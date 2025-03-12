@@ -11,25 +11,25 @@ import logging
 # Third-party library imports
 from PIL import Image
 from werkzeug.serving import make_server
-from flask import Flask, request, jsonify, render_template, send_file, make_response
+from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, redirect, url_for
 from flask.wrappers import Response
 from flask_socketio import SocketIO
 from flask_minify import Minify
 from engineio.async_drivers import gevent # DO NOT REMOVE
 from win32com.client import Dispatch
 import easygui
+from app.utils.plugins.load_plugins import load_plugins
 
 # WebDeck imports
 from .on_start import on_start
 from .utils.global_variables import set_global_variable, get_global_variable
 
-config, commands, local_ip = on_start()
+config, local_ip = on_start()
 folders_to_create = []
 set_global_variable("config", config)
 
 from app.tray import change_tray_language, change_server_state
 from .utils.themes.parse_themes import parse_themes
-from .utils.plugins.load_plugins import load_plugins
 from .utils.working_dir import get_base_dir
 from .utils.settings.get_config import get_port, get_config
 from .utils.settings.save_config import save_config
@@ -38,7 +38,7 @@ from .utils.settings.audio_devices import get_audio_devices
 from .utils.settings.gridsize import update_gridsize
 from .utils.settings.create_folders import create_folders
 from .utils.firewall import fix_firewall_permission, check_firewall_permission
-from .utils.languages import text, set_default_language, get_languages_info, get_language
+from .utils.languages import text, set_default_language, get_languages_info, get_language,get_new_text
 from .utils.logger import log
 from .utils.args import get_arg
 from .utils.merge_dicts import merge_dicts
@@ -54,8 +54,16 @@ change_server_state(0)  # Tray icon: server loading
 base_dir = get_base_dir()
 template_folder = os.path.join(base_dir, 'templates')
 static_folder = os.path.join(base_dir, 'static')
+print(f"Base directory: {base_dir}")
+print(f"Template folder: {template_folder}")
+print(f"Static folder: {static_folder}")
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+
+
+
+socketio = SocketIO(app)
+commands = load_plugins(app)
 
 logging.getLogger("werkzeug").disabled = True
 app.jinja_env.globals.update(
@@ -66,11 +74,11 @@ if getattr(sys, "frozen", False):
     Minify(app=app, html=True, js=True, cssless=True)
 app.config["SECRET_KEY"] = get_config()["settings"]["flask_secret_key"]
 
-socketio = SocketIO(app)
 
 
 @app.route("/usage", methods=["POST"])
 def usage():
+
     return jsonify(get_usage())
 
 
@@ -135,11 +143,6 @@ def get_svgs():
 def home():
     config = get_config(save_updated_config=True)
 
-    with open("webdeck/commands.json", encoding="utf-8") as f:
-        commands = json.load(f)
-        commands, all_func = load_plugins(commands)
-        set_global_variable("all_func", all_func)
-
     with open("webdeck/version.json", encoding="utf-8") as f:
         versions = json.load(f)
 
@@ -175,7 +178,27 @@ def home():
         int=int, str=str, dict=dict, json=json, type=type, eval=eval, open=open,
         isfile=os.path.isfile, text=text, get_language=get_language,
     )
+
+
+@app.route('/home')
+def new():
+    context = {}
+    config = get_config(save_updated_config=True)
+    #open pages.json if not exist make it 
+    with open(".config/pages.json", "r") as f:        
+        pages = json.load(f)
+        context["deck_folder"] = pages[next(iter(pages))]  
+        context["folder_name"] = str(next(iter(pages)))
+        print(context["folder_name"])
+        print (type(context["deck_folder"]))
+        textdir = get_new_text()
+        context["text"] = textdir
+        context["commands"] = commands
+        
+    return render_template("index_new.jinja",config=config,context=context)
+
     
+
 
 @app.route("/save_config", methods=["POST"])
 def saveconfig():
@@ -371,6 +394,9 @@ def get_config_route():
     return jsonify(config)
 
 
+
+    
+
 @app.route("/upload_folderpath", methods=["POST"])
 def upload_folderpath():
     path = easygui.diropenbox()
@@ -442,11 +468,11 @@ def create_folder():
         return jsonify({"success": False, "message": "Folder already exists"})
 
 
-@app.route("/delete_folder", methods=["POST"])
-def delete_folder():
-    pass
-    
 
+@app.route('/temp/<filename>')
+def serve_temp_file(filename):
+    temp_folder = os.path.join(base_dir, '.temp')
+    return send_from_directory(temp_folder, filename)
 
 
 # https://stackoverflow.com/a/70555525/17100464
@@ -501,19 +527,25 @@ def send_data_socketio(message):
 @app.route("/send-data", methods=["POST"])
 def send_data_route():
     try:
-        result = command(message=request.get_json()["message"])
+        result = command(message=request.get_json().get("message", ""))
+        print(f"result from send_data: {result}")
     except Exception as e:
         log.exception(e, "An error occurred while handling a command")
         return jsonify({"success": False, "message": str(e)})
     
     if result is False:
         return jsonify({"success": False})
-    elif isinstance(result, Response):
-        return result
-    elif not isinstance(result, dict):
-        return jsonify({"success": True})
     
-    return jsonify(result)
+    elif isinstance(result, Response):
+        log.info("sending response from route")
+        return result
+    
+    elif isinstance(result, dict):
+        log.info("sending response from route")
+        return jsonify(result)
+    
+    # Si el resultado es algo que se puede representar como JSON (por ejemplo, un string o un número).
+    return jsonify({"success": True, "data": result})
 
 
 @app.errorhandler(Exception)
@@ -534,11 +566,12 @@ if (
 log.info(f"Local IP address detected: {local_ip}")
 
 def run_server():
+    
     change_server_state(1)
     if config["settings"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
         server = make_server(local_ip, get_port(), app)
         server.serve_forever()
-    else:
+    else:        
         app.run(
             host=get_arg("host") or local_ip,
             port=get_port(),

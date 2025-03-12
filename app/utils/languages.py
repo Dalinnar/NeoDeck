@@ -1,6 +1,8 @@
 import os
 import locale
 
+from settings import BASE_DIR
+
 lang_files = {}
 languages_info = []
 default_lang = 'en_US'
@@ -8,22 +10,41 @@ lang_files_dir = ''
 misc_lang_files_dir = ''
 
 
-def load_lang_file(lang) -> dict:
-    lang_dictionary = {}
-    lang_path = f"{lang_files_dir}/{lang}.lang"
+#updates a lang file with new translations based on a dictionary
+def update_lang_file(lang_file_path,dict):
+    #grab the 
+    with open (lang_file_path):
+        pass
 
-    if not os.path.isfile(lang_path):
-        lang_path = f"{misc_lang_files_dir}/{lang}.lang"
+
+
     
-    if not os.path.isfile(lang_path):
-        for root, dirs, files in os.walk(lang_files_dir):
-            for file in files:
-                if file.endswith(".lang") and file.startswith(lang):
-                    lang_path = os.path.join(lang_files_dir, file)
-                    break
-            if lang_path != os.path.join(lang_files_dir, f"{lang}.lang"):
-                break
 
+
+def load_lang_file(lang, lang_file_path=None) -> dict:
+    lang_dictionary = {}
+
+    # Si se proporciona un archivo específico, usarlo directamente
+    if lang_file_path:
+        if not os.path.isfile(lang_file_path):
+            raise FileNotFoundError(f"Language file not found: {lang_file_path}")
+        lang_path = lang_file_path
+    else:
+        # Construir ruta por defecto
+        lang_path = os.path.join(lang_files_dir, f"{lang}.lang")
+        if not os.path.isfile(lang_path):
+            lang_path = os.path.join(misc_lang_files_dir, f"{lang}.lang")
+
+        if not os.path.isfile(lang_path):
+            for root, _, files in os.walk(lang_files_dir):
+                for file in files:
+                    if file.endswith(".lang") and file.startswith(lang):
+                        lang_path = os.path.join(root, file)
+                        break
+            else:  # Si no encuentra el archivo, lanzar error
+                raise FileNotFoundError(f"Language file for '{lang}' not found.")
+
+    # Cargar el archivo de idioma
     with open(lang_path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -133,16 +154,52 @@ def init(lang_files_directory=None, misc_lang_files_directory=None, default_lang
     return languages_info
 
 def text(text=None, lang=None) -> str:
-    global default_lang
+    global default_lang    
     lang = get_language(lang or default_lang)
-    
     if text is None:
         return ""
+    if lang not in lang_files:
+        lang = default_lang
+        if lang not in lang_files:
+            raise KeyError(f"Language '{lang}' not found in lang_files")
+    try:
+        with open (os.path.join(BASE_DIR,".temp","languages",f"{lang}.lang"),"r",encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith(("//", "#")):
+                    try:
+                        key, value = line.split("=", 1)
+                        lang_files[lang][key.strip()] = value.strip()
+                    except ValueError as e:
+                        raise ValueError(f'Invalid line format: {line}') from e
+    except FileNotFoundError:
+        pass
+        
+
+    #return lang_files["en_US"].update(lang_files[lang])
+    return lang_files[lang].get(text,lang_files.get("en_US", {}).get(text, text))
+
+
+def get_new_text(lang=None):
+    global default_lang    
+    lang = get_language(lang or default_lang)
 
     if lang not in lang_files:
         lang = default_lang
         if lang not in lang_files:
             raise KeyError(f"Language '{lang}' not found in lang_files")
-        # raise KeyError(f"Language '{lang}' not found in lang_files")
+    try:
+        with open (os.path.join(BASE_DIR,".temp","languages",f"{lang}.lang"),"r",encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith(("//", "#")):
+                    try:
+                        key, value = line.split("=", 1)
+                        lang_files[lang][key.strip()] = value.strip()
+                    except ValueError as e:
+                        raise ValueError(f'Invalid line format: {line}') from e
+    except FileNotFoundError:
+        pass
     
-    return lang_files[lang].get(text, text)
+    lang_files["en_US"].update(lang_files[lang])
+    return lang_files["en_US"]

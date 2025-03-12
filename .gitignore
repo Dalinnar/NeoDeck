@@ -6,6 +6,7 @@ temp/*
 .config/user_uploads
 .config/themes
 .config/plugins
+app/plugins/*
 
 # virtual environment directory
 venv
@@ -31,3 +32,4 @@ __pycache__/
 .DS_Store
 tests/*
 data.json
+.temp/*

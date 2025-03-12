@@ -267,14 +267,14 @@ WEBDECK_config__btn_default_display_name=Settings
 WEBDECK_config__btn_description=Open settings menu
 
 
-DISPLAY_CATEGORY_NAME=Display
+DISPLAY_CATEGORY_NAME=Monitoreo
 
 DISPLAY_cpu__btn_name=CPU usage %
 DISPLAY_cpu__btn_default_display_name=CPU usage
 DISPLAY_cpu__btn_description=
 DISPLAY_cpu__arg_1_name=Button text
 
-DISPLAY_memory__category_name=Memory (RAM)
+DISPLAY_memory__category_name=Memoria (RAM)
 DISPLAY_memory__category_description=
 
 DISPLAY_memory_sub1__btn_name=RAM usage (%)
@@ -297,7 +297,7 @@ DISPLAY_memory_sub4__btn_default_display_name=total RAM
 DISPLAY_memory_sub4__btn_description=
 DISPLAY_memory_sub4__arg_1_name=Button text
 
-DISPLAY_disks__category_name=Disks
+DISPLAY_disks__category_name=Discos
 DISPLAY_disks__category_description=
 
 DISPLAY_disks_sub1__btn_name=Disk usage (%)
@@ -365,10 +365,10 @@ DISPLAY_network_sub2__btn_description=
 DISPLAY_network_sub2__arg_1_name=Button text
 
 
-SYSTEM_CATEGORY_NAME=System
+SYSTEM_CATEGORY_NAME=Sistema
 
-SYSTEM_volume__category_name=Volume control
-SYSTEM_volume__category_description=Manage system volume
+SYSTEM_volume__category_name=Control de volumen
+SYSTEM_volume__category_description=Administrar volumen del sistema
 
 SYSTEM_volume_sub1__btn_name=Increase volume
 SYSTEM_volume_sub1__btn_default_display_name=
@@ -391,7 +391,7 @@ SYSTEM_volume_sub4__btn_name=Mute the volume
 SYSTEM_volume_sub4__btn_default_display_name=
 SYSTEM_volume_sub4__btn_description=Mute computer volume
 
-SYSTEM_media_control__category_name=Media control
+SYSTEM_media_control__category_name=Control multimedia
 SYSTEM_media_control__category_description=Manage system media
 
 SYSTEM_media_control_sub1__btn_name=Previous
@@ -481,7 +481,7 @@ SYSTEM_execute_batch_code__btn_description=Execute batch from the webdeck progra
 SYSTEM_execute_batch_code__arg_1_name=Batch code
 
 
-TEXT_CATEGORY_NAME=Text
+TEXT_CATEGORY_NAME=Texto
 
 TEXT_press_a_key__btn_name=Keyboard key
 TEXT_press_a_key__btn_default_display_name=Press key

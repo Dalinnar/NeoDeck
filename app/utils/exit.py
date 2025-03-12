@@ -1,8 +1,11 @@
+import shutil
 import sys
 import os
 import win32com.client
 import subprocess
 import signal
+import glob
+from settings import BASE_DIR
 from .logger import log
 
 
@@ -11,6 +14,10 @@ def exit_program(force=True, from_timeout=False):
         log.info("Timeout reached. Exiting WebDeck...")
     else:
         log.info("Exiting WebDeck...")
+        #remove all files from temp
+        for f in glob.glob(os.path.join(str(BASE_DIR), ".temp", "*")):
+            if os.path.isfile(f):os.remove(f)
+            elif os.path.isdir(f):shutil.rmtree(f)
     
     if sys.platform == "win32":
         wmi = win32com.client.GetObject("winmgmts:\\\\.\\root\\cimv2")

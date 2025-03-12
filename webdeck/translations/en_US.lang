@@ -554,10 +554,15 @@ OBSSTUDIO_hotkey__btn_default_display_name=OBS Hotkey
 OBSSTUDIO_hotkey__btn_description=Trigger a hotkey in OBS
 OBSSTUDIO_hotkey__arg_1_name=Key name
 
-OBSSTUDIO_changescene__btn_name=Change scene
+OBSSTUDIO_changescene__btn_name=Change scene con drogas
 OBSSTUDIO_changescene__btn_default_display_name=
 OBSSTUDIO_changescene__btn_description=Set current scene by name on OBS
 OBSSTUDIO_changescene__arg_1_name=Scene name
+
+OBSSTUDIO_togglesource__btn_name=Toggle source
+OBSSTUDIO_togglesource__btn_default_display_name=OBS Toggle Source
+OBSSTUDIO_togglesource__btn_description=Change a source visibility on OBS
+OBSSTUDIO_togglesource__arg_1_name=Key name
 
 OBSSTUDIO_togglerecording__btn_name=Toggle recording
 OBSSTUDIO_togglerecording__btn_default_display_name=
@@ -676,3 +681,26 @@ SPOTIFY_follow_current_played_artist_(doesnt_unfollow_if_already)__btn_descripti
 SPOTIFY_unfollow_current_played_artist__btn_name=Unfollow artist
 SPOTIFY_unfollow_current_played_artist__btn_default_display_name=
 SPOTIFY_unfollow_current_played_artist__btn_description=Unfollow the artist of the currently played song
+
+
+
+//category titles
+
+CATEGORY__TILE_Display=Display
+CATEGORY__TILE_OBS_Studio=OBS Studio
+CATEGORY__TILE_Soundboard=Soundboard
+CATEGORY__TILE_Spotify=Spotify
+CATEGORY__TILE_System=System
+CATEGORY__TILE_Text=Text
+CATEGORY__TILE_Utilities=Utilities
+CATEGORY__TILE_Webdeck=Webdeck
+
+//category subtitles
+
+SUBCATEGORY__TILE_Display_Disks=Disks
+SUBCATEGORY__TILE_Display_GPU=GPU
+SUBCATEGORY__TILE_Display_Memory=Memory
+SUBCATEGORY__TILE_Display_Network=Network
+SUBCATEGORY__TILE_Spotify_Volume_(ONLY_WITH_SPOTIFY_PREMIUM)=Spotify Volume (ONLY_WITH_SPOTIFY_PREMIUM)
+SUBCATEGORY__TILE_System_Media_control=System Media Control
+SUBCATEGORY__TILE_System_Volume=System Volume

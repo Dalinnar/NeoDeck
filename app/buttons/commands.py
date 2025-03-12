@@ -32,14 +32,7 @@ from . import command_actions
 
 
 
-def handle_command(message: str = None):
-    global all_func
-
-    command_arguments = message
-    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "")
-    if message: log.info(f"Command received: {message}")
-    
-    command_map ={
+command_map ={
         "/debug-send":              lambda: log.info("Debug message sent"),
         "/bypass-windows-firewall": lambda: fix_firewall_permission(),
         "/exit" :                   lambda: sys.exit("/exit received"),
@@ -94,24 +87,27 @@ def handle_command(message: str = None):
             subprocess.Popen(f"taskkill /f /im {window.get_focused()}",shell=True),
             subprocess.Popen(f"taskkill /f /im {window.get_focused()}.exe", shell=True)) if window.get_focused() else None,
     }
+
+
+
+def handle_command(message: str = None):
+    global command_map
+    # Limpiar el mensaje de caracteres no deseados
+    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "")
     
+    if message:
+        log.info(f"Command received: {message}")
+    
+    # Buscar si el mensaje coincide con alguno de los comandos
     for command, func in command_map.items():
-        if isinstance(command, (str, tuple)):
+        if isinstance(command, (str, tuple)):            
             if isinstance(command, str) and message.startswith(command) or isinstance(command, tuple) and any(cmd in message for cmd in command):
+                # Ejecutar la función asociada al comando
                 result = func(message) if 'message' in func.__code__.co_varnames else func()
+                
+                # Si el resultado no es None, devolver el resultado
+                
                 return result if result is not None else ""
-
-        
-        for commands in get_global_variable('all_func').values():
-            for command, func in commands.items():
-                if message.lstrip('/').startswith(command):
-                    command_arguments = message[len(command)+1:].strip()
-                    commandArgs = command_arguments.split("<|§|>")
-
-                    if inspect.signature(func).parameters:
-                        func(*commandArgs)
-                    else:
-                        func()
-                    break
-                        
+    
+    # Si no se encuentra el comando, devolver un valor vacío (o puedes devolver un mensaje de error si lo prefieres)
     return jsonify({"success": True})

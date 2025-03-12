@@ -116,6 +116,16 @@
     {% endif %}
 
     <style>
+    .custom_plugin_modal{
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 60%;
+      height: 60%;
+      z-index: 3;
+      background-color: #CCC;
+    }
       
       {% if random_bg and not random_bg.strip() == "" %}
         {% if random_bg.endswith('.mp4') %}
@@ -340,7 +350,9 @@
                     <!--|||||||||||||||||||||||-->
                   </button>
                 {% else %}
-                  {% if config["front"]["buttons"][folder_id][button_id]["image"].startswith('http') %}
+                  {% if 'temp' in config["front"]["buttons"][folder_id][button_id]["image"] %}
+                    {% set imagepath = config["front"]["buttons"][folder_id][button_id]["image"] %}
+                  {% elif config["front"]["buttons"][folder_id][button_id]["image"].startswith('http') %}
                     {% set imagepath = config["front"]["buttons"][folder_id][button_id]["image"] %}
                   {% elif ':' in config["front"]["buttons"][folder_id][button_id]["image"] %}
                     {% set imagepath = "static/img/" + config["front"]["buttons"][folder_id][button_id]["image"].split('\\')[-1] %}
@@ -369,6 +381,7 @@
                     <!--|||||||||||||||||||||||-->
                     {% if button_config['message'] and button_config['message'].startswith('/usage') %}
                       {% set name = button_config['message'].replace('<|§|>','').replace("'",'"',2).split('"')[1].strip() %}
+                      
                       {% set path = button_config['message'].replace('<|§|>','').replace("'",'"',2).split('"')[2] %}
                       {% if button_config['message'].split()[1] %}
                         <div class="usage">
@@ -1113,6 +1126,7 @@
                         {% endif %}
                         
                         {% set _command = command|replace(' ','_')|replace("'",'')|lower %}
+                        <script> console.log("command: {{_command}} ",)</script>
                         {% set query = _category ~ '_' ~ _command ~ '__' ~ btn ~ '_description' %}
                         {% set button_description = text(query) %}
                         {% if button_description == query %}
@@ -1138,11 +1152,12 @@
                           {% if button_title == query or button_title == '' %}
                             {% set button_title = command_name %}
                           {% endif %}
-                          <button arg_modal_ID="{{ arg_modal_ID }}" class="dropdown-btn no-dropdown {{dark_theme}}" id="open-button-{{ arg_modal_ID }}" dropdown-commandTag="{{command}}">
+                          <button arg_modal_ID="{{ arg_modal_ID }}" class="dropdown-btn no-dropdown {{dark_theme}}" id="open-button-{{ arg_modal_ID }}" dropdown-commandTag="{{command}}" custom_template="{{command_value['custom_template']}}" >
                             {{button_title}}
                           </button>
-                        
+                        {% if not command_value["custom_template"] %}
                           {% include 'addbutton_modal.jinja' %}
+                        {% endif %}
 
                         {% else %}
                           {# if type is multiple #}
@@ -1201,8 +1216,15 @@
                                 {% if button_title == query or button_title == '' %}
                                   {% set button_title = command %}
                                 {% endif %}
-                                <button arg_modal_ID="{{ arg_modal_ID }}" class="dropdown-btn no-dropdown {{dark_theme}}" id="open-button-{{ arg_modal_ID }}" dropdown-commandTag="{{command}}">
-                                  {{button_title}}
+                                <button 
+                                arg_modal_ID="{{ arg_modal_ID }}" 
+                                class="dropdown-btn no-dropdown {{dark_theme}}" 
+                                id="open-button-{{ arg_modal_ID }}" 
+                                dropdown-commandTag="{{command}}" 
+                                custom_template="{{command_value['custom_template']}}"
+                                position=""
+                                >
+                                  {{button_title}} asdasd
                                 </button>
                                 
                                 {% include 'addbutton_modal.jinja' %}
@@ -1228,6 +1250,7 @@
                   dropdown[index].addEventListener("click", function() {
                     if (!(dropdown[index].classList.contains("final-btn") || dropdown[index].classList.contains("no-dropdown"))) {
                       this.classList.toggle("active");
+                      console.log("dropdown-btn clicked");
                     }
                     var dropdownContent = this.nextElementSibling;
                     try {
@@ -1396,7 +1419,7 @@ function DeleteFolder(folder_id) {
         } catch (err) {}
       };
       // Appeler la fonction pour activer le verrouillage de l'écran lorsque l'utilisateur interagit avec le site
-      document.addEventListener('click', wakeLock);
+      document.addEventListener("click", wakeLock);
 
       function showToast(type, text) {
         let bg, duration
@@ -1429,28 +1452,30 @@ function DeleteFolder(folder_id) {
         console.log('INFO: ', text);
       }
 
-      function send_data(message) {
-        fetch('/send-data', {
-          method: 'POST',
-          headers: {
+function send_data(message) {
+    return fetch('/send-data', {   // Debes retornar la promesa de fetch
+        method: 'POST',
+        headers: {
             'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ message: message })
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success === false) {
-              showError(data.message);
-            } else {
-              if (data.message) {
-                showInfo(data.message);
-              } else {
-                console.log(data);
-              }
-          }
-          })
-          .catch(error => console.error(error));
-      }
+        },
+        body: JSON.stringify({ message: message })
+    })
+    .then(response => response.json())  // Convierte la respuesta en JSON
+    .then(data => {
+        if (data.success === false) {
+            showError(data.message);
+            return null;  // En caso de error, retornamos null
+        } else {
+            if (data.data) {
+                return data.data;  // Retorna los datos si existen
+            }
+        }
+    })
+    .catch(error => {
+        console.error("Error:", error);
+        return null;  // Si hay un error en la llamada, retornamos null
+    });
+}
 
       {#
       function loop() {
@@ -1595,10 +1620,12 @@ function DeleteFolder(folder_id) {
                     loadingScreen.classList.add("hidden");
                     disconnectCount = 0;
                   }
-                  // console.log(usage_dict);
+                  console.log(usage_dict);
                   forms.forEach(form => {
                     const divElements = document.querySelectorAll('.usage-value');
+                    
                     divElements.forEach(divElement => {
+                      
                       const otherClass = divElement.classList[1];
                       if (otherClass !== undefined && otherClass.includes('.')) {
                         if (eval(otherClass) !== '-') {
@@ -1861,10 +1888,10 @@ function DeleteFolder(folder_id) {
                             let editButtonElements = document.querySelectorAll('.edit-button');
                             let deleteButtonElements = document.querySelectorAll('.delete-button');
                             for (let i = 0; i < editButtonElements.length; i++) {
-                                editButtonElements[i].addEventListener('click', showEditWindow);
+                                editButtonElements[i].addEventListener("click", showEditWindow);
                             }
                             for (let i = 0; i < deleteButtonElements.length; i++) {
-                                deleteButtonElements[i].addEventListener('click', showDeleteConfirmation);
+                                deleteButtonElements[i].addEventListener("click", showDeleteConfirmation);
                             }
 
                             let tempValue = tempEditorConfig['front']['buttons'][parentId1][formNumber1];
@@ -1980,11 +2007,11 @@ function DeleteFolder(folder_id) {
         }
 
         // Ajouter un gestionnaire d'événements pour le clic sur le bouton editorButton
-        editorButton.addEventListener('click', toggleEditorMode);
+        editorButton.addEventListener("click", toggleEditorMode);
       
         // Ajouter un gestionnaire d'événements pour le clic sur le bouton exitEditorButton
         const exitEditorButton = document.getElementById('exitEditorButton');
-        exitEditorButton.addEventListener('click', toggleEditorMode);
+        exitEditorButton.addEventListener("click", toggleEditorMode);
       
         // Ajouter un gestionnaire d'événements pour le clic sur le bouton SaveExitEditorButton
         function SaveExitEditor(tempEditorConfig) {
@@ -2035,7 +2062,7 @@ function DeleteFolder(folder_id) {
         }
 
         const SaveExitEditorButton = document.getElementById('SaveExitEditorButton');
-        SaveExitEditorButton.addEventListener('click', function () {
+        SaveExitEditorButton.addEventListener("click", function () {
           console.log('tempEditorConfig:');
           console.log(JSON.stringify(tempEditorConfig));
           SaveExitEditor(tempEditorConfig);
@@ -2150,10 +2177,10 @@ function DeleteFolder(folder_id) {
             let editButtonElements = document.querySelectorAll('.edit-button');
             let deleteButtonElements = document.querySelectorAll('.delete-button');
             for (let i = 0; i < editButtonElements.length; i++) {
-                editButtonElements[i].addEventListener('click', showEditWindow);
+                editButtonElements[i].addEventListener("click", showEditWindow);
             }
             for (let i = 0; i < deleteButtonElements.length; i++) {
-                deleteButtonElements[i].addEventListener('click', showDeleteConfirmation);
+                deleteButtonElements[i].addEventListener("click", showDeleteConfirmation);
             }
             let tempValue = tempEditorConfig['front']['buttons'][parentId1][formNumber1];
             tempEditorConfig['front']['buttons'][parentId1][formNumber1] = tempEditorConfig['front']['buttons'][parentId2][formNumber2];
@@ -2210,10 +2237,10 @@ function DeleteFolder(folder_id) {
             let editButtonElements = document.querySelectorAll('.edit-button');
             let deleteButtonElements = document.querySelectorAll('.delete-button');
             for (let i = 0; i < editButtonElements.length; i++) {
-                editButtonElements[i].addEventListener('click', showEditWindow);
+                editButtonElements[i].addEventListener("click", showEditWindow);
             }
             for (let i = 0; i < deleteButtonElements.length; i++) {
-                deleteButtonElements[i].addEventListener('click', showDeleteConfirmation);
+                deleteButtonElements[i].addEventListener("click", showDeleteConfirmation);
             }
             let tempValue = tempEditorConfig['front']['buttons'][parentId1][formNumber1];
             tempEditorConfig['front']['buttons'][parentId1][formNumber1] = tempEditorConfig['front']['buttons'][parentId2][formNumber2];
@@ -2235,7 +2262,7 @@ function DeleteFolder(folder_id) {
         }
 
         const swapEditorButton = document.getElementById('swapEditorButton');
-        swapEditorButton.addEventListener('click', swapEditorButtonFunction);
+        swapEditorButton.addEventListener("click", swapEditorButtonFunction);
 
         document.addEventListener('keydown', function(event) {
           if (is_editbutton_modal_opened === 0 && is_addbutton_modal_opened === 0 && document.getElementById('modal-container').style.opacity !== '1') {
@@ -2299,19 +2326,19 @@ function DeleteFolder(folder_id) {
         
           // Ajouter un gestionnaire d'événement pour le clic sur le bouton +
           for (let i = 0; i < addButtonElements.length; i++) {
-              addButtonElements[i].addEventListener('click', showAddConfirmation);
+              addButtonElements[i].addEventListener("click", showAddConfirmation);
           }
           // Ajouter un gestionnaire d'événement pour le clic sur le bouton edit
           for (let i = 0; i < editButtonElements.length; i++) {
-              editButtonElements[i].addEventListener('click', showEditWindow);
+              editButtonElements[i].addEventListener("click", showEditWindow);
           }
           // Ajouter un gestionnaire d'événement pour le clic sur le bouton delete
           for (let i = 0; i < deleteButtonElements.length; i++) {
-              deleteButtonElements[i].addEventListener('click', showDeleteConfirmation);
+              deleteButtonElements[i].addEventListener("click", showDeleteConfirmation);
           }
           // Ajouter un gestionnaire d'événement pour le clic sur le bouton swap
           for (let i = 0; i < AllButtons.length; i++) {
-              AllButtons[i].addEventListener('click', swapButton);
+              AllButtons[i].addEventListener("click", swapButton);
           }
 
           // Ajouter un écouteur d'événement sur chaque bouton pour ouvrir la modal addbutton
@@ -2456,6 +2483,7 @@ function DeleteFolder(folder_id) {
                   .then(response => response.json())
                   .then(usage_dict => {
                     const divElements = document.querySelectorAll('.usage-value');
+                    console.log(divElements);
                     divElements.forEach(divElement => {
                       const otherClass = divElement.classList[1];
                       if (otherClass !== undefined || eval(otherClass) !== '-') {
@@ -2626,6 +2654,8 @@ function DeleteFolder(folder_id) {
         // Ajouter un écouteur d'événement sur chaque bouton pour ouvrir la modal addbutton
         for (let button of open_modal_addbutton) {
           button.addEventListener("click", function() {
+
+            console.log("click");
             if (swapMode !== 1) {
               var addIdValue = button.getAttribute('add_ID');
               var addFolderValue = button.getAttribute('add_FOLDER');
@@ -2695,16 +2725,56 @@ function DeleteFolder(folder_id) {
         }
         
         // Ajouter des écouteurs d'événements sur chaque bouton pour ouvrir la modal correspondante
-        open_modal_addbutton_args.forEach(function(button) {
-          button.addEventListener("click", function() {
-            let modalId = button.getAttribute("arg_modal_ID");
-            if (swapMode !== 1) {
-              show_addbutton_args_modal(modalId);
-            }
-          });
-        });
-        
-        
+open_modal_addbutton_args.forEach(function(button) {
+  button.addEventListener("click", function() {
+    console.log("clicked final button");
+    let modalId = button.getAttribute("arg_modal_ID");
+
+    // Verifica si el botón tiene el atributo "custom_template"
+    let customTemplate = button.getAttribute("custom_template");
+
+    if (customTemplate) {
+      
+      send_data("/template " +customTemplate).then(response => {
+        var template_data = response;
+        console.log(template_data);
+        createCustomModal(customTemplate,template_data);
+      })
+      
+      
+      addbutton_modal_close_button.click();
+    } else {
+      // Si no tiene "custom_template", abrir el modal común
+      if (swapMode !== 1) {
+        show_addbutton_args_modal(modalId);
+      }
+    }
+  });
+});
+
+// Función para crear un modal personalizado
+function createCustomModal(templateName,htmldata) {
+  var modal = document.createElement('div');
+  modal.classList.add('custom_plugin_modal');
+
+  modal.innerHTML = `
+    <div>
+      <svg class="close-button" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </div>
+  `;
+  //apend all htmldata to modal
+  modal.innerHTML += htmldata;
+
+  document.body.appendChild(modal);
+
+  // Agregar evento para cerrar el modal al hacer clic en el SVG
+  modal.querySelector('.close-button').addEventListener('click', function() {
+    modal.remove();
+  });
+}       
         // Ajouter des écouteurs d'événements sur chaque modal pour la fermer en cliquant en dehors
         addbutton_args_modal_containers.forEach(function(modalContainer) {
           let modalId = modalContainer.getAttribute("id").split("-").pop();
@@ -2811,7 +2881,7 @@ function DeleteFolder(folder_id) {
         const dezoomBtn = document.querySelector('.dezoom-btn');
         const zoomBtn = document.querySelector('.zoom-btn');
         if (fullscreenBtn) {
-          fullscreenBtn.addEventListener('click', () => {
+          fullscreenBtn.addEventListener("click", () => {
             if (document.fullscreenEnabled && swapMode === 0 ) {
               if (document.fullscreenElement) {
                 document.exitFullscreen();
@@ -2828,7 +2898,7 @@ function DeleteFolder(folder_id) {
 
         try {
           let scale = 1;
-          zoomInBtn.addEventListener('click', () => {
+          zoomInBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               scale += 0.1;
               document.documentElement.style.transform = `scale(${scale})`;
@@ -2837,7 +2907,7 @@ function DeleteFolder(folder_id) {
         } catch (error) {}
 
         try {
-          zoomOutBtn.addEventListener('click', () => {
+          zoomOutBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               scale -= 0.1;
               document.documentElement.style.transform = `scale(${scale})`;
@@ -2846,7 +2916,7 @@ function DeleteFolder(folder_id) {
         } catch (error) {}
 
         try {
-          shrinkBtn.addEventListener('click', () => {
+          shrinkBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               const currentMargin = parseInt(getComputedStyle(buttonsCenter).marginLeft);
               buttonsCenter.style.marginLeft = `${currentMargin + 1}px`;
@@ -2856,7 +2926,7 @@ function DeleteFolder(folder_id) {
         } catch (error) {}
 
         try {
-          expandBtn.addEventListener('click', () => {
+          expandBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               const currentMargin = parseInt(getComputedStyle(buttonsCenter).marginLeft);
               buttonsCenter.style.marginLeft = `${currentMargin - 1}px`;
@@ -2896,7 +2966,7 @@ function DeleteFolder(folder_id) {
         var currentZoom = 1;
 
         try {
-          dezoomBtn.addEventListener('click', () => {
+          dezoomBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               currentZoom = currentZoom - 0.05;
               let calcWidth = 100 / currentZoom;
@@ -2910,7 +2980,7 @@ function DeleteFolder(folder_id) {
         } catch (error) {}
 
         try {
-          zoomBtn.addEventListener('click', () => {
+          zoomBtn.addEventListener("click", () => {
             if (swapMode !== 1) {
               currentZoom = currentZoom + 0.05;
               let calcWidth = 100 / currentZoom;

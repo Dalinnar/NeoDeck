@@ -1,0 +1,532 @@
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="static\icons\icon.ico" />
+  <title>WebDeck</title>
+
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/button_generator.js') }}" ></script>
+  <style>
+    *,
+    *:before,
+    *:after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "Noto Sans SC", sans-serif;
+    }
+
+    * {
+      scrollbar-width: none;
+      /* Para Firefox */
+      -ms-overflow-style: none;
+      /* Para Internet Explorer y Edge */
+    }
+
+    *::-webkit-scrollbar {
+      display: none;
+      /* Para Chrome, Safari y Opera */
+    }
+       .tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border-radius: 4px;
+            padding: 5px;
+            font-size: 12px;
+            display: none;
+            pointer-events: none; /* Para evitar que el tooltip interfiera con otros elementos */
+            z-index: 1000;
+        }
+
+    /* Asegura que el contenedor principal ocupe toda la pantalla */
+    .main-container {
+      width: 100vw;
+      height: 100vh;
+      background-color: rgb(63, 63, 63);
+      display: flex;
+      overflow: auto;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .title_container {
+      padding: 20px;
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      border-radius: 20px;
+      align-items: center;
+      justify-content: start;
+      transition: .3s;
+      background: #ffffff0a;
+      margin: 10px 0;
+    }
+
+    .title_container:hover {
+      background-color: #3b3b3b;
+    }
+
+    /* Contenedor de los botones */
+    .buttons-container {
+      width: 98vw;
+      height: auto;
+      max-height: 98vh;
+      display: grid;
+      gap: 0.3vh;
+      align-content: center;
+      align-items: center;
+      justify-items: center;
+      margin: auto;
+    }
+
+    .buttons-container>div:empty {
+
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      background-color: #1e1e1e;
+      box-shadow: ;
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      transition: 0.1s;
+
+    }
+
+    .buttons-container>div:empty:hover {
+
+      border: 2px solid white;
+
+    }
+
+    .hidden {
+      display: none;
+    }
+
+
+    .menuContainer button {
+      padding: 10px;
+      background-color: #3b3b3b;
+      color: whitesmoke;
+      border-radius: 10px;
+      margin: 5px;
+      border: none;
+      outline: none;
+      transition: .3s;
+    }
+
+    .menuContainer input {
+      background-color: transparent;
+      width: 100%;
+      border: 2px solid whitesmoke;
+      font-size: 24px;
+
+      outline: none;
+      color: whitesmoke;
+      padding: 5px;
+
+
+    }
+
+    .menuContainer button:hover {
+      background-color: #4b4b4b;
+    }
+
+    .menuContainer.hidden {
+      width: 0;
+      margin-left: 0;
+    }
+
+    .menuContainer {
+
+
+      width: 50%;
+      padding: 10px;
+      background-color: #1e1e1e;
+      height: 100%;
+      margin-left: 40px;
+      transition: .4s;
+      overflow: auto;
+      display: block;
+
+      h2,
+      h3 {
+        color: white;
+      }
+    }
+
+    .menuContainer.hidden * {
+      display: none;
+    }
+
+    /* Estilo para los botones */
+    .button {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      border: 4px solid red;
+      border-radius: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 16px;
+      text-align: center;
+    }
+  </style>
+
+</head>
+
+<body>
+
+  <div class="main-container">
+
+    <div class="buttons-container"  grid_size='{{config["front"]["height"]}};{{config["front"]["width"]}}'></div>
+    <div class="menuContainer hidden" id="menuContainer"></div>
+
+  </div>
+
+  <script>
+  //add all the data to the grid
+  window.buttonData = {}
+  window.folder_data = {{context["deck_folder"] | tojson | safe}}
+  window.folder_name =  "{{ context['folder_name'] }}"
+  </script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      
+      // Cargar la página inicial desde el contexto
+      const initialPage = JSON.parse('{{ context["deck_folder"] | tojson | safe}}');
+      updateGrid(initialPage);
+      const commands = JSON.parse('{{ context["commands"] | tojson | safe}}');
+
+      set_menu_commands(commands);
+    });
+
+    function updateGrid(pageData) {
+      const container = document.querySelector(".buttons-container");
+
+      if (!container) return;
+
+      // Limpiar el contenedor antes de agregar nuevos elementos
+      container.innerHTML = "";
+
+      const rows = Number(pageData.rows);
+      const cols = Number(pageData.columns);
+
+      if (!rows || !cols) return;
+
+      // Configurar el grid
+      container.style.display = "grid";
+      container.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+      container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      container.style.aspectRatio = `${cols} / ${rows}`;
+
+      // Crear los elementos del grid
+      for (let i = 0; i < rows * cols; i++) {
+        const element = document.createElement("div");
+        element.classList.add("grid-item");
+        container.appendChild(element);
+      }
+    }
+
+    function loadPage(pageIndex) {
+      fetch(`/get_page/${pageIndex}`)
+        .then(response => response.json())
+        .then(data => updateGrid(data))
+        .catch(error => console.error("Error loading page:", error));
+    }
+  </script>
+  <script>
+    let startX = 0;
+
+function toggleMenu() {
+  const menu = document.querySelector(".menuContainer");
+  menu.classList.toggle("hidden");
+}
+
+// Detectar la tecla "q" presionada
+document.addEventListener("keydown", function (event) {
+  // Verificar si el foco está en un input o elemento similar
+  const isInputFocused = document.activeElement.tagName.toLowerCase() === "input" ||
+                         document.activeElement.tagName.toLowerCase() === "textarea";
+
+  // Si el foco no está en un input, permite que se ejecute la acción de la tecla
+  if (!isInputFocused && event.key.toLowerCase() === "q") {
+    toggleMenu();
+  }
+});
+
+// Detectar el toque en pantalla (para dispositivos móviles)
+document.addEventListener("touchstart", function (event) {
+  startX = event.touches[0].clientX;  // Posición inicial del toque
+});
+
+document.addEventListener("touchend", function (event) {
+  const endX = event.changedTouches[0].clientX;  // Posición final del toque
+  if (startX - endX > 50) {
+    // Toque de derecha a izquierda
+    toggleMenu();
+  } else if (endX - startX > 50) {
+    // Toque de izquierda a derecha
+    toggleMenu();
+  }
+});
+  </script>
+
+
+  <script>
+    const translations = {{ context["text"] | tojson | safe }};
+
+    function getTranslation(key) {
+      if (translations[key] == key) {
+        console.error("Translation not found for key:", key);
+      }
+      return translations[key] || key;
+    }
+
+  </script>
+
+  <script>
+    function search_commands(search) {
+      console.log("Searching for:", search);
+      const containers = document.querySelectorAll("#menuContainer .container");
+      const categories = document.querySelectorAll("#menuContainer [id^='category_']");
+      const query = search.trim().toLowerCase();
+
+      if (!query) {
+        containers.forEach(container => {
+          container.classList.add("hidden");
+          container.querySelectorAll("button").forEach(button => button.classList.remove("hidden"));
+        });
+        categories.forEach(category => category.classList.remove("hidden"));
+        return;
+      }
+
+      containers.forEach(container => {
+        const buttons = [...container.querySelectorAll("button")];
+        const hasMatch = buttons.some(button => button.textContent.toLowerCase().includes(query));
+
+        container.classList.toggle("hidden", !hasMatch);
+        buttons.forEach(button => button.classList.toggle("hidden", !button.textContent.toLowerCase().includes(query)));
+      });
+
+      // Ocultar categorías si no tienen botones visibles
+      categories.forEach(category => {
+        const containerId = category.id.replace("category_", "container_");
+        const container = document.getElementById(containerId);
+        const hasVisibleButtons = container && container.querySelector("button:not(.hidden)");
+
+        category.classList.toggle("hidden", !hasVisibleButtons);
+      });
+    }
+  </script>
+
+
+  <script>
+    function set_menu_commands(jsonData) {
+      const container = document.getElementById("menuContainer");
+      container.innerHTML = "";
+      //add an input to search
+      let search = document.createElement("input");
+      search.placeholder = "Search something...";
+      search.addEventListener("input", function () {
+        search_commands(search.value);
+      })
+      container.appendChild(search);
+
+
+      Object.entries(jsonData).forEach(([category, data]) => {
+        let _category = category.replace(/ /g, "").replace("'", "").toUpperCase();
+        let Q1 = _category + "_CATEGORY_NAME";
+        let category_name = getTranslation(Q1);
+        if (category_name == Q1) {
+          console.log("translation not found for category: " + Q1);
+          category_name = category;
+        }
+
+        // create the category div
+        const categoryDiv = document.createElement("div"); 1
+        categoryDiv.id = "category_" + _category;
+        container.appendChild(categoryDiv);
+
+        //set title 
+        let title = document.createElement("h2");
+        title.textContent = category_name;
+
+
+        //set category icon
+        let icon = document.createElement("img");
+        icon.src = "static/img/menu_icon_white.png";
+        icon.style.width = "30px";
+        icon.style.aspectRatio = "1";
+
+        let title_container = document.createElement("div");
+
+        //make a div to style the title
+        title_container.classList.add("title_container");
+        title_container.onclick = function () {
+          toggleCategory(categoryDiv);
+        };
+        title_container.appendChild(icon);
+        title_container.appendChild(title);
+
+        categoryDiv.prepend(title_container);
+
+        // create a container for all the buttons and subcats on the category
+        const categ_container = document.createElement("div");
+        categ_container.id = "container_" + _category;
+        categ_container.classList.add("container", "hidden");
+        categoryDiv.appendChild(categ_container);
+
+
+        //iter trhough all the elements of each category
+        Object.entries(data).forEach(([name, subdata]) => {
+          // if the type is multiple, create a subcategory div
+          if (subdata.TYPE === "multiple") {
+            let _subcategory = _category + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase();
+            let Q2 = _subcategory + "__category_name";
+            let _subcat_desc = _subcategory + "__category_description";
+
+            let subcat_name = getTranslation(Q2);
+            let subcat_desc = getTranslation(_subcat_desc);
+
+            if (subcat_name == Q2) {
+              subcat_name = name;
+            }
+            const subcategoryDiv = document.createElement("div");
+            const subcateg_container = document.createElement("div");
+
+            //create a title container
+            let subtitle_container = document.createElement("div");
+            subtitle_container.classList.add("title_container");
+            subtitle_container.onclick = function () {
+              toggleCategory(subcategoryDiv);
+            }
+
+            let icon = document.createElement("img");
+            let subTitle = document.createElement("h3");
+            icon.src = "static/img/menu_icon_white.png";
+            icon.style.width = "30px";
+            icon.style.aspectRatio = "1";
+
+            subtitle_container.appendChild(icon);
+            subtitle_container.appendChild(subTitle);
+
+
+            subTitle.textContent = subcat_name;
+
+            subcategoryDiv.prepend(subtitle_container);
+
+
+            subcateg_container.classList.add("container", "hidden");
+            subcategoryDiv.appendChild(subcateg_container);
+            categ_container.appendChild(subcategoryDiv);
+
+            Object.entries(subdata.commands).forEach(([index, button_data]) => {
+              addButton(subcateg_container, index, button_data, _category, _subcategory);
+
+            })
+
+          } else {
+            //this are buttons of a category
+            addButton(categ_container, name, subdata, _category);
+          }
+        });
+      });
+    }
+
+
+    function addButton(parentElement, name, data, categ = "", subcateg = "") {
+      var button = document.createElement("button");
+      //check if name is an integer, and not a string
+      if (Number.isInteger(Number(name))) {
+        
+        query = subcateg + "_sub" + (Number(name) + 1) + "__btn_name"
+        button.innerText = getTranslation(query);
+      }
+      else {
+        query = categ + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase() + "__btn_name";
+        button.innerText = getTranslation(query);
+      }
+        button.id = query
+        window.buttonData[button.id] = data
+        
+      button.draggable = true;
+      
+      parentElement.appendChild(button);
+    }
+
+  </script>
+
+
+  <script>
+    //scrupt to show the menu contents
+    function toggleCategory(menu) {
+      //grab the div class container on the menu div
+      container = menu.querySelector(".container");
+      container.classList.toggle("hidden");
+
+    }
+  </script>
+
+<script>
+  window.onload = function () {
+    document.addEventListener("dragover", (event) => event.preventDefault());
+
+    const buttons = document.getElementById('menuContainer').querySelectorAll('button');
+    const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
+
+    buttons.forEach(button => {
+      button.addEventListener('dragstart', (event) => {
+        event.dataTransfer.setData("text", event.target.id);
+      });
+    });
+
+    deck_buttons.forEach(deck => {
+      deck.addEventListener('drop', (event) => {
+        event.preventDefault();
+
+        const draggedButtonId = event.dataTransfer.getData("text");
+        const draggedButton = document.getElementById(draggedButtonId);
+
+        // Obtener el contenedor grid (el padre del deck)
+        const parent = deck.parentNode;
+
+        // Obtener las propiedades grid-template-columns y grid-template-rows
+        const gridStyle = window.getComputedStyle(parent);
+        const gridColumns = gridStyle.getPropertyValue('grid-template-columns').split(' ');
+        const gridRows = gridStyle.getPropertyValue('grid-template-rows').split(' ');
+
+        // Obtener la posición del deck dentro del contenedor
+        const deckRect = deck.getBoundingClientRect();
+        const parentRect = parent.getBoundingClientRect();
+
+        // Calcular la columna y la fila del deck basado en el tamaño de las celdas
+        const columnWidth = parseFloat(gridColumns[0].replace('px', ''));
+        const rowHeight = parseFloat(gridRows[0].replace('px', ''));
+
+        const offsetX = deckRect.left - parentRect.left;
+        const offsetY = deckRect.top - parentRect.top;
+
+        const column = Math.floor(offsetX / columnWidth) + 1;
+        const row = Math.floor(offsetY / rowHeight) + 1;
+
+        let current_button_data = window.buttonData[draggedButtonId];        
+
+        generate_button(current_button_data,window.folder_name,window.folder_data, column, row);
+      });
+    });
+  };
+</script>
+
+</body>
+
+</html>

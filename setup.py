@@ -65,10 +65,18 @@ def is_excluded(file_path):
 
 def get_include_files():
     include_files = []
+
+    
+    plugins_dir = "plugins"
+    if not os.path.exists(plugins_dir):
+        os.makedirs(plugins_dir) 
+
+    include_files.append((plugins_dir, "plugins"))
+
     for root, dirs, files in os.walk("."):
-        # Check if the directory itself is excluded first
         if is_excluded(root):
             continue
+
         for file in files:
             file_path = os.path.join(root, file)
             if not is_excluded(file_path.replace('\\', '/')):
@@ -81,7 +89,9 @@ def get_include_files():
                         include_files.append((file_path, os.path.join("docs", file)))
                 else:
                     include_files.append((file_path, file_path))
+
     return include_files
+
 
 def download_nircmd():
     if os.path.isfile("temp/nircmd.exe"):
@@ -183,7 +193,7 @@ if __name__ == "__main__":
         }
     }
 
-    base = "Win32GUI" if sys.platform == "win32" else "gui"
+    base = "console" if sys.platform == "win32" else "gui"
     # base = 'console' if sys.platform=='win32' else None
     executables = [
         Executable(

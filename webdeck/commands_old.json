@@ -2,7 +2,7 @@
   "Webdeck": {
     "Fullscreen": {
       "command": "/fullscreen",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "fullscreen2.png",
         "image_size": "50%"
@@ -10,7 +10,7 @@
     },
     "Reload page": {
       "command": "/reload",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "reload.png",
         "image_size": "50%"
@@ -18,14 +18,9 @@
     },
     "Open a folder": {
       "command": "/folder",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name" : "webdeck_foldername",
-          "placeholder": "Enter folder name",
-          "value": ""
-          
-          
+          "TYPE": "input webdeck_foldername"
         }
       ],
       "style": {
@@ -35,7 +30,7 @@
     },
     "Config": {
       "command": "/open-config",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "settings2.png",
         "image_size": "70%"
@@ -44,232 +39,298 @@
   },
   "Display": {
     "CPU": {
-      "command": "/usage",
-      "inputs": [
-        { 
-          "TYPE": "input text",
-          "name" : "usage-title-text",
+      "command": "/usage '",
+      "args": [
+        {
+          "TYPE": "input usage-title-text",
           "value": "CPU"
+        },
+        {
+          "TYPE": "text",
+          "value": "' usage_dict['cpu']['usage_percent']"
         }
       ],
-      "collect_data_from" : "usage_dict.cpu.usage_percent",
       "style": {
         "image": "",
         "image_size": ""
       }
     },
     "Memory": {
-  "TYPE": "multiple",
-  "commands": [
-    {
-      "command": "/usage",
-      "inputs": [
+      "TYPE": "multiple",
+      "commands": [
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
-      "collect_data_from": "usage_dict.memory.usage_percent",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
-      "collect_data_from": "usage_dict.memory.used_gb",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
-      "collect_data_from": "usage_dict.memory.available_gb",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
-      "collect_data_from": "usage_dict.memory.total_gb",
-      "style": {}
-    }
-  ]
-},
-"Disks": {
-  "TYPE": "multiple",
-  "commands": [
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "RAM"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['memory']['usage_percent']"
+            }
+          ],
+          "style": {}
         },
         {
-          "TYPE": "select",
-          "name": "disk-letter",
-          "options_url": "/api/disks"
-        }
-      ],
-      "collect_data_from": "usage_dict.disks.{disk-letter}.usage_percent",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "RAM"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['memory']['used_gb']"
+            }
+          ],
+          "style": {}
         },
         {
-          "TYPE": "input select",
-          "name": "disk-letter",
-          "options_url": "/api/disks"
-        }
-      ],
-      "collect_data_from": "usage_dict.disks.{disk-letter}.free_gb",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "RAM"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['memory']['available_gb']"
+            }
+          ],
+          "style": {}
         },
         {
-          "TYPE": "input select",
-          "name": "disk-letter",
-          "options_url": "/api/disks"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "RAM"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['memory']['total_gb']"
+            }
+          ],
+          "style": {}
         }
-      ],
-      "collect_data_from": "usage_dict.disks.{disk-letter}.used_gb",
-      "style": {}
+      ]
     },
-    {
-      "command": "/usage",
-      "inputs": [
+    "Disks": {
+      "TYPE": "multiple",
+      "commands": [
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['disks']['"
+            },
+            {
+              "TYPE": "input disk-letter",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['usage_percent']"
+            }
+          ],
+          "style": {}
         },
         {
-          "TYPE": "input select",
-          "name": "disk-letter",
-          "options_url": "/api/disks"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['disks']['"
+            },
+            {
+              "TYPE": "input disk-letter",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['free_gb']"
+            }
+          ],
+          "style": {}
+        },
+        {
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['disks']['"
+            },
+            {
+              "TYPE": "input disk-letter",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['used_gb']"
+            }
+          ],
+          "style": {}
+        },
+        {
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['disks']['"
+            },
+            {
+              "TYPE": "input disk-letter",
+              "value": "Disk"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['total_gb']"
+            }
+          ],
+          "style": {}
         }
-      ],
-      "collect_data_from": "usage_dict.disks.{disk-letter}.total_gb",
-      "style": {}
-    }
-  ]
-},
+      ]
+    },
     "GPU": {
-  "TYPE": "multiple",
-  "commands": [
-    {
-      "command": "/usage",
-      "inputs": [
+      "TYPE": "multiple",
+      "commands": [
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "GPU"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['gpus']['"
+            },
+            {
+              "TYPE": "input available_gpus"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['usage_percent']"
+            }
+          ],
+          "style": {}
         },
         {
-          "TYPE": "input select",
-          "name": "available-gpus",
-          "options_url": "/api/gpus"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "GPU"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['gpus']['"
+            },
+            {
+              "TYPE": "input available_gpus"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['used_mb']"
+            }
+          ],
+          "style": {}
+        },
+        {
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "GPU"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['gpus']['"
+            },
+            {
+              "TYPE": "input available_gpus"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['total_mb']"
+            }
+          ],
+          "style": {}
+        },
+        {
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "GPU"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['gpus']['"
+            },
+            {
+              "TYPE": "input available_gpus"
+            },
+            {
+              "TYPE": "text",
+              "value": "']['total_mb']"
+            }
+          ],
+          "style": {}
         }
-      ],
-      "collect_data_from": "usage_dict.gpus.{available-gpus}.usage_percent",
-      "style": {}
+      ]
     },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
-        },
-        {
-          "TYPE": "input select",
-          "name": "available-gpus",
-          "options_url": "/api/gpus"
-        }
-      ],
-      "collect_data_from": "usage_dict.gpus.{available-gpus}.used_mb",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
-        },
-        {
-          "TYPE": "input select",
-          "name": "available-gpus",
-          "options_url": "/api/gpus"
-        }
-      ],
-      "collect_data_from": "usage_dict.gpus.{available-gpus}.total_mb",
-      "style": {}
-    }
-  ]
-},
     "Network": {
-  "TYPE": "multiple",
-  "commands": [
-    {
-      "command": "/usage",
-      "inputs": [
+      "TYPE": "multiple",
+      "commands": [
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Upload"
-        }
-      ],
-      "collect_data_from": "usage_dict.network.bytes_sent",
-      "style": {}
-    },
-    {
-      "command": "/usage",
-      "inputs": [
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Upload"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['network']['bytes_sent']"
+            }
+          ],
+          "style": {}
+        },
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Download"
+          "command": "/usage '",
+          "args": [
+            {
+              "TYPE": "input usage-title-text",
+              "value": "Download"
+            },
+            {
+              "TYPE": "text",
+              "value": "' usage_dict['network']['bytes_recv']"
+            }
+          ],
+          "style": {}
         }
-      ],
-      "collect_data_from": "usage_dict.network.bytes_recv",
-      "style": {}
+      ]
     }
-  ]
-}
-
   },
   "System": {
     "Volume": {
@@ -277,15 +338,14 @@
       "commands": [
         {
           "command": "/volume +",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "volume-number",
-              "min": "0",
-              "max": "100",
+              "TYPE": "NONE"
+            },
+            {
+              "TYPE": "input number['1','100']",
               "placeholder": "1"
             }
-            
           ],
           "style": {
             "image": "volume-up.svg",
@@ -294,12 +354,12 @@
         },
         {
           "command": "/volume -",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "volume-number",
-              "min": "0",
-              "max": "100",
+              "TYPE": "NONE"
+            },
+            {
+              "TYPE": "input number['1','100']",
               "placeholder": "1"
             }
           ],
@@ -310,13 +370,9 @@
         },
         {
           "command": "/volume set",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "volume-number",
-              "min": "0",
-              "max": "100",
-              "placeholder": "1"
+              "TYPE": "input number['0','100']"
             }
           ],
           "style": {
@@ -326,7 +382,7 @@
         },
         {
           "command": "/soundcontrol mute",
-          "inputs": [],
+          "args": [],
           "style": {
             "image": "volume-mute.svg",
             "image_size": "75%"
@@ -339,54 +395,48 @@
       "commands": [
         {
           "command": "/mediacontrol previous",
-          "inputs": []
+          "args": []
         },
         {
           "command": "/mediacontrol playpause",
-          "inputs": []
+          "args": []
         },
         {
           "command": "/mediacontrol next",
-          "inputs": []
+          "args": []
         }
       ]
     },
     "Open": {
       "command": "/start",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input file",
-          "name": "file-path"
+          "TYPE": "input file"
         }
       ],
       "style": {}
     },
     "opendir": {
       "command": "/openfolder",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "folder-path",
-          "placeholder": "path/to/your/folder"
+          "TYPE": "input folderpath"
         }
       ],
       "style": {}
     },
     "Open a website": {
       "command": "/start",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input url",
-          "name": "url",
-          "placeholder": "https://example.com"
-
+          "TYPE": "input url"
         }
       ],
       "style": {}
     },
     "Lock session": {
       "command": "/locksession",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "lock-session.png",
         "image_size": "70%"
@@ -394,7 +444,7 @@
     },
     "Shutdown PC": {
       "command": "/PCshutdown",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "",
         "image_size": "70%"
@@ -402,7 +452,7 @@
     },
     "Restart PC": {
       "command": "/PCrestart",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "",
         "image_size": "70%"
@@ -410,7 +460,7 @@
     },
     "Sleep PC": {
       "command": "/PCsleep",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "",
         "image_size": "70%"
@@ -418,7 +468,7 @@
     },
     "Hibernate PC": {
       "command": "/PChibernate",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "",
         "image_size": "70%"
@@ -426,10 +476,20 @@
     },
     "ScreenSaver": {
       "command": "/screensaver",
-      "inputs": [        
+      "args": [
         {
-          "TYPE": "select",
-          "options":["NONE", "full", "off"]
+          "TYPE": "input dropdown",
+          "options": [
+            {
+              "ID": "NONE"
+            },
+            {
+              "ID": "full"
+            },
+            {
+              "ID": "off"
+            }
+          ]
         }
       ],
       "style": {
@@ -439,7 +499,7 @@
     },
     "Restart explorer": {
       "command": "/restartexplorer",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "restart_explorer.png",
         "image_size": "80%"
@@ -447,7 +507,7 @@
     },
     "SuperAltF4": {
       "command": "/superAltF4",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "altf4.png",
         "image_size": "75%"
@@ -455,50 +515,67 @@
     },
     "Kill a task": {
       "command": "/forceclose",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input file",
-          "name": "file-path",
-          "file_type": ".exe"
+          "TYPE": "input filetype['.exe']"
         }
       ],
       "style": {}
     },
     "Restart a task": {
       "command": "/restart",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input file",
-          "name": "file-path",
-          "file_type": ".exe"
+          "TYPE": "input filetype['.exe']"
         }
       ],
       "style": {}
     },
     "Execute python code": {
       "command": "/exec",
-     "inputs": [
-  {
-    "TYPE": "select",
-    "options": ["uploaded_file", "file_path", "single_line"]
-  },
-  {
-    "TYPE": "input file",
-    "name": "file_path",
-    "file_type": ".py",
-    "dependant_on": "uploaded_file"
-  },
-  {
-    "TYPE": "input text",
-    "name": "file_path",
-    "dependant_on": "file_path"
-  },
-  {
-    "TYPE": "input text",
-    "name": "single_line",
-    "dependant_on": "single_line"
-  }
-],
+      "args": [
+        {
+          "TYPE": "choice",
+          "options": [
+            {
+              "TYPE": "multiple checked",
+              "items": [
+                {
+                  "TYPE": "text",
+                  "value": "type:uploaded_file"
+                },
+                {
+                  "TYPE": "input filetype['.py']"
+                }
+              ]
+            },
+            {
+              "TYPE": "multiple",
+              "items": [
+                {
+                  "TYPE": "text",
+                  "value": "type:file_path"
+                },
+                {
+                  "TYPE": "input filepath['.py']"
+                }
+              ]
+            },
+            {
+              "TYPE": "multiple",
+              "items": [
+                {
+                  "TYPE": "text",
+                  "value": "type:single_line"
+                },
+                {
+                  "TYPE": "input text"
+                }
+              ]
+            }
+          ]
+        }
+      ],
       "style": {
         "image": "execpython.png",
         "image_size": "70%"
@@ -506,10 +583,9 @@
     },
     "Execute batch code": {
       "command": "/batch",
-      "inputs": [
+      "args": [
         {
-          "TYPE":"textarea",
-          "name": "batch_code"
+          "TYPE": "input longtext"
         }
       ],
       "style": {}
@@ -518,10 +594,9 @@
   "Text": {
     "Press a key": {
       "command": "/key",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "size":"1"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -531,11 +606,9 @@
     },
     "Write text": {
       "command": "/write",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "textarea",
-          "name": "text",
-          "placeholder": "your bash code here..."
+          "TYPE": "input longtext"
         }
       ],
       "style": {
@@ -545,11 +618,9 @@
     },
     "Write text and press Enter": {
       "command": "/writeandsend",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "textarea",
-          "name":"text",
-          "placeholder": "put your text here..."
+          "TYPE": "input longtext"
         }
       ],
       "style": {
@@ -559,7 +630,7 @@
     },
     "Speech recognition": {
       "command": "/speechrecognition",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "speech-recognition.png",
         "image_size": "55%"
@@ -567,16 +638,17 @@
     },
     "Copy": {
       "command": "/copy",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "select",
-          "options": ["simple_copy","copy_text_to_clipboard"]
-        },
-        {
-          "TYPE": "input text",
-          "name": "text",
-          "dependant_on": "copy_text_to_clipboard"
-
+          "TYPE": "choice",
+          "options": [
+            {
+              "TYPE": "NONE checked"
+            },
+            {
+              "TYPE": "input text"
+            }
+          ]
         }
       ],
       "style": {
@@ -586,16 +658,17 @@
     },
     "Paste": {
       "command": "/paste",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "select",
-          "options": ["simple_paste","paste_text_to_clipboard"]
-        },
-        {
-          "TYPE": "input text",
-          "name": "text",
-          "dependant_on": "paste_text_to_clipboard"
-
+          "TYPE": "choice",
+          "options": [
+            {
+              "TYPE": "NONE checked"
+            },
+            {
+              "TYPE": "input text"
+            }
+          ]
         }
       ],
       "style": {
@@ -605,7 +678,7 @@
     },
     "Cut (ctrl+x)": {
       "command": "/cut",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "cut.png",
         "image_size": "70%"
@@ -613,7 +686,7 @@
     },
     "Open clipboard": {
       "command": "/clipboard",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "clipboard.png",
         "image_size": "75%"
@@ -621,7 +694,7 @@
     },
     "Clear clipboard": {
       "command": "/clearclipboard",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "clipboard-clear.png",
         "image_size": "75%"
@@ -631,7 +704,7 @@
   "Utilities": {
     "Color picker": {
       "command": "/colorpicker lang:en",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "eyedropper.svg",
         "image_size": "50%"
@@ -641,17 +714,12 @@
   "Soundboard": {
     "Playsound": {
       "command": "/playsound",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input file",
-          "name": "file-path",
-          "file_type": ".mp3"          
+          "TYPE": "input filetype['.mp3']"
         },
         {
-          "TYPE": "input number",
-          "name": "volume",
-          "min": "0",
-          "max": "100",
+          "TYPE": "input number['1','100']",
           "placeholder": "50"
         }
       ],
@@ -662,7 +730,7 @@
     },
     "Stopsound": {
       "command": "/stop_soundboard",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "sound-off.png",
         "image_size": "60%"
@@ -672,11 +740,9 @@
   "OBS Studio": {
     "hotkey": {
       "command": "/obs_key",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "obs_key",
-          "placeholder": "obs key"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -686,11 +752,9 @@
     },
     "changeScene": {
       "command": "/obs_scene",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "obs_key",
-          "placeholder": "obs key"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -700,11 +764,9 @@
     },
     "toggleSource": {
       "command": "/obs_togglesource",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "obs_source",
-          "placeholder": "obs source"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -714,7 +776,7 @@
     },
     "toggleRecording": {
       "command": "/obs_toggle_rec",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -722,7 +784,7 @@
     },
     "startRecording": {
       "command": "/obs_start_rec",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -730,7 +792,7 @@
     },
     "stopRecording": {
       "command": "/obs_stop_rec",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -738,7 +800,7 @@
     },
     "toggleRecordingPause": {
       "command": "/obs_toggle_rec_pause",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -746,7 +808,7 @@
     },
     "pauseRecording": {
       "command": "/obs_pause_rec",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -754,7 +816,7 @@
     },
     "resumeRecording": {
       "command": "/obs_resume_rec",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -762,7 +824,7 @@
     },
     "toggleStreaming": {
       "command": "/obs_toggle_stream",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -770,7 +832,7 @@
     },
     "startStreaming": {
       "command": "/obs_start_stream",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -778,7 +840,7 @@
     },
     "stopStreaming": {
       "command": "/obs_stop_stream",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -786,7 +848,7 @@
     },
     "toggleVirtualCam": {
       "command": "/obs_toggle_virtualcam",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -794,7 +856,7 @@
     },
     "startVirtualCam": {
       "command": "/obs_start_virtualcam",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -802,7 +864,7 @@
     },
     "stopVirtualCam": {
       "command": "/obs_stop_virtualcam",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "obs_logo2.svg",
         "image_size": "70%"
@@ -815,13 +877,13 @@
       "commands": [
         {
           "command": "/spotify volume +",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "input_number",
-              "placeholder": "10",              
-              "min": "1",
-              "max": "100"
+              "TYPE": "NONE"
+            },
+            {
+              "TYPE": "input number['1','100']",
+              "placeholder": "10"
             }
           ],
           "style": {
@@ -831,13 +893,13 @@
         },
         {
           "command": "/spotify volume -",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "input_number",
-              "placeholder": "10",              
-              "min": "1",
-              "max": "100"
+              "TYPE": "NONE"
+            },
+            {
+              "TYPE": "input number['1','100']",
+              "placeholder": "10"
             }
           ],
           "style": {
@@ -847,13 +909,9 @@
         },
         {
           "command": "/spotify volume set",
-          "inputs": [
+          "args": [
             {
-              "TYPE": "input number",
-              "name": "input_number",
-              "placeholder": "10",              
-              "min": "1",
-              "max": "100"
+              "TYPE": "input number['0','100']"
             }
           ],
           "style": {
@@ -863,7 +921,7 @@
         },
         {
           "command": "/soundcontrol mute",
-          "inputs": [],
+          "args": [],
           "style": {
             "image": "volume-mute.svg",
             "image_size": "75%"
@@ -873,11 +931,9 @@
     },
     "Play song": {
       "command": "/spotify playsong",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "input_text",
-          "placeholder": "song name"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -887,11 +943,9 @@
     },
     "Play playlist": {
       "command": "/spotify playplaylist",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "input_text",
-          "placeholder": "playlist"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -901,7 +955,7 @@
     },
     "Like the played song": {
       "command": "/spotify likesong",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "heart.svg",
         "image_size": "70%"
@@ -909,7 +963,7 @@
     },
     "Save the played album": {
       "command": "/spotify likealbum",
-      "inputs": [],
+      "args": [],
       "style": {
         "image": "add-to-playlist5.png",
         "image_size": "70%"
@@ -917,13 +971,9 @@
     },
     "Toggle playlist inclusion": {
       "command": "/spotify add_or_remove",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "input_text",
-          "placeholder": "",
-          "min": "1",
-          "max": "100"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -933,11 +983,9 @@
     },
     "Add current song to a playlist (do not remove if already)": {
       "command": "/spotify add_to_playlist",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "input_text",
-          "placeholder": "add this song to this playlist"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -947,11 +995,9 @@
     },
     "Remove current song from a playlist": {
       "command": "/spotify remove_from_playlist",
-      "inputs": [
+      "args": [
         {
-          "TYPE": "input text",
-          "name": "input_text",
-          "placeholder": "remove this song to this playlist"
+          "TYPE": "input text"
         }
       ],
       "style": {
@@ -961,15 +1007,15 @@
     },
     "Toggle follow artist": {
       "command": "/spotify follow_or_unfollow_artist",
-      "inputs": []
+      "args": []
     },
     "Follow current played artist (doesn't unfollow if already)": {
       "command": "/spotify follow_artist",
-      "inputs": []
+      "args": []
     },
     "Unfollow current played artist": {
       "command": "/spotify unfollow_artist",
-      "inputs": []
+      "args": []
     }
   }
 }

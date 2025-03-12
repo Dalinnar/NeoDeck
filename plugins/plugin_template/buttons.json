@@ -1,0 +1,28 @@
+{
+    "plugin_template": {
+      "button name 1": {
+        "custom_template":"wizlight template",
+        "command": "/plugin_template__hello_world",
+        "args": [
+          {
+            "TYPE": "input text",
+            "placeholder": "Enter a message"
+          }
+        ]
+      },
+      "button name 2": {
+        "command": "/plugin_template__other_function",
+        "args": [
+          {
+            "TYPE": "input number['1','100']",
+            "placeholder": "Enter a number between 1 and 100"
+          }
+        ],
+        "style": {
+        "image": "eyedropper.png",
+        "image_size": "50%"
+      }
+        
+      }
+    }
+  }

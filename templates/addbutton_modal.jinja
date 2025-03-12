@@ -214,6 +214,8 @@
                       {% set imagelink = "static/img/" + command_value["style"]["image"].split('\\')[-1] %}
                     {% elif command_value["style"]["image"].startswith('**uploaded/') %}
                       {% set imagelink = ".config/user_uploads/" + config["front"]["buttons"][folder_id][button_id]["image"].replace('**uploaded/','') %}
+                    {% elif "temp" in command_value["style"]["image"] %}
+                      {% set imagelink = command_value["style"]["image"] %}
                     {% else %}
                       {% set imagelink = "static/img/" + command_value["style"]["image"] %}
                     {% endif %}

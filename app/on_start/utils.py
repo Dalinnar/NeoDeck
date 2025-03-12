@@ -9,7 +9,7 @@ import pynvml
 import threading
 from math import sqrt
 from win32com.client import Dispatch
-
+from settings import *
 from app.updater import check_files, check_for_updates
 from app.utils.settings.get_config import get_config
 from app.utils.settings.save_config import save_config
@@ -162,8 +162,8 @@ def on_start():
         os.makedirs(".config/themes")
         
     # Create plugins dir if needed
-    if not os.path.exists(".config/plugins"):
-        os.makedirs(".config/plugins")
+    if not os.path.exists("plugins"):
+        os.makedirs("plugins")
         
     # Update new files
     check_files()
@@ -175,11 +175,8 @@ def on_start():
     if (config["settings"].get("auto_updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
         check_for_updates()
     
-    # Load commands
-    with open("webdeck/commands.json", encoding="utf-8") as f:
-        commands = json.load(f)
-        commands, all_func = load_plugins(commands)
-        set_global_variable("all_func", all_func)
+
+        
     
     # Get local ip
     local_ip = get_local_ip()
@@ -191,7 +188,7 @@ def on_start():
     # Run threaded tasks
     on_start_threaded(config)
     
-    return config, commands, local_ip
+    return config,  local_ip
 
 def on_start_threaded(config):
     def run_threaded_tasks():
