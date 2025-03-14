@@ -111,3 +111,5 @@ def handle_command(message: str = None):
     
     # Si no se encuentra el comando, devolver un valor vacío (o puedes devolver un mensaje de error si lo prefieres)
     return jsonify({"success": True})
+
+

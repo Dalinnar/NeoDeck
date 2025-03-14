@@ -524,6 +524,9 @@ TEXT_open_clipboard__btn_name=Open clipboard
 TEXT_open_clipboard__btn_default_display_name=Clipboard
 TEXT_open_clipboard__btn_description=
 
+
+SOUNDBOARD_playsound_input0 =Select sound to play
+
 TEXT_clear_clipboard__btn_name=Clear clipboard
 TEXT_clear_clipboard__btn_default_display_name=
 TEXT_clear_clipboard__btn_description=

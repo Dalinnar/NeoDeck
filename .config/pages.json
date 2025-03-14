@@ -1,7 +1,7 @@
 {
     "index" :{
         "background": "//#141414",
-        "columns": "3",
+        "columns": "8",
         "rows": "3",
         "buttons": []
     }

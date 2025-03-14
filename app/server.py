@@ -7,9 +7,11 @@ import sys
 import ipaddress
 import ast
 import logging
+import psutil
 
 # Third-party library imports
 from PIL import Image
+from GPUtil import getGPUs
 from werkzeug.serving import make_server
 from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, redirect, url_for
 from flask.wrappers import Response
@@ -54,9 +56,7 @@ change_server_state(0)  # Tray icon: server loading
 base_dir = get_base_dir()
 template_folder = os.path.join(base_dir, 'templates')
 static_folder = os.path.join(base_dir, 'static')
-print(f"Base directory: {base_dir}")
-print(f"Template folder: {template_folder}")
-print(f"Static folder: {static_folder}")
+
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
@@ -184,13 +184,12 @@ def home():
 def new():
     context = {}
     config = get_config(save_updated_config=True)
+    context["image_list"] = get_image_list()
     #open pages.json if not exist make it 
     with open(".config/pages.json", "r") as f:        
         pages = json.load(f)
         context["deck_folder"] = pages[next(iter(pages))]  
         context["folder_name"] = str(next(iter(pages)))
-        print(context["folder_name"])
-        print (type(context["deck_folder"]))
         textdir = get_new_text()
         context["text"] = textdir
         context["commands"] = commands
@@ -198,6 +197,16 @@ def new():
     return render_template("index_new.jinja",config=config,context=context)
 
     
+
+@app.route("/api/<value>")
+def api(value):
+    
+    value_map = {
+
+        "disks": [p.device for p in psutil.disk_partitions()],
+        "gpus" : [gpu.name for gpu in getGPUs()]
+    }    
+    return jsonify(value_map[value])
 
 
 @app.route("/save_config", methods=["POST"])
@@ -444,7 +453,7 @@ def upload_file():
             log.exception(e, "Failed to rotate image during upload")
 
     log.success(f"File '{uploaded_file.filename}' uploaded successfully")
-    return jsonify({"success": True, "message": text("downloaded_successfully")})
+    return jsonify({"success": True, "message": text("downloaded_successfully"),"file_path": save_path})
 
 
 @app.route("/create_folder", methods=["POST"])
@@ -492,6 +501,28 @@ def get_config_file(directory, filename):
     except Exception as e:
         log.exception(e, f"An error occurred while trying to get the file '{file_path}'")
         return make_response(f"Error: {str(e)}", 500)
+
+
+#route to get a list of all images availeable on some folders
+
+def get_image_list():
+    folders = [".config/user_uploads", "temp", "static/img"]
+    image_list = []
+    
+    for folder in folders:
+        for root, dirs, files in os.walk(folder):
+            for file in files:
+                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp','.webp','.svg')):
+                    # Normalizar la ruta para usar "/"
+                    normalized_path = os.path.join(root, file).replace("\\", "/")
+                    image_list.append(normalized_path)
+    
+    return image_list
+
+    
+
+
+
 
 
 @socketio.on("connect")

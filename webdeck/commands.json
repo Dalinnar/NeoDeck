@@ -429,6 +429,7 @@
       "inputs": [        
         {
           "TYPE": "select",
+          "name": "screensaver-mode",
           "options":["NONE", "full", "off"]
         }
       ],
@@ -480,6 +481,7 @@
      "inputs": [
   {
     "TYPE": "select",
+    "name": "code_type",
     "options": ["uploaded_file", "file_path", "single_line"]
   },
   {
@@ -570,6 +572,7 @@
       "inputs": [
         {
           "TYPE": "select",
+          "name": "copy_type",
           "options": ["simple_copy","copy_text_to_clipboard"]
         },
         {
@@ -589,6 +592,7 @@
       "inputs": [
         {
           "TYPE": "select",
+          "name": "paste_type",
           "options": ["simple_paste","paste_text_to_clipboard"]
         },
         {
