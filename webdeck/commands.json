@@ -17,15 +17,12 @@
       }
     },
     "Open a folder": {
-      "command": "/folder",
+      "command": "$folder({folder-path})",
       "inputs": [
         {
-          "TYPE": "input text",
-          "name" : "webdeck_foldername",
-          "placeholder": "Enter folder name",
-          "value": ""
-          
-          
+          "TYPE": "select",
+          "name": "folder-path",          
+          "options_url": "/api/deck_folders"
         }
       ],
       "style": {
@@ -44,14 +41,9 @@
   },
   "Display": {
     "CPU": {
-      "command": "/usage",
-      "inputs": [
-        { 
-          "TYPE": "input text",
-          "name" : "usage-title-text",
-          "value": "CPU"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
+      "blank_img" : true,
       "collect_data_from" : "usage_dict.cpu.usage_percent",
       "style": {
         "image": "",
@@ -62,50 +54,26 @@
   "TYPE": "multiple",
   "commands": [
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.memory.usage_percent",
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.memory.used_gb",
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.memory.available_gb",
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "RAM"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.memory.total_gb",
       "style": {}
     }
@@ -115,13 +83,8 @@
   "TYPE": "multiple",
   "commands": [
     {
-      "command": "/usage",
+      "command": "#monitor",
       "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
-        },
         {
           "TYPE": "select",
           "name": "disk-letter",
@@ -132,15 +95,10 @@
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "disk-letter",
           "options_url": "/api/disks"
         }
@@ -149,15 +107,10 @@
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "disk-letter",
           "options_url": "/api/disks"
         }
@@ -166,15 +119,10 @@
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Disk"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "disk-letter",
           "options_url": "/api/disks"
         }
@@ -188,15 +136,10 @@
   "TYPE": "multiple",
   "commands": [
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "available-gpus",
           "options_url": "/api/gpus"
         }
@@ -205,15 +148,10 @@
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "available-gpus",
           "options_url": "/api/gpus"
         }
@@ -222,15 +160,10 @@
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
+      "command": "#monitor",
+      "inputs": [        
         {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "GPU"
-        },
-        {
-          "TYPE": "input select",
+          "TYPE": "select",
           "name": "available-gpus",
           "options_url": "/api/gpus"
         }
@@ -244,26 +177,14 @@
   "TYPE": "multiple",
   "commands": [
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Upload"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.network.bytes_sent",
       "style": {}
     },
     {
-      "command": "/usage",
-      "inputs": [
-        {
-          "TYPE": "input text",
-          "name": "usage-title-text",
-          "value": "Download"
-        }
-      ],
+      "command": "#monitor",
+      "inputs": [],
       "collect_data_from": "usage_dict.network.bytes_recv",
       "style": {}
     }
@@ -362,7 +283,7 @@
       "style": {}
     },
     "opendir": {
-      "command": "/openfolder",
+      "command": "/openfolder {folder-path}",
       "inputs": [
         {
           "TYPE": "input text",
@@ -373,7 +294,7 @@
       "style": {}
     },
     "Open a website": {
-      "command": "/start",
+      "command": "/start {url}",
       "inputs": [
         {
           "TYPE": "input url",
@@ -880,7 +801,7 @@
       "inputs": [
         {
           "TYPE": "input text",
-          "name": "input_text",
+          "name": "button_text",
           "placeholder": "song name"
         }
       ],
@@ -894,7 +815,7 @@
       "inputs": [
         {
           "TYPE": "input text",
-          "name": "input_text",
+          "name": "button_text",
           "placeholder": "playlist"
         }
       ],
@@ -924,7 +845,7 @@
       "inputs": [
         {
           "TYPE": "input text",
-          "name": "input_text",
+          "name": "button_text",
           "placeholder": "",
           "min": "1",
           "max": "100"
@@ -940,7 +861,7 @@
       "inputs": [
         {
           "TYPE": "input text",
-          "name": "input_text",
+          "name": "button_text",
           "placeholder": "add this song to this playlist"
         }
       ],
@@ -954,7 +875,7 @@
       "inputs": [
         {
           "TYPE": "input text",
-          "name": "input_text",
+          "name": "button_text",
           "placeholder": "remove this song to this playlist"
         }
       ],

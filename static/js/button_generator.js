@@ -18,6 +18,18 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     const dialog_content = document.querySelector(".dialog_content");
     dialog_content.innerHTML = "";
 
+    //create the text button_input
+    text_generic = document.createElement("input");
+    text_generic.setAttribute("type", "text");
+    text_generic.setAttribute("placeholder", "Button Text");
+    text_generic.addEventListener("input", () => {
+        //grab the element wit id "button_text"
+        button_text = document.getElementById("button_text");
+        button_text.textContent = text_generic.value;
+    });
+
+    dialog_content.appendChild(text_generic);
+
     button_data.inputs.forEach(input => dialog_content.appendChild(createInputField(input)));
 
     // Crear contenedor del botón
@@ -81,35 +93,64 @@ const populateSelectOptions = (_input, options) => {
     });
 };
 
+//function to gle fields based on selected value and remove the con
 const toggleDependentFields = (selectedValue) => {
-    document.querySelectorAll("[data-dependant]").forEach(dep => dep.style.display = "none");
-    document.querySelectorAll(`[data-dependant="${selectedValue}"]`).forEach(dep => dep.style.display = "flex");
+    document.querySelectorAll("[data-dependant]").forEach(dep => {
+        const input = dep.querySelector("input, select, textarea");
+        dep.style.display = dep.getAttribute("data-dependant") === selectedValue ? "flex" : "none";
+        if (input) input.disabled = dep.style.display === "none", input.value = "";
+    });
 };
 
 const createButtonTemplate = (button_data) => {
+
+    
+
+
     const button_template = document.createElement("div");
     button_template.classList.add("button_template");
     button_template.style.backgroundColor = "#393939";
 
-    const img = document.createElement("img");
-    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
 
-    const imageSource = button_data && button_data.style && button_data.style.image ? button_data.style.image : "key.png";
-    if (imageSource.endsWith(".svg")) {
-        svg.setAttribute("viewBox", "0 0 24 24");
-        svg.innerHTML = `<use xlink:href="${imageSource}"></use>`;
-        svg.style.width = "80%";
-        svg.style.height = "auto";
-        svg.addEventListener("click", () => open_image_gallery(svg));
-        button_template.appendChild(svg);
-    } else {
-        img.src = `/static/img/${imageSource}`;
-        img.style.width = "80%";
-        img.style.height = "auto";
-        img.addEventListener("click", () => open_image_gallery(img));
-        button_template.appendChild(img);
-    }
     
+    
+
+
+    text_div = document.createElement("div");
+    text_div.classList.add("button_text_div");
+
+    button_text = document.createElement("h3");
+    button_text.textContent = "";
+    button_text.id = "button_text";
+
+    text_div.appendChild(button_text);
+
+
+
+    button_template.appendChild(text_div);
+    if (button_data.command === "#monitor") {
+        Initialize_monitors();
+        h2 = document.createElement("h2");
+        h2.setAttribute("data_from", button_data.collect_data_from ?? "");
+
+        text_div.appendChild(h2);
+    }
+
+
+
+    const img = document.createElement("img");
+    imageSource = button_data.style?.image ?? "empty_img.png";
+    imageSource = imageSource || "empty_img.png";  // Si es una cadena vacía, usa "empty_img.png"
+    img.src = imageSource.includes("/") ? imageSource : `/static/img/${imageSource}`;
+
+    img.style.width = "80%";
+    img.style.height = "auto";
+    button_template.appendChild(img);
+
+
+    button_template.addEventListener("click", () => open_image_gallery(img));
+
+
     return button_template;
 };
 
@@ -145,7 +186,7 @@ function get_data_from_url(url) {
         .catch(error => console.error(error));
 }
 
-function open_image_gallery(imgOrSvg) {
+function open_image_gallery(img) {
     let image_list = window.image_list;
 
     // Si el diálogo ya existe, eliminarlo
@@ -156,14 +197,26 @@ function open_image_gallery(imgOrSvg) {
     const gallery = dialog.querySelector("#image_gallery");
 
     // Crear input de subida y botón de carga
-    const input = createUploadInput(imgOrSvg, dialog, gallery);
+    const input = createUploadInput(img, dialog, gallery);
     const uploadButton = createUploadButton(input);
+
+    //create a div for no image
+    const no_image = document.createElement("div");
+    no_image.classList.add("no-image");
+    no_image.innerText = getTranslation("no_image_generic");
+    no_image.onclick = () => {
+        img.src = "/static/img/empty_img.png";
+        dialog.close();
+    }
+
+    gallery.append(no_image);
+
 
     // Agregar el botón de subida a la galería
     gallery.append(input, uploadButton);
 
     // Agregar imágenes existentes a la galería
-    image_list.forEach(imageSrc => gallery.append(createGalleryImage(imageSrc, imgOrSvg, dialog)));
+    image_list.forEach(imageSrc => gallery.append(createGalleryImage(imageSrc, img, dialog)));
 
     // Agregar el botón de cierre
     const closeButton = document.createElement("button");
@@ -216,7 +269,8 @@ function createUploadInput(imgOrSvg, dialog, gallery) {
 function createUploadButton(input) {
     const upload_div = document.createElement("div");
     upload_div.classList.add("upload-button");
-    upload_div.innerText = "Subir imagen";
+
+    upload_div.innerText = getTranslation("upload_image_generic");
     upload_div.addEventListener("click", () => input.click());
     return upload_div;
 }
@@ -249,14 +303,8 @@ async function handleFileUpload(file, previewImg, gallery) {
 function createGalleryImage(imageSrc, imgOrSvg, dialog) {
     let element;
 
-    if (imageSrc.endsWith(".svg")) {
-        element = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        element.setAttribute("viewBox", "0 0 24 24");
-        element.innerHTML = `<use xlink:href="${imageSrc}"></use>`;
-    } else {
-        element = document.createElement("img");
-        element.src = imageSrc;
-    }
+    element = document.createElement("img");
+    element.src = imageSrc;
 
     element.classList.add("gallery-image");
     element.addEventListener("click", () => {

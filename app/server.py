@@ -9,6 +9,7 @@ import ast
 import logging
 import psutil
 
+
 # Third-party library imports
 from PIL import Image
 from GPUtil import getGPUs
@@ -47,6 +48,7 @@ from .utils.merge_dicts import merge_dicts
 from .buttons.usage import get_usage
 from .buttons.obs import reload_obs
 from .buttons import soundboard
+from .functions import load_deck_folders , get_image_list
 from .buttons import handle_command as command
 
 
@@ -204,7 +206,8 @@ def api(value):
     value_map = {
 
         "disks": [p.device for p in psutil.disk_partitions()],
-        "gpus" : [gpu.name for gpu in getGPUs()]
+        "gpus" : [gpu.name for gpu in getGPUs()],
+        "deck_folders" : load_deck_folders()
     }    
     return jsonify(value_map[value])
 
@@ -501,27 +504,6 @@ def get_config_file(directory, filename):
     except Exception as e:
         log.exception(e, f"An error occurred while trying to get the file '{file_path}'")
         return make_response(f"Error: {str(e)}", 500)
-
-
-#route to get a list of all images availeable on some folders
-
-def get_image_list():
-    folders = [".config/user_uploads", "temp", "static/img"]
-    image_list = []
-    
-    for folder in folders:
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp','.webp','.svg')):
-                    # Normalizar la ruta para usar "/"
-                    normalized_path = os.path.join(root, file).replace("\\", "/")
-                    image_list.append(normalized_path)
-    
-    return image_list
-
-    
-
-
 
 
 

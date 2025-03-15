@@ -9,11 +9,13 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-  <script src="{{ url_for('static', filename='js/button_generator.js') }}" ></script>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/button_generator.js') }}"></script>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/deck.css') }}">
- 
+
 
 </head>
 
@@ -21,21 +23,21 @@
 
   <div class="main-container">
 
-    <div class="buttons-container"  grid_size='{{config["front"]["height"]}};{{config["front"]["width"]}}'></div>
+    <div class="buttons-container" grid_size='{{config["front"]["height"]}};{{config["front"]["width"]}}'></div>
     <div class="menuContainer hidden" id="menuContainer"></div>
 
   </div>
 
   <script>
-  //add all the data to the grid
-  window.buttonData = {}
-  window.folder_data = {{context["deck_folder"] | tojson | safe}}
-  window.folder_name =  "{{ context['folder_name'] }}"
-  window.image_list = {{context["image_list"] | tojson | safe}}
+    //add all the data to the grid
+    window.buttonData = {}
+    window.folder_data = {{ context["deck_folder"] | tojson | safe }}
+    window.folder_name = "{{ context['folder_name'] }}"
+    window.image_list = {{ context["image_list"] | tojson | safe }}
   </script>
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      
+
       // Cargar la página inicial desde el contexto
       const initialPage = JSON.parse('{{ context["deck_folder"] | tojson | safe}}');
       updateGrid(initialPage);
@@ -81,47 +83,49 @@
   <script>
     let startX = 0;
 
-function toggleMenu() {
-  const menu = document.querySelector(".menuContainer");
-  menu.classList.toggle("hidden");
-}
+    function toggleMenu() {
+      const menu = document.querySelector(".menuContainer");
+      menu.classList.toggle("hidden");
+    }
 
-// Detectar la tecla "q" presionada
-document.addEventListener("keydown", function (event) {
-  // Verificar si el foco está en un input o elemento similar
-  const isInputFocused = document.activeElement.tagName.toLowerCase() === "input" ||
-                         document.activeElement.tagName.toLowerCase() === "textarea";
+    // Detectar la tecla "q" presionada
+    document.addEventListener("keydown", function (event) {
+      // Verificar si el foco está en un input o elemento similar
+      const isInputFocused = document.activeElement.tagName.toLowerCase() === "input" ||
+        document.activeElement.tagName.toLowerCase() === "textarea";
 
-  // Si el foco no está en un input, permite que se ejecute la acción de la tecla
-  if (!isInputFocused && event.key.toLowerCase() === "q") {
-    toggleMenu();
-  }
-});
+      // Si el foco no está en un input, permite que se ejecute la acción de la tecla
+      if (!isInputFocused && event.key.toLowerCase() === "q") {
+        toggleMenu();
+      }
+    });
 
-// Detectar el toque en pantalla (para dispositivos móviles)
-document.addEventListener("touchstart", function (event) {
-  startX = event.touches[0].clientX;  // Posición inicial del toque
-});
+    // Detectar el toque en pantalla (para dispositivos móviles)
+    document.addEventListener("touchstart", function (event) {
+      startX = event.touches[0].clientX;  // Posición inicial del toque
+    });
 
-document.addEventListener("touchend", function (event) {
-  const endX = event.changedTouches[0].clientX;  // Posición final del toque
-  if (startX - endX > 50) {
-    // Toque de derecha a izquierda
-    toggleMenu();
-  } else if (endX - startX > 50) {
-    // Toque de izquierda a derecha
-    toggleMenu();
-  }
-});
+    document.addEventListener("touchend", function (event) {
+      const endX = event.changedTouches[0].clientX;  // Posición final del toque
+      if (startX - endX > 50) {
+        // Toque de derecha a izquierda
+        toggleMenu();
+      } else if (endX - startX > 50) {
+        // Toque de izquierda a derecha
+        toggleMenu();
+      }
+    });
   </script>
 
 
   <script>
     const translations = {{ context["text"] | tojson | safe }};
     function getTranslation(key) {
+      /*
       if (translations[key] === undefined) {
         console.warn("Translation not found for key:", key);
       }
+      */
       return translations[key] || key;
     }
 
@@ -265,7 +269,7 @@ document.addEventListener("touchend", function (event) {
             Object.entries(subdata.commands).forEach(([index, button_data]) => {
               button_data.inputs.forEach((input, inp_index) => input.label = getTranslation(`${_subcategory ? _subcategory : _category}_${index}_input${inp_index}`));
 
-              
+
               addButton(subcateg_container, index, button_data, _category, _subcategory);
 
             })
@@ -284,7 +288,7 @@ document.addEventListener("touchend", function (event) {
       var button = document.createElement("button");
       //check if name is an integer, and not a string
       if (Number.isInteger(Number(name))) {
-        
+
         query = subcateg + "_sub" + (Number(name) + 1) + "__btn_name"
         button.innerText = getTranslation(query);
       }
@@ -292,11 +296,11 @@ document.addEventListener("touchend", function (event) {
         query = categ + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase() + "__btn_name";
         button.innerText = getTranslation(query);
       }
-        button.id = query
-        window.buttonData[button.id] = data
-        
+      button.id = query
+      window.buttonData[button.id] = data
+
       button.draggable = true;
-      
+
       parentElement.appendChild(button);
     }
 
@@ -313,55 +317,97 @@ document.addEventListener("touchend", function (event) {
     }
   </script>
 
-<script>
-  window.onload = function () {
-    document.addEventListener("dragover", (event) => event.preventDefault());
+  <script>
+    window.onload = function () {
+      document.addEventListener("dragover", (event) => event.preventDefault());
 
-    const buttons = document.getElementById('menuContainer').querySelectorAll('button');
-    const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
+      const buttons = document.getElementById('menuContainer').querySelectorAll('button');
+      const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
 
-    buttons.forEach(button => {
-      button.addEventListener('dragstart', (event) => {
-        event.dataTransfer.setData("text", event.target.id);
+      const buttonIds = new Set([...buttons].map(button => button.id)); // Crear un set con los IDs de los botones permitidos
+
+      buttons.forEach(button => {
+        button.addEventListener('dragstart', (event) => {
+          event.dataTransfer.setData("text", event.target.id);
+        });
       });
-    });
 
-    deck_buttons.forEach(deck => {
-      deck.addEventListener('drop', (event) => {
-        event.preventDefault();
+      deck_buttons.forEach(deck => {
+        deck.addEventListener('drop', (event) => {
+          event.preventDefault();
 
-        const draggedButtonId = event.dataTransfer.getData("text");
-        const draggedButton = document.getElementById(draggedButtonId);
+          const draggedButtonId = event.dataTransfer.getData("text");
 
-        // Obtener el contenedor grid (el padre del deck)
-        const parent = deck.parentNode;
+          // Verificar si el ID pertenece a los botones permitidos
+          if (!buttonIds.has(draggedButtonId)) {
+            return;
+          }
 
-        // Obtener las propiedades grid-template-columns y grid-template-rows
-        const gridStyle = window.getComputedStyle(parent);
-        const gridColumns = gridStyle.getPropertyValue('grid-template-columns').split(' ');
-        const gridRows = gridStyle.getPropertyValue('grid-template-rows').split(' ');
+          const draggedButton = document.getElementById(draggedButtonId);
+          const parent = deck.parentNode;
+          const gridStyle = window.getComputedStyle(parent);
+          const gridColumns = gridStyle.getPropertyValue('grid-template-columns').split(' ');
+          const gridRows = gridStyle.getPropertyValue('grid-template-rows').split(' ');
 
-        // Obtener la posición del deck dentro del contenedor
-        const deckRect = deck.getBoundingClientRect();
-        const parentRect = parent.getBoundingClientRect();
+          const deckRect = deck.getBoundingClientRect();
+          const parentRect = parent.getBoundingClientRect();
 
-        // Calcular la columna y la fila del deck basado en el tamaño de las celdas
-        const columnWidth = parseFloat(gridColumns[0].replace('px', ''));
-        const rowHeight = parseFloat(gridRows[0].replace('px', ''));
+          const columnWidth = parseFloat(gridColumns[0].replace('px', ''));
+          const rowHeight = parseFloat(gridRows[0].replace('px', ''));
 
-        const offsetX = deckRect.left - parentRect.left;
-        const offsetY = deckRect.top - parentRect.top;
+          const offsetX = deckRect.left - parentRect.left;
+          const offsetY = deckRect.top - parentRect.top;
 
-        const column = Math.floor(offsetX / columnWidth) + 1;
-        const row = Math.floor(offsetY / rowHeight) + 1;
+          const column = Math.floor(offsetX / columnWidth) + 1;
+          const row = Math.floor(offsetY / rowHeight) + 1;
 
-        let current_button_data = window.buttonData[draggedButtonId];        
+          let current_button_data = window.buttonData[draggedButtonId];
 
-        generate_button(current_button_data,window.folder_name,window.folder_data, column, row);
+          generate_button(current_button_data, window.folder_name, window.folder_data, column, row);
+        });
       });
-    });
-  };
-</script>
+    };
+
+  </script>
+
+  <script>
+    let isFetching = false;
+
+    function Initialize_monitors() {
+      if (isFetching) return;
+      isFetching = true;
+      fetch_monitors();
+    }
+
+    function fetch_monitors() {
+      fetch('/usage', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+        .then(response => response.json())
+        .then(data => {
+          window.usage_dict = data;
+        })
+        .catch(() => console.error("Error fetching usage data"))
+        .finally(() => {
+          update_monitors();
+          setTimeout(fetch_monitors, 5000);
+        });
+    }
+    function update_monitors() {
+      console.log(window.usage_dict)
+      var monitors = document.querySelectorAll('[data_from]');
+      monitors.forEach(monitor => {
+        const dataFrom = monitor.getAttribute('data_from');
+        const value = dataFrom.split(".").reduce((obj, key) => obj && obj[key], window);
+        if (value === undefined) return;
+        monitor.innerHTML = value;
+      })
+    }
+  </script>
+
 
 </body>
 

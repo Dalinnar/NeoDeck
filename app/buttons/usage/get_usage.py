@@ -22,7 +22,7 @@ def get_usage(get_all=None, asked_devices=[]):
     
     # CPU
     if get_all or any(item[0] == 'cpu' for item in asked_devices):
-        cpu_percent = psutil.cpu_percent()
+        cpu_percent = psutil.cpu_percent(interval=1)
         computer_info["cpu"] = {"usage_percent": cpu_percent}
 
     # Memory
