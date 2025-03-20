@@ -12,6 +12,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
     rel="stylesheet">
+  <script src="{{ url_for('static', filename='js/default_functions.js') }}"></script>
   <script src="{{ url_for('static', filename='js/button_generator.js') }}"></script>
 
   <link rel="stylesheet" href="{{ url_for('static', filename='css/deck.css') }}">
@@ -22,7 +23,6 @@
 <body>
 
   <div class="main-container">
-
     <div class="buttons-container" grid_size='{{config["front"]["height"]}};{{config["front"]["width"]}}'></div>
     <div class="menuContainer hidden" id="menuContainer"></div>
 
@@ -48,10 +48,7 @@
 
     function updateGrid(pageData) {
       const container = document.querySelector(".buttons-container");
-
       if (!container) return;
-
-      // Limpiar el contenedor antes de agregar nuevos elementos
       container.innerHTML = "";
 
       const rows = Number(pageData.rows);
@@ -65,27 +62,91 @@
       container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       container.style.aspectRatio = `${cols} / ${rows}`;
 
-      // Crear los elementos del grid
-      for (let i = 0; i < rows * cols; i++) {
-        const element = document.createElement("div");
-        element.classList.add("grid-item");
-        container.appendChild(element);
+      // Usar un Set para rastrear posiciones ocupadas
+      const occupiedPositions = new Set();
+
+      pageData.buttons.forEach((button) => {
+
+        if (button.custom_generator) {
+          eval(button.custom_generator);
+          return;
+        }
+        const button_div = document.createElement("div");
+        button_div.classList.add("button_div");
+
+        button_div.style.gridColumn = button.column;
+        button_div.style.gridRow = button.row;
+        button_div.style.backgroundColor = button.background_color;
+        button_div.style.color = button.text_color;
+
+        // Si tiene una imagen, crear la etiqueta <img> y ajustarla
+        if (button.image) {
+          const img = document.createElement("img");
+          img.src = button.image;
+          img.alt = "Button Image";
+          img.style.width = `${button.image_size}%`;
+          img.style.height = `${button.image_size}%`;
+          button_div.appendChild(img);
+        }
+
+        if (button.btn_text) {
+          const btn_text = document.createElement("h3");
+          btn_text.innerText = button.btn_text;
+          btn_text.style.zIndex = 2;
+          button_div.appendChild(btn_text);
+        }
+
+        if (button.command) {
+          button_div.addEventListener("click", () => {
+            //if the command starts with "$" its an eval
+            if (button.command.startsWith("$")) {
+              eval(button.command.slice(1));
+            }
+            //if the command starts with / its a command
+            if (button.command.startsWith("/")) {
+              send_data(button.command);
+            }
+
+          })
+          //if the commands is "#monitor"
+          if (button.command === "#monitor") {
+            Initialize_monitors();
+
+            const monitor = document.createElement("h2");
+
+            monitor.style.zIndex = 2;
+            monitor.setAttribute("data_from", button.collect_data_from);
+
+            button_div.appendChild(monitor);
+          }
+        }
+
+        container.appendChild(button_div);
+
+        // Marcar la posición como ocupada
+        occupiedPositions.add(`${button.row}-${button.column}`);
+      });
+      // Crear los elementos vacíos SOLO en las posiciones libres
+      for (let r = 1; r <= rows; r++) {
+        for (let c = 1; c <= cols; c++) {
+          if (!occupiedPositions.has(`${r}-${c}`)) {
+            const element = document.createElement("div");
+            element.classList.add("grid-item");
+            container.appendChild(element);
+          }
+        }
       }
+      setupDragAndDrop();
     }
 
-    function loadPage(pageIndex) {
-      fetch(`/get_page/${pageIndex}`)
-        .then(response => response.json())
-        .then(data => updateGrid(data))
-        .catch(error => console.error("Error loading page:", error));
-    }
+    
   </script>
   <script>
     let startX = 0;
-
     function toggleMenu() {
       const menu = document.querySelector(".menuContainer");
       menu.classList.toggle("hidden");
+      
     }
 
     // Detectar la tecla "q" presionada
@@ -317,21 +378,23 @@
     }
   </script>
 
-  <script>
-    window.onload = function () {
+  <script>function setupDragAndDrop() {
       document.addEventListener("dragover", (event) => event.preventDefault());
 
+      // Obtener los botones del menú
       const buttons = document.getElementById('menuContainer').querySelectorAll('button');
       const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
 
       const buttonIds = new Set([...buttons].map(button => button.id)); // Crear un set con los IDs de los botones permitidos
 
+      // Configurar el evento de dragstart para los botones
       buttons.forEach(button => {
         button.addEventListener('dragstart', (event) => {
           event.dataTransfer.setData("text", event.target.id);
         });
       });
 
+      // Configurar el evento de drop para los elementos vacíos (donde se puede soltar)
       deck_buttons.forEach(deck => {
         deck.addEventListener('drop', (event) => {
           event.preventDefault();
@@ -366,8 +429,8 @@
           generate_button(current_button_data, window.folder_name, window.folder_data, column, row);
         });
       });
-    };
-
+    }
+    window.onload = setupDragAndDrop;
   </script>
 
   <script>
@@ -407,6 +470,35 @@
       })
     }
   </script>
+
+
+  <script>
+    function send_data(message) {
+      return fetch('/send-data', {   // Debes retornar la promesa de fetch
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: message })
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success === false) {
+            showError(data.message);
+            return null;
+          } else {
+            if (data.data) {
+              return data.data;
+            }
+          }
+        })
+        .catch(error => {
+          console.error("Error:", error);
+          return null;  // Si hay un error en la llamada, retornamos null
+        });
+    }</script>
+
+
 
 
 </body>

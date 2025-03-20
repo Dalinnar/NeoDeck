@@ -20,6 +20,7 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
 
     //create the text button_input
     text_generic = document.createElement("input");
+    text_generic.name = "button_text";
     text_generic.setAttribute("type", "text");
     text_generic.setAttribute("placeholder", "Button Text");
     text_generic.addEventListener("input", () => {
@@ -37,12 +38,23 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     dialog_content.appendChild(button_template);
 
     // Crear controles de personalización
-    const { colorLabel, colorInput, sizeSlider } = createCustomizationControls(button_template);
-    dialog_content.append(colorLabel, colorInput, sizeSlider);
+
+    //personalization div
+    const personalization_div = document.createElement("div");
+    personalization_div.classList.add("personalization_settings");
+    const { colorLabel, colorInput, text_color_input, sizeSlider } = createCustomizationControls(button_template);
+    personalization_div.append(colorLabel, colorInput, text_color_input);
+    dialog_content.appendChild(personalization_div);
+    dialog_content.appendChild(sizeSlider);
+
 
     // Botón de enviar
     const submit_button = document.createElement("button");
     submit_button.textContent = "Submit";
+    //click event function
+    submit_button.addEventListener("click", function () {
+        buildButton(button_data, folder_name, folder_data, column, row)
+    })
     dialog_content.appendChild(submit_button);
 };
 
@@ -62,6 +74,9 @@ const createInputField = (input) => {
     const container = document.createElement("div");
     if (input.dependant_on) {
         container.style.display = "none";
+        //add the atribute dependant_on to the input
+        _input.setAttribute("data-dependant", input.dependant_on);
+
         container.setAttribute("data-dependant", input.dependant_on);
     }
     container.append(label, _input);
@@ -90,10 +105,12 @@ const populateSelectOptions = (_input, options) => {
         _option.textContent = option;
         if (index === 0) _option.selected = true;
         _input.appendChild(_option);
+        //click the option to trigger the change event
+        _input.click();
     });
 };
 
-//function to gle fields based on selected value and remove the con
+//function toggle fields based on selected value and remove the content
 const toggleDependentFields = (selectedValue) => {
     document.querySelectorAll("[data-dependant]").forEach(dep => {
         const input = dep.querySelector("input, select, textarea");
@@ -103,62 +120,94 @@ const toggleDependentFields = (selectedValue) => {
 };
 
 const createButtonTemplate = (button_data) => {
-
-    
-
-
     const button_template = document.createElement("div");
     button_template.classList.add("button_template");
     button_template.style.backgroundColor = "#393939";
 
-
-    
-    
-
-
-    text_div = document.createElement("div");
+    const text_div = document.createElement("div");
     text_div.classList.add("button_text_div");
 
-    button_text = document.createElement("h3");
+    const button_text = document.createElement("h3");
     button_text.textContent = "";
+    button_text.name = "button_text";
     button_text.id = "button_text";
-
     text_div.appendChild(button_text);
 
-
-
     button_template.appendChild(text_div);
+
+    // if the command is "#monitor", initialize monitors
     if (button_data.command === "#monitor") {
         Initialize_monitors();
-        h2 = document.createElement("h2");
-        h2.setAttribute("data_from", button_data.collect_data_from ?? "");
+        const h2 = document.createElement("h2");
+        const { collect_data_from } = button_data;
 
+
+        // if no variables, set data_from directly
+        if (!collect_data_from.includes("{") && !collect_data_from.includes("}")) {
+            h2.setAttribute("data_from", collect_data_from ?? "");
+        } else {
+            const variables = collect_data_from.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+
+            // fucntion that updates the "data_from" based on inputs
+            const updateDataFrom = () => {
+                let updatedDataFrom = collect_data_from;
+                variables.forEach(variable => {
+                    const input = document.querySelector(`[name="${variable}"]`);
+                    if (input) {
+                        let inputValue = input.value || (input.tagName === "SELECT" && input.options[0]?.value) || "";
+                        updatedDataFrom = updatedDataFrom.replace(new RegExp(`{${variable}}`, "g"), inputValue);
+                    }
+                });
+                h2.setAttribute("data_from", updatedDataFrom);
+            };
+
+            //initial update and input event for inputs
+            updateDataFrom();
+            variables.forEach(variable => {
+                const input = document.querySelector(`[name="${variable}"]`);
+                if (input) {
+                    input.addEventListener("input", updateDataFrom);
+                    if (input.tagName === "SELECT") input.addEventListener("click", updateDataFrom);
+                }
+            });
+        }
         text_div.appendChild(h2);
     }
 
-
-
     const img = document.createElement("img");
-    imageSource = button_data.style?.image ?? "empty_img.png";
-    imageSource = imageSource || "empty_img.png";  // Si es una cadena vacía, usa "empty_img.png"
+    let imageSource = button_data.style?.image ?? "empty_img.png";
+    imageSource = imageSource || "empty_img.png";
     img.src = imageSource.includes("/") ? imageSource : `/static/img/${imageSource}`;
-
+    img.classList.add("button_image");
     img.style.width = "80%";
     img.style.height = "auto";
     button_template.appendChild(img);
 
-
+    // Evento para abrir la galería de imágenes al hacer clic
     button_template.addEventListener("click", () => open_image_gallery(img));
-
 
     return button_template;
 };
 
+
 const createCustomizationControls = (button_template) => {
+
+    //background color
     const colorInput = document.createElement("input");
     colorInput.type = "color";
+    colorInput.name = "background_color";
     colorInput.id = "button_color_input";
     colorInput.addEventListener("input", (e) => button_template.style.backgroundColor = e.target.value);
+
+    //text color
+    let text_div = document.getElementsByClassName("button_text_div")[0];
+
+    const text_color_input = document.createElement("input");
+    text_color_input.type = "color";
+    text_color_input.id = "text_color_input";
+    text_color_input.name = "text_color";
+    text_color_input.addEventListener("input", (e) => text_div.style.color = e.target.value);
+
 
     const colorLabel = document.createElement("label");
     colorLabel.textContent = "Color:";
@@ -166,6 +215,7 @@ const createCustomizationControls = (button_template) => {
 
     const sizeSlider = document.createElement("input");
     sizeSlider.type = "range";
+    sizeSlider.name = "img_size";
     sizeSlider.min = "0";
     sizeSlider.max = "100";
     sizeSlider.value = "80";
@@ -174,7 +224,7 @@ const createCustomizationControls = (button_template) => {
         imgOrSvg.style.width = e.target.value + "%";
     });
 
-    return { colorLabel, colorInput, sizeSlider };
+    return { colorLabel, colorInput, text_color_input, sizeSlider };
 };
 
 function get_data_from_url(url) {
@@ -257,7 +307,9 @@ function createUploadInput(imgOrSvg, dialog, gallery) {
         const previewImg = createGalleryImage(URL.createObjectURL(file), imgOrSvg, dialog);
 
         // Subir imagen al servidor y actualizar src
-        await handleFileUpload(file, previewImg, gallery);
+        data = await handleFileUpload(file, previewImg);
+        previewImg.src = data.file_path;
+        window.image_list.push(data.file_path);
 
         gallery.appendChild(previewImg);
     });
@@ -275,25 +327,16 @@ function createUploadButton(input) {
     return upload_div;
 }
 
-// Manejar la subida del archivo
-async function handleFileUpload(file, previewImg, gallery) {
+async function handleFileUpload(file) {
     const formData = new FormData();
     formData.append("file", file);
 
     try {
-        const response = await fetch("/upload_file", {
-            method: "POST",
-            body: formData
-        });
-
+        const response = await fetch("/upload_file", { method: "POST", body: formData });
         const data = await response.json();
-
-        if (data.success) {
-            previewImg.src = data.file_path; // Reemplazar imagen con la URL real
-            window.image_list.push(data.file_path);
-        } else {
-            console.error("Error al subir archivo:", data.message);
-        }
+        if (!data.success) throw new Error(data.message);
+        console.log(data);
+        return data;
     } catch (error) {
         console.error("Error en la subida:", error);
     }
@@ -318,3 +361,62 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 
     return element;
 }
+async function buildButton(button_data, folder_name, folder_data, column, row) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = [...dialog.querySelectorAll("[name]:not([disabled])")];
+
+    const obj = { command: button_data.command, column: column, row: row };
+
+    try {
+        await Promise.all(inputs.map(async (input) => {
+            const value = input.type === "file" && input.files.length > 0
+                ? await handleFileUpload(input.files[0]).then(fileData => fileData?.file_path)
+                : input.value;
+
+            if (value) {
+                obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), value);
+            }
+        }));
+
+
+        //setup the colors
+        obj.background_color = inputs.find(input => input.name === "background_color")?.value || "#1e1e1e";
+        obj.text_color = inputs.find(input => input.name === "text_color")?.value || "#ffffff";
+
+        obj.command = obj.command.replace(/\{(.*?)\}/g, (_, v) =>
+            inputs.find(i => i.name === v)?.value || `{${v}}`
+        );
+
+        const image_element = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)(.*)$/, '$2');
+        if (image_element !== "/static/img/empty_img.png") {
+            obj.image = image_element;
+            obj.image_size = inputs.find(input => input.name === "img_size")?.value || "80";
+        }
+
+        const buttonTextInput = inputs.find(input => input.name === "button_text");
+        if (buttonTextInput?.value) obj.btn_text = buttonTextInput.value;
+
+        if (button_data.command === "#monitor") {
+            obj.collect_data_from = button_data.collect_data_from.replace(/\{(.*?)\}/g, (_, v) =>
+                inputs.find(i => i.name === v)?.value || `{${v}}`
+            );
+        }
+
+        folder_data.buttons.push(obj);
+
+        const response = await fetch(`/update_folder_data/${folder_name}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(folder_data),
+        });
+
+        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+
+        const result = await response.json();
+        updateGrid(result.folder);
+
+    } catch (error) {
+        console.error("Error processing inputs:", error);
+    }
+}
+

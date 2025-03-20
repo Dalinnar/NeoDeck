@@ -1,7 +1,7 @@
 {
   "Webdeck": {
     "Fullscreen": {
-      "command": "/fullscreen",
+      "command": "$fullscreen()",
       "inputs": [],
       "style": {
         "image": "fullscreen2.png",
@@ -17,7 +17,7 @@
       }
     },
     "Open a folder": {
-      "command": "$folder({folder-path})",
+      "command": "$folder('{folder-path}')",
       "inputs": [
         {
           "TYPE": "select",
@@ -398,7 +398,7 @@
       "style": {}
     },
     "Execute python code": {
-      "command": "/exec",
+      "command": "/exec {code_type} {selected_option}",
      "inputs": [
   {
     "TYPE": "select",
@@ -406,19 +406,19 @@
     "options": ["uploaded_file", "file_path", "single_line"]
   },
   {
-    "TYPE": "input file",
-    "name": "file_path",
+    "TYPE": "input file", 
+    "name": "selected_option",
     "file_type": ".py",
     "dependant_on": "uploaded_file"
   },
   {
     "TYPE": "input text",
-    "name": "file_path",
+    "name": "selected_option",
     "dependant_on": "file_path"
   },
   {
     "TYPE": "input text",
-    "name": "single_line",
+    "name": "selected_option",
     "dependant_on": "single_line"
   }
 ],
@@ -428,7 +428,7 @@
       }
     },
     "Execute batch code": {
-      "command": "/batch",
+      "command": "/batch {batch_code}",
       "inputs": [
         {
           "TYPE":"textarea",
@@ -453,7 +453,7 @@
       }
     },
     "Write text": {
-      "command": "/write",
+      "command": "/write {text}",
       "inputs": [
         {
           "TYPE": "textarea",
@@ -467,7 +467,7 @@
       }
     },
     "Write text and press Enter": {
-      "command": "/writeandsend",
+      "command": "/writeandsend {text}",
       "inputs": [
         {
           "TYPE": "textarea",

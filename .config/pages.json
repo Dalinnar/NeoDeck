@@ -1,8 +1,127 @@
 {
-    "index" :{
+    "index": {
         "background": "//#141414",
+        "buttons": [
+            {
+                "background_color": "#c36060",
+                "column": 5,
+                "command": "$folder('drogas')",
+                "image": "/static/img/folder.png",
+                "image_size": "80",
+                "row": 2,
+                "text_color": "#b31919"
+            },
+            {
+                "background_color": "#ffffff",
+                "btn_text": "ESCENAS",
+                "column": 2,
+                "command": "$folder('index')",
+                "image": "/.config/user_uploads/cat-space.gif",
+                "image_size": "87",
+                "row": 2,
+                "text_color": "#ffff66"
+            },
+            {
+                "background_color": "#000000",
+                "btn_text": "cosas",
+                "collect_data_from": "usage_dict.disks.C.free_gb",
+                "column": 8,
+                "command": "#monitor",
+                "image": "/.config/user_uploads/Intel_CPU_Core_i7_2600K_Sandy_Bridge_top.webp",
+                "image_size": "100",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#f50000",
+                "btn_text": "CPU %",
+                "collect_data_from": "usage_dict.cpu.usage_percent",
+                "column": 6,
+                "command": "#monitor",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#000000",
+                "column": 7,
+                "command": "$fullscreen()",
+                "image": "/static/img/fullscreen2.png",
+                "image_size": "80",
+                "row": 2,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#ffffff",
+                "column": 7,
+                "command": "$fullscreen()",
+                "image": "/static/img/fullscreen2.png",
+                "image_size": "80",
+                "row": 3,
+                "text_color": "#ffffff"
+            },
+            {
+                "background_color": "#ffffff",
+                "column": 7,
+                "command": "$fullscreen()",
+                "image": "/static/img/fullscreen2.png",
+                "image_size": "80",
+                "row": 3,
+                "text_color": "#ffffff"
+            },
+            {
+                "background_color": "#ffffff",
+                "column": 2,
+                "command": "$folder('index')",
+                "image": "/static/img/folder.png",
+                "image_size": "80",
+                "row": 2,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#000000",
+                "column": 1,
+                "command": "$folder('index')",
+                "image": "/static/img/folder.png",
+                "image_size": "80",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "command": "$folder('drogas')",
+                "column": 8,
+                "row": 2,
+                "background_color": "#000000",
+                "text_color": "#000000",
+                "image": "/static/img/folder.png",
+                "image_size": "80"
+            }
+        ],
         "columns": "8",
-        "rows": "3",
-        "buttons": []
+        "rows": "3"
+    },
+    "drogas": {
+        "background": "//#141414",
+        "buttons": [
+            {
+                "background_color": "#000000",
+                "column": 1,
+                "command": "$folder('drogas')",
+                "image": "/static/img/folder.png",
+                "image_size": "80",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "command": "$folder('index')",
+                "column": 2,
+                "row": 1,
+                "background_color": "#000000",
+                "text_color": "#000000",
+                "image": "/static/img/folder.png",
+                "image_size": "80"
+            }
+        ],
+        "columns": "3",
+        "rows": "3"
     }
 }

@@ -143,6 +143,8 @@ def get_svgs():
 
 @app.route("/")
 def home():
+    
+    return redirect("/home")
     config = get_config(save_updated_config=True)
 
     with open("webdeck/version.json", encoding="utf-8") as f:
@@ -190,6 +192,7 @@ def new():
     #open pages.json if not exist make it 
     with open(".config/pages.json", "r") as f:        
         pages = json.load(f)
+        context["pages"] = list(pages.keys())
         context["deck_folder"] = pages[next(iter(pages))]  
         context["folder_name"] = str(next(iter(pages)))
         textdir = get_new_text()
@@ -204,9 +207,8 @@ def new():
 def api(value):
     
     value_map = {
-
-        "disks": [p.device for p in psutil.disk_partitions()],
-        "gpus" : [gpu.name for gpu in getGPUs()],
+        "disks": [p.device[0] for p in psutil.disk_partitions()],
+        "gpus" : [f"GPU{i+1}" for i in range(len(getGPUs()))],
         "deck_folders" : load_deck_folders()
     }    
     return jsonify(value_map[value])
@@ -456,7 +458,7 @@ def upload_file():
             log.exception(e, "Failed to rotate image during upload")
 
     log.success(f"File '{uploaded_file.filename}' uploaded successfully")
-    return jsonify({"success": True, "message": text("downloaded_successfully"),"file_path": save_path})
+    return jsonify({"success": True, "message": text("downloaded_successfully"),"file_path": f"{save_path}"})
 
 
 @app.route("/create_folder", methods=["POST"])
@@ -560,6 +562,29 @@ def send_data_route():
     # Si el resultado es algo que se puede representar como JSON (por ejemplo, un string o un número).
     return jsonify({"success": True, "data": result})
 
+
+@app.route("/update_folder_data/<folder_name>", methods=["POST"])
+def update_folder_data(folder_name):
+    data = request.get_json()
+
+    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
+        pages = json.load(f)  # Leer el JSON
+        pages[folder_name] = data  # Modificar datos
+
+        f.seek(0)  # Volver al inicio del archivo
+        json.dump(pages, f, indent=4)  # Escribir el JSON formateado
+        f.truncate()  # Eliminar contenido sobrante si el nuevo JSON es más corto
+
+    return jsonify({"success": True, "message": "Folder data updated successfully", "folder":pages[folder_name] })
+    
+
+
+
+@app.route("/get_page/<folder_name>", methods=["GET"])
+def get_page(folder_name):
+    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
+        pages = json.load(f)  # Leer el JSON
+        return jsonify(pages[folder_name])
 
 @app.errorhandler(Exception)
 def handle_exception(e):
