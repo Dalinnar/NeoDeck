@@ -417,5 +417,5 @@ input[type="color"] {
     position: absolute;    
     border-radius: inherit;
     height: auto;
-    object-fit: cover;
+    object-fit: contain;
   }

@@ -378,8 +378,7 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
             }
         }));
 
-
-        //setup the colors
+        // setup the colors
         obj.background_color = inputs.find(input => input.name === "background_color")?.value || "#1e1e1e";
         obj.text_color = inputs.find(input => input.name === "text_color")?.value || "#ffffff";
 
@@ -404,15 +403,9 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
 
         folder_data.buttons.push(obj);
 
-        const response = await fetch(`/update_folder_data/${folder_name}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(folder_data),
-        });
+        // Llamar a la nueva función para subir los datos
+        const result = await uploadFolderData(folder_name, folder_data);
 
-        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-
-        const result = await response.json();
         updateGrid(result.folder);
 
     } catch (error) {
