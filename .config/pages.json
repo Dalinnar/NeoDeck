@@ -37,13 +37,21 @@
         "background": "//#141414",
         "buttons": [
             {
-                "command": "$folder('index')",
+                "background_color": "#000000",
                 "column": 2,
+                "command": "$folder('index')",
+                "image": "/static/img/folder.png",
+                "image_size": "80",
                 "row": 2,
+                "text_color": "#000000"
+            },
+            {
+                "command": "#monitor",
+                "column": 3,
+                "row": 1,
                 "background_color": "#000000",
                 "text_color": "#000000",
-                "image": "/static/img/folder.png",
-                "image_size": "80"
+                "collect_data_from": "usage_dict.cpu.usage_percent"
             }
         ],
         "columns": "3",

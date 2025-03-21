@@ -5,6 +5,7 @@
     padding: 0;
     box-sizing: border-box;
     font-family: "Noto Sans SC", sans-serif;
+    user-select: none;
     scrollbar-width: none;    
     -ms-overflow-style: none;    
 }
@@ -12,17 +13,9 @@
     display: none;
 }
 
-.tooltip {
-    position: absolute;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border-radius: 4px;
-    padding: 5px;
-    font-size: 12px;
-    display: none;
-    pointer-events: none;
-    /* Para evitar que el tooltip interfiera con otros elementos */
-    z-index: 1000;
+body{
+    background-color: #1e1e1e;
+
 }
 
 /* Asegura que el contenedor principal ocupe toda la pantalla */
@@ -418,4 +411,74 @@ input[type="color"] {
     border-radius: inherit;
     height: auto;
     object-fit: contain;
+  }
+
+  #pages-container {
+    background-color: #1e1e1e;
+    width: 100%;
+    padding: 10px;
+    color: white;
+    max-height: 500px; /* Ajusta según el contenido */
+    top: 0;
+    transition: .3s;
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    left: 0;
+    opacity: 1; /* Se mantiene visible */
+    overflow: hidden; /* Asegura que no se vea el contenido detrás */
+}
+
+#pages-container.hidden {
+    height: 0;
+    opacity: 0; /* Se desvanece */
+    padding: 0; /* Opcional para que no ocupe espacio */
+}
+
+.page{
+    padding: 5px 15px;
+    background-color: #429c51;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    position: relative;
+    justify-content: center;
+    border-radius: 10px;    
+    transition: .3s;
+}
+.page:hover{
+    background-color: #429c5180;
+    cursor: pointer;
+}
+.chevron_svg{
+    box-sizing: content-box; 
+    stroke-width: 2;   
+    padding: 5px;
+    border-radius: 30%
+}
+
+.context-menu {
+    position: absolute;
+    background-color: rgba(30, 30, 30, 0.5);
+    padding: 10px;
+    top: 50px;
+    left: 10px;    
+    z-index: 1000;
+    display: none;
+    min-width: 150px; /* Opcional: Establece un ancho mínimo */
+  }
+
+  .context-menu ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .context-menu li {
+    padding: 5px;
+    cursor: pointer;
+  }
+
+  .context-menu li:hover {
+    background-color: rgba(30, 30, 30, 1);;
   }
