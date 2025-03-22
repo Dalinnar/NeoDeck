@@ -3,30 +3,67 @@
         "background": "//#141414",
         "buttons": [
             {
-                "background_color": "#ffffff",
-                "column": 7,
-                "command": "$fullscreen()",
-                "image": "/static/img/fullscreen2.png",
-                "image_size": "80",
-                "row": 3,
-                "text_color": "#ffffff"
-            },
-            {
-                "background_color": "#ffffff",
-                "column": 7,
-                "command": "$fullscreen()",
-                "image": "/static/img/fullscreen2.png",
-                "image_size": "80",
-                "row": 3,
-                "text_color": "#ffffff"
-            },
-            {
                 "background_color": "#000000",
                 "column": 8,
                 "command": "$folder('drogas')",
+                "endcolumn": 9,
+                "endrow": 4,
                 "image": "/static/img/folder.png",
                 "image_size": "80",
-                "row": 2,
+                "row": 3,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#b28585",
+                "column": 1,
+                "command": "$reload()",
+                "endcolumn": 3,
+                "endrow": 3,
+                "image": "/static/img/reload.png",
+                "image_size": "80",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#ffffff",
+                "column": 2,
+                "command": "$fullscreen()",
+                "endcolumn": 3,
+                "endrow": 4,
+                "image": "/static/img/fullscreen2.png",
+                "image_size": "80",
+                "row": 3,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#1e1e1e",
+                "column": 5,
+                "command": "/obs_scene {scene_name}",
+                "endcolumn": 7,
+                "endrow": 4,
+                "image": "/.config/user_uploads/cat-space.gif",
+                "image_size": "100",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#cb5d5d",
+                "column": 7,
+                "command": "/mediacontrol playpause",
+                "image": "/.config/user_uploads/300px-Play_Pause_icon_2283501.svg.png",
+                "image_size": "80",
+                "row": 3,
+                "text_color": "#fffafa"
+            },
+            {
+                "background_color": "#1e1e1e",
+                "column": 7,
+                "command": "!volume",
+                "endcolumn": 8,
+                "endrow": 3,
+                "max": "100",
+                "min": "0",
+                "row": 1,
                 "text_color": "#000000"
             }
         ],
@@ -38,20 +75,11 @@
         "buttons": [
             {
                 "background_color": "#000000",
-                "column": 2,
-                "command": "$folder('index')",
-                "image": "/static/img/folder.png",
-                "image_size": "80",
-                "row": 2,
-                "text_color": "#000000"
-            },
-            {
-                "command": "#monitor",
+                "collect_data_from": "usage_dict.cpu.usage_percent",
                 "column": 3,
+                "command": "#monitor",
                 "row": 1,
-                "background_color": "#000000",
-                "text_color": "#000000",
-                "collect_data_from": "usage_dict.cpu.usage_percent"
+                "text_color": "#000000"
             }
         ],
         "columns": "3",

@@ -44,6 +44,7 @@
       "command": "#monitor",
       "inputs": [],
       "blank_img" : true,
+      "track": "cpu",
       "collect_data_from" : "usage_dict.cpu.usage_percent",
       "style": {
         "image": "",
@@ -56,24 +57,28 @@
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "memory",
       "collect_data_from": "usage_dict.memory.usage_percent",
       "style": {}
     },
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "memory",
       "collect_data_from": "usage_dict.memory.used_gb",
       "style": {}
     },
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "memory",
       "collect_data_from": "usage_dict.memory.available_gb",
       "style": {}
     },
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "memory",
       "collect_data_from": "usage_dict.memory.total_gb",
       "style": {}
     }
@@ -91,6 +96,7 @@
           "options_url": "/api/disks"
         }
       ],
+      "track": "disks",
       "collect_data_from": "usage_dict.disks.{disk-letter}.usage_percent",
       "style": {}
     },
@@ -103,6 +109,7 @@
           "options_url": "/api/disks"
         }
       ],
+      "track": "disks",
       "collect_data_from": "usage_dict.disks.{disk-letter}.free_gb",
       "style": {}
     },
@@ -115,6 +122,7 @@
           "options_url": "/api/disks"
         }
       ],
+      "track": "disks",
       "collect_data_from": "usage_dict.disks.{disk-letter}.used_gb",
       "style": {}
     },
@@ -127,6 +135,7 @@
           "options_url": "/api/disks"
         }
       ],
+      "track": "disks",
       "collect_data_from": "usage_dict.disks.{disk-letter}.total_gb",
       "style": {}
     }
@@ -144,6 +153,7 @@
           "options_url": "/api/gpus"
         }
       ],
+      "track": "gpus",
       "collect_data_from": "usage_dict.gpus.{available-gpus}.usage_percent",
       "style": {}
     },
@@ -156,6 +166,7 @@
           "options_url": "/api/gpus"
         }
       ],
+      "track": "gpus",
       "collect_data_from": "usage_dict.gpus.{available-gpus}.used_mb",
       "style": {}
     },
@@ -168,6 +179,7 @@
           "options_url": "/api/gpus"
         }
       ],
+      "track": "gpus",
       "collect_data_from": "usage_dict.gpus.{available-gpus}.total_mb",
       "style": {}
     }
@@ -179,12 +191,14 @@
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "network",
       "collect_data_from": "usage_dict.network.bytes_sent",
       "style": {}
     },
     {
       "command": "#monitor",
       "inputs": [],
+      "track": "network",
       "collect_data_from": "usage_dict.network.bytes_recv",
       "style": {}
     }
@@ -196,6 +210,12 @@
     "Volume": {
       "TYPE": "multiple",
       "commands": [
+        {
+          "command": "!volume",
+          "inputs": [],
+          "min":"0",
+          "max":"100"
+        },
         {
           "command": "/volume +{volume-number}",
           "inputs": [

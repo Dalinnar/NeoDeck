@@ -78,7 +78,7 @@ app.config["SECRET_KEY"] = get_config()["settings"]["flask_secret_key"]
 
 
 
-@app.route("/usage", methods=["POST"])
+@app.route("/monitors", methods=["POST"])
 def usage():
 
     return jsonify(get_usage())

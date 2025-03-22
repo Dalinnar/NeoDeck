@@ -12,12 +12,10 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
     rel="stylesheet">
-  <script src="{{ url_for('static', filename='js/default_functions.js') }}"></script>
-  <script src="{{ url_for('static', filename='js/button_generator.js') }}"></script>
-
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/deck.css') }}">
-
-
+  <script src="/static/js/default_functions.js"></script>
+  <script src="/static/js/button_generator.js"></script>
+  <script defer src="/static/js/SelectionManager.js"></script>
+  <link rel="stylesheet" href="/static/css/deck.css">
 </head>
 
 <body>
@@ -69,7 +67,7 @@
       // Usar un Set para rastrear posiciones ocupadas
       const occupiedPositions = new Set();
 
-      pageData.buttons.forEach((button) => {
+      pageData.buttons.forEach((button, index) => {
 
         if (button.custom_generator) {
           eval(button.custom_generator);
@@ -77,15 +75,32 @@
         }
         const button_div = document.createElement("div");
         button_div.classList.add("button_div");
+        button_div.id = "button_" + index;
 
-        button_div.style.gridColumn = button.column;
-        button_div.style.gridRow = button.row;
+
         button_div.style.backgroundColor = button.background_color;
         button_div.style.color = button.text_color;
+
+
+
+        button_div.style.gridArea = `${button.row} / ${button.column} / ${button.endrow ?? button.row} / ${button.endcolumn ?? button.column}`;
+        if (button.image) {
+          const img = document.createElement("img");
+          Object.assign(img, {
+            src: button.image,
+            style: `width: ${button.image_size}%; height: ${button.image_size}%;`,
+            draggable: false
+          });
+          button_div.appendChild(img);
+        }
+
+
 
         if (button.image) {
           const img = document.createElement("img");
           img.src = button.image;
+          //make the image not draggable
+          img.draggable = false;
           img.alt = "Button Image";
           img.style.width = `${button.image_size}%`;
           img.style.height = `${button.image_size}%`;
@@ -118,14 +133,27 @@
           })
           //if the commands is "#monitor"
           if (button.command === "#monitor") {
-            Initialize_monitors();
-
+            console.log(button.track);
+            Initialize_monitors(button.track ?? undefined);
             const monitor = document.createElement("h2");
 
             monitor.style.zIndex = 2;
             monitor.setAttribute("data_from", button.collect_data_from);
 
             button_div.appendChild(monitor);
+          }
+          if (button.command.startsWith("!")) {
+
+            const range = document.createElement("input");
+            range.type = "range";
+            range.classList.add("slider");
+            range.min = button.min;
+            range.max = button.max;
+            button_div.appendChild(range);
+
+            range.addEventListener("change", function () {
+              send_data(button.command + " " + range.value);
+            });
           }
         }
 
@@ -137,12 +165,12 @@
       // Crear los elementos vacíos SOLO en las posiciones libres
       for (let r = 1; r <= rows; r++) {
         for (let c = 1; c <= cols; c++) {
-          if (!occupiedPositions.has(`${r}-${c}`)) {
-            const element = document.createElement("div");
-            element.style.gridArea = `${r} / ${c}`;
-            element.classList.add("grid-item");
-            container.appendChild(element);
-          }
+
+          const element = document.createElement("div");
+          element.style.gridArea = `${r} / ${c}`;
+          element.classList.add("grid-item");
+          container.appendChild(element);
+
         }
       }
       setupDragAndDrop();
@@ -214,12 +242,12 @@
       const isMenuVisible = menu.classList.contains("hidden") || override;
 
       buttons.forEach((button) => {
-        // if the menu is visible or the override is true, remove the svg if it exists
+        // Si el menú está visible o el override es verdadero, eliminar el SVG si existe
         const existingSvg = button.querySelector("svg");
         if (isMenuVisible && existingSvg) {
           existingSvg.remove(); // Eliminar el SVG
         } else if (!isMenuVisible && !existingSvg) {
-          // if the menu is visible, remove the svg if it exists
+          // Si el menú está visible, agregar el SVG si no existe
           const svg = document.createElement("svg");
           svg.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
@@ -232,7 +260,7 @@
           svg.style.cursor = "pointer";
           svg.style.zIndex = 3;
           svg.style.stroke = "red";
-          svg.style.padding = "1%"
+          svg.style.padding = "1%";
           svg.style.backgroundColor = "#55555555";
           svg.style.borderRadius = "50%";
 
@@ -248,6 +276,13 @@
           });
 
           button.appendChild(svg); // Añadir el SVG al botón
+        }
+
+        // Hacer que el botón sea arrastrable si el menú está visible
+        if (!isMenuVisible) {
+          button.setAttribute("draggable", "true");
+        } else {
+          button.removeAttribute("draggable");
         }
       });
     }
@@ -561,19 +596,25 @@
 
   <script>
     let isFetching = false;
+    const data = new Set();
 
-    function Initialize_monitors() {
+    function Initialize_monitors(track) {
+      // Agregar el track si aún no está en el set
+      if (track) {
+        data.add(track);
+      }
       if (isFetching) return;
       isFetching = true;
       fetch_monitors();
     }
 
     function fetch_monitors() {
-      fetch('/usage', {
+      fetch('/monitors', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ track: [...data] }) // Convertir Set a Array antes de enviar
       })
         .then(response => response.json())
         .then(data => {
@@ -581,19 +622,21 @@
         })
         .catch(() => console.error("Error fetching usage data"))
         .finally(() => {
+          isFetching = false; // Permitir futuras llamadas
           update_monitors();
           setTimeout(fetch_monitors, 5000);
         });
     }
+
     function update_monitors() {
-      console.log(window.usage_dict)
+      console.log(window.usage_dict);
       var monitors = document.querySelectorAll('[data_from]');
       monitors.forEach(monitor => {
         const dataFrom = monitor.getAttribute('data_from');
         const value = dataFrom.split(".").reduce((obj, key) => obj && obj[key], window);
         if (value === undefined) return;
         monitor.innerHTML = value;
-      })
+      });
     }
   </script>
 
@@ -622,7 +665,16 @@
           console.error("Error:", error);
           return null;  // Si hay un error en la llamada, retornamos null
         });
-    }</script>
+    }
+  </script>
+
+
+
+
+
+
+
+
 </body>
 
 </html>

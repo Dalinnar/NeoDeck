@@ -173,6 +173,21 @@ const createButtonTemplate = (button_data) => {
         }
         text_div.appendChild(h2);
     }
+    //if the button command starts with "!", it is a level
+    if (button_data.command.startsWith("!")) {
+        const rangeInput = document.createElement("input");
+        rangeInput.type = "range";
+        rangeInput.min = button_data.min ?? 0;
+        
+        rangeInput.max = button_data.max ?? 100;
+        rangeInput.style.writingMode = "sideways-lr";
+        rangeInput.style.position = "absolute";
+        rangeInput.style.height = "95%";
+        button_template.appendChild(rangeInput);
+
+
+    }
+
 
     const img = document.createElement("img");
     let imageSource = button_data.style?.image ?? "empty_img.png";
@@ -197,6 +212,7 @@ const createCustomizationControls = (button_template) => {
     colorInput.type = "color";
     colorInput.name = "background_color";
     colorInput.id = "button_color_input";
+    colorInput.value = "#1e1e1e";
     colorInput.addEventListener("input", (e) => button_template.style.backgroundColor = e.target.value);
 
     //text color
@@ -396,11 +412,15 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         if (buttonTextInput?.value) obj.btn_text = buttonTextInput.value;
 
         if (button_data.command === "#monitor") {
+            obj.track = button_data.track;
             obj.collect_data_from = button_data.collect_data_from.replace(/\{(.*?)\}/g, (_, v) =>
                 inputs.find(i => i.name === v)?.value || `{${v}}`
             );
         }
-
+        if (button_data.command.startsWith("!")) {
+            obj.min = button_data.min;
+            obj.max = button_data.max;
+        }
         folder_data.buttons.push(obj);
 
         // Llamar a la nueva función para subir los datos

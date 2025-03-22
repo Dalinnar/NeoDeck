@@ -17,6 +17,7 @@ import comtypes
 from app.utils.logger import log
 from app.utils.global_variables import get_global_variable
 from app.utils.kill_nircmd import kill_nircmd
+from app.buttons.audio.volume import set_volume
 
 from app.utils.firewall import fix_firewall_permission
 from .usage import extract_asked_device, get_usage
@@ -61,7 +62,7 @@ command_map ={
         "/setoutputdevice":         lambda message: audio.set_speakers_by_name(message.replace("/setoutputdevice", "").strip()),
         "/usage" :                  lambda message: command_actions.handle_device_usage(message),
         "/restart":                 lambda message: command_actions.restarttask(message),
-        "/volume":                  lambda message: audio.change_volume(message),
+        "!volume":                  lambda message: set_volume(message),
         "/spotify":                 lambda message: spotify.handle_command(message),
         "/obs":                     lambda message: obs.handle_command(message),
         "/colorpicker":             lambda message: color_picker.handle_command(message),
