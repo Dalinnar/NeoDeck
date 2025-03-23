@@ -54,6 +54,7 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     //click event function
     submit_button.addEventListener("click", function () {
         buildButton(button_data, folder_name, folder_data, column, row)
+        modal.close();
     })
     dialog_content.appendChild(submit_button);
 };

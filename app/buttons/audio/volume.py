@@ -14,7 +14,7 @@ def set_volume(message):
         delta = int(message.split(" ")[1])  
 
         # Asegurar que el valor esté entre 1 y 100
-        delta = max(1, min(100, delta))
+        delta = max(0, min(100, delta))
 
         # Convertir a rango de 0.01 - 1.0
         volume_level = delta / 100  

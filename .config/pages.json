@@ -15,20 +15,20 @@
             },
             {
                 "background_color": "#b28585",
-                "column": 1,
+                "column": 4,
                 "command": "$reload()",
-                "endcolumn": 3,
-                "endrow": 3,
+                "endcolumn": 5,
+                "endrow": 4,
                 "image": "/static/img/reload.png",
                 "image_size": "80",
-                "row": 1,
+                "row": 3,
                 "text_color": "#000000"
             },
             {
                 "background_color": "#ffffff",
-                "column": 2,
+                "column": 3,
                 "command": "$fullscreen()",
-                "endcolumn": 3,
+                "endcolumn": 4,
                 "endrow": 4,
                 "image": "/static/img/fullscreen2.png",
                 "image_size": "80",
@@ -37,19 +37,21 @@
             },
             {
                 "background_color": "#1e1e1e",
-                "column": 5,
+                "column": 3,
                 "command": "/obs_scene {scene_name}",
-                "endcolumn": 7,
-                "endrow": 4,
+                "endcolumn": 6,
+                "endrow": 3,
                 "image": "/.config/user_uploads/cat-space.gif",
                 "image_size": "100",
-                "row": 1,
+                "row": 2,
                 "text_color": "#000000"
             },
             {
                 "background_color": "#cb5d5d",
                 "column": 7,
                 "command": "/mediacontrol playpause",
+                "endcolumn": 8,
+                "endrow": 4,
                 "image": "/.config/user_uploads/300px-Play_Pause_icon_2283501.svg.png",
                 "image_size": "80",
                 "row": 3,
@@ -57,13 +59,37 @@
             },
             {
                 "background_color": "#1e1e1e",
-                "column": 7,
+                "column": 2,
                 "command": "!volume",
-                "endcolumn": 8,
-                "endrow": 3,
+                "endcolumn": 3,
+                "endrow": 4,
                 "max": "100",
                 "min": "0",
                 "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#1e1e1e",
+                "column": 1,
+                "command": "!volume",
+                "endcolumn": 2,
+                "endrow": 4,
+                "image": "/.config/user_uploads/Spotify_logo_without_text.svg.png",
+                "image_size": "100",
+                "max": "100",
+                "min": "0",
+                "row": 1,
+                "text_color": "#000000"
+            },
+            {
+                "background_color": "#1e1e1e",
+                "column": 5,
+                "command": "/volume set{volume-number}",
+                "endcolumn": 6,
+                "endrow": 4,
+                "image": "/static/img/sound.png",
+                "image_size": "80",
+                "row": 3,
                 "text_color": "#000000"
             }
         ],
@@ -83,6 +109,6 @@
             }
         ],
         "columns": "3",
-        "rows": "3"
+        "rows": "8"
     }
 }
