@@ -9,9 +9,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link
-    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
-    rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
   <script src="/static/js/default_functions.js"></script>
   <script src="/static/js/button_generator.js"></script>
   <script defer src="/static/js/SelectionManager.js"></script>
@@ -22,8 +20,7 @@
 
   <div id="pages-container" class="hidden"></div>
   <div class="main-container">
-
-    <div class="buttons-container" grid_size='{{config["front"]["height"]}};{{config["front"]["width"]}}'></div>
+    <div class="buttons-container"></div>
     <div class="menuContainer hidden" id="menuContainer">
       <div class="QuickMenu" id="category_commands">
         <a href="/settings" class="quickmenu_icon" title="settings" >
@@ -48,9 +45,7 @@
           </svg>
         </a>
       </div>
-
     </div>
-
     <script>
       //add all the data to the grid
       window.buttonData = {}
@@ -367,14 +362,9 @@
     <script>
       const translations = {{ context["text"] | tojson | safe }};
       function getTranslation(key) {
-        /*
-        if (translations[key] === undefined) {
-          console.warn("Translation not found for key:", key);
-        }
-        */
+
         return translations[key] || key;
       }
-
     </script>
 
     <script>
@@ -676,7 +666,7 @@
           .then(response => response.json())
           .then(data => {
             if (data.success === false) {
-              showError(data.message);
+              console.error("Error:", data.message);
               return null;
             } else {
               if (data.data) {

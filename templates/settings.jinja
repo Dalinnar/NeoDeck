@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeoDeck settings</title>
+    <link rel="icon" href="static\icons\icon.ico" />
+
+    <script src="/static/js/selectionmenu.js"></script>
+    <link rel="stylesheet" href="/static/css/settings.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+
+    <nav class="section_container">
+        <a href="/"> go back</a>
+    </nav>
+    <div class="settings_container"></div>
+
+</body>
+
+<script>
+    const default_settings = {{ context['default_settings'] | tojson | safe }};
+    const saved_settings = {{ context['saved_settings'] | tojson }};
+    console.log(default_settings);
+    console.log("saved_settings: ", saved_settings);
+
+
+    const section_container = document.querySelector('.section_container');
+
+    // Crear un objeto para guardar los valores originales cuando se cargue una configuración
+    let original_values = {};
+    let currentCategory = null;
+
+    //append a div h2  for each setting
+    for (const categ in default_settings) {
+        const div = document.createElement('div');
+        const h2 = document.createElement('h2');
+        h2.textContent = categ;
+        h2.onclick = () => load_settings(categ);
+        div.appendChild(h2);
+        section_container.appendChild(div);
+    }
+
+    function load_settings(categ) {
+        currentCategory = categ;
+        const settings_container = document.querySelector('.settings_container');
+        settings_container.innerHTML = '';
+
+        const settings = default_settings[categ];
+        const saved = saved_settings[categ] || {};
+
+        // Guardar los valores originales cuando se carga una categoría
+        original_values[categ] = { ...saved };
+
+        Object.entries(settings).forEach(([setting, value]) => {
+            const saved_value = saved[setting] ?? value;
+            const div = document.createElement('div');
+            div.classList.add('setting-item');
+
+            // Crear etiqueta
+            const label = document.createElement('label');
+            label.textContent = getTranslation(`${categ}_setting_${setting}`);
+            label.setAttribute('for', setting);
+
+            let input;
+            if (typeof value === 'boolean') {
+                Object.assign(div.style, { flexDirection: "row-reverse", alignItems: "center" });
+
+                input = document.createElement('input');
+                input.classList.add('custom-checkbox');
+                input.type = 'checkbox';
+                input.checked = saved_value;
+            } else if (Array.isArray(value)) {
+                input = document.createElement('select');
+                input.multiple = true;
+                [...new Set(saved_value)].forEach(val => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.textContent = val;
+                    input.appendChild(opt);
+                });
+            } else if (typeof value === 'object' && value !== null) {
+                input = document.createElement('select');
+                Object.entries(value).forEach(([key, val]) => {
+                    const opt = document.createElement('option');
+                    opt.value = opt.textContent = val;
+                    opt.selected = saved_value === val;
+                    input.appendChild(opt);
+                });
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.value = saved_value;
+            }
+
+            input.id = setting;
+            input.name = setting;
+            input.addEventListener('change', () => markChanged());
+
+            div.append(label, input);
+            settings_container.appendChild(div);
+
+            if (Array.isArray(value)) {
+                multiselect(input.id);
+            }
+        });
+
+        // Añadir el botón de "Restablecer"
+        const reset_button = document.querySelector('#reset_button');
+        if (reset_button) reset_button.onclick = () => resetSettings(categ);
+    }
+
+
+    function markChanged() {
+        const save_button = document.querySelector('#save_button');
+        save_button.disabled = false; // Habilitar el botón de guardar cuando haya cambios
+    }
+
+    // Función para restablecer a los valores originales
+    function resetSettings(categ) {
+        const settings_container = document.querySelector('.settings_container');
+        const inputs = settings_container.querySelectorAll('.setting-item input, .setting-item select');
+
+        inputs.forEach(input => {
+            const setting = input.id;
+            const defaultValue = original_values[categ][setting];
+
+            if (input.type === 'checkbox') {
+                input.checked = defaultValue !== undefined ? defaultValue : false;
+            } else if (input.tagName === 'SELECT') {
+                input.value = defaultValue !== undefined ? defaultValue : '';
+            } else {
+                input.value = defaultValue !== undefined ? defaultValue : '';
+            }
+            //if input is a list and multiple
+            if (Array.isArray(defaultValue) && input.multiple) {
+                multiselect(input.id);
+            }
+        });
+
+        // Deshabilitar el botón de guardar después de restablecer
+        const save_button = document.querySelector('#save_button');
+        save_button.disabled = true;
+    }
+
+    // Función dummy para "Guardar"
+    function saveSettings() {
+        const settings_container = document.querySelector('.settings_container');
+        const inputs = settings_container.querySelectorAll('.setting-item input, .setting-item select');
+
+        let updatedSettings = {};
+
+        inputs.forEach(input => {
+            const setting = input.id;
+            let value;
+
+            // Obtener el valor del input dependiendo del tipo
+            if (input.type === 'checkbox') {
+                value = input.checked;
+            } else if (input.tagName === 'SELECT') {
+                if (input.multiple) {
+                    value = [];
+                    for (let i = 0; i < input.options.length; i++) {
+                        value.push(input.options[i].value);
+                    }
+
+                }
+                else {
+                    value = input.value;
+                }
+            } else {
+                value = input.value;
+            }
+
+            // Agregar el valor actualizado al objeto de configuración
+            updatedSettings[setting] = value;
+        });
+
+        // Preparar los datos para enviarlos al servidor
+        const data = {
+            [currentCategory]: updatedSettings// La categoría que está siendo editada
+        };
+        console.log(currentCategory)
+        console.log("data: ", data);
+
+        // Enviar los cambios al servidor
+
+        fetch('/save_settings', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(data),
+        })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log('Cambios guardados correctamente');
+                    // Hacer algo después de que se haya guardado correctamente, como deshabilitar el botón
+                    const save_button = document.querySelector('#save_button');
+                    save_button.disabled = true;
+                    //reload the page
+                    location.reload();
+
+                } else {
+                    console.error('Hubo un error al guardar los cambios');
+                }
+            })
+            .catch(error => {
+                console.error('Error al guardar los cambios:', error);
+            });
+
+    }
+
+    // Añadir la funcionalidad de los botones de Guardar y Restablecer al cargar la página
+    document.addEventListener('DOMContentLoaded', () => {
+        // Crear el contenedor de botones
+        const settings_save_container = document.createElement('div');
+        settings_save_container.classList.add('settings-buttons-container');
+
+        // Crear los botones de "Restablecer" y "Guardar"
+        const reset_button = document.createElement('button');
+        const save_button = document.createElement('button');
+
+        // Asignar texto a los botones usando traducciones
+        reset_button.textContent = getTranslation('reset');
+        reset_button.id = 'reset_button';
+        save_button.disabled = true; // Deshabilitar el botón al inicio
+        save_button.id = 'save_button';
+        save_button.textContent = getTranslation('save');
+        save_button.onclick = saveSettings;
+
+        // Añadir los botones al contenedor
+        settings_save_container.appendChild(reset_button);
+        settings_save_container.appendChild(save_button);
+
+        // Asegurarse de que body esté disponible
+        const body = document.querySelector('body');
+        if (body) {
+            body.appendChild(settings_save_container);
+        } else {
+            console.error("No se pudo encontrar el body.");
+        }
+    });
+</script>
+
+
+
+<script>
+    const translations = {{ context["text"] | tojson | safe }};
+    function getTranslation(key) {
+        return translations[key] || key;
+    }
+
+</script>
+
+</html>

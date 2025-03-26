@@ -4,13 +4,13 @@
         "buttons": [
             {
                 "background_color": "#000000",
-                "column": 8,
+                "column": 7,
                 "command": "$folder('drogas')",
                 "endcolumn": 9,
                 "endrow": 4,
                 "image": "/static/img/folder.png",
                 "image_size": "80",
-                "row": 3,
+                "row": 2,
                 "text_color": "#000000"
             },
             {
@@ -37,20 +37,20 @@
             },
             {
                 "background_color": "#1e1e1e",
-                "column": 3,
+                "column": 5,
                 "command": "/obs_scene {scene_name}",
-                "endcolumn": 6,
-                "endrow": 3,
+                "endcolumn": 9,
+                "endrow": 2,
                 "image": "/.config/user_uploads/cat-space.gif",
                 "image_size": "100",
-                "row": 2,
+                "row": 1,
                 "text_color": "#000000"
             },
             {
                 "background_color": "#cb5d5d",
-                "column": 7,
+                "column": 6,
                 "command": "/mediacontrol playpause",
-                "endcolumn": 8,
+                "endcolumn": 7,
                 "endrow": 4,
                 "image": "/.config/user_uploads/300px-Play_Pause_icon_2283501.svg.png",
                 "image_size": "80",
@@ -91,6 +91,15 @@
                 "image_size": "80",
                 "row": 3,
                 "text_color": "#000000"
+            },
+            {
+                "background_color": "#a53b3b",
+                "column": 6,
+                "command": "/mediacontrol next",
+                "image": "/static/img/caret-down.svg",
+                "image_size": "80",
+                "row": 2,
+                "text_color": "#000000"
             }
         ],
         "columns": "8",
@@ -98,16 +107,7 @@
     },
     "drogas": {
         "background": "//#141414",
-        "buttons": [
-            {
-                "background_color": "#000000",
-                "collect_data_from": "usage_dict.cpu.usage_percent",
-                "column": 3,
-                "command": "#monitor",
-                "row": 1,
-                "text_color": "#000000"
-            }
-        ],
+        "buttons": [],
         "columns": "3",
         "rows": "8"
     }

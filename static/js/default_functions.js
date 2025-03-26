@@ -45,3 +45,4 @@ async function uploadFolderData(folder_name, folder_data) {
         throw error; // Lanza el error para que lo maneje la función que lo llame
     }
 }
+

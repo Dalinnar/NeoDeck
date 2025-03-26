@@ -8,6 +8,9 @@ import ipaddress
 import ast
 import logging
 import psutil
+from settings import default_settings,loaded_settings, get_settings, load_settings
+
+
 
 
 # Third-party library imports
@@ -23,6 +26,7 @@ from win32com.client import Dispatch
 import easygui
 from app.utils.plugins.load_plugins import load_plugins
 
+
 # WebDeck imports
 from .on_start import on_start
 from .utils.global_variables import set_global_variable, get_global_variable
@@ -35,24 +39,20 @@ from app.tray import change_tray_language, change_server_state
 from .utils.themes.parse_themes import parse_themes
 from .utils.working_dir import get_base_dir
 from .utils.settings.get_config import get_port, get_config
-from .utils.settings.save_config import save_config
-from .utils.settings.check_config_update import check_config_update
 from .utils.settings.audio_devices import get_audio_devices
-from .utils.settings.gridsize import update_gridsize
-from .utils.settings.create_folders import create_folders
+
+
 from .utils.firewall import fix_firewall_permission, check_firewall_permission
-from .utils.languages import text, set_default_language, get_languages_info, get_language,get_new_text
+from .utils.languages import text, get_languages_info, get_language,get_new_text
 from .utils.logger import log
 from .utils.args import get_arg
-from .utils.merge_dicts import merge_dicts
 from .buttons.usage import get_usage
-from .buttons.obs import reload_obs
-from .buttons import soundboard
-from .functions import load_deck_folders , get_image_list
+
+from .functions import *
 from .buttons import handle_command as command
 
 
-change_server_state(0)  # Tray icon: server loading
+change_server_state(0)
 
 
 base_dir = get_base_dir()
@@ -63,9 +63,10 @@ static_folder = os.path.join(base_dir, 'static')
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
 
 
-
 socketio = SocketIO(app)
 commands = load_plugins(app)
+#load all the settings now with all the plugins on
+settings =get_settings()
 
 logging.getLogger("werkzeug").disabled = True
 app.jinja_env.globals.update(
@@ -80,8 +81,8 @@ app.config["SECRET_KEY"] = get_config()["settings"]["flask_secret_key"]
 
 @app.route("/monitors", methods=["POST"])
 def usage():
-
     return jsonify(get_usage())
+    
 
 
 # Middleware to check request IP address
@@ -201,7 +202,15 @@ def new():
         
     return render_template("index_new.jinja",config=config,context=context)
 
+#add method get and post to settings
+@app.route("/settings", methods=["GET", "POST"])
+def settings_page():
+    context = {}
     
+    context["text"] = get_new_text()
+    context["default_settings"] = default_settings
+    context["saved_settings"] = settings
+    return render_template("settings.jinja", context=context)
 
 @app.route("/api/<value>")
 def api(value):
@@ -214,226 +223,19 @@ def api(value):
     return jsonify(value_map[value])
 
 
-@app.route("/save_config", methods=["POST"])
-def saveconfig():
-    global config, folders_to_create
-
-    config = get_config()
-
-    # Retrieve form data
-    new_config = request.get_json()
-
-    new_height = new_config["front"]["height"]
-    new_width = new_config["front"]["width"]
-    config = update_gridsize(config, new_height, new_width)
-    config["front"]["height"] = new_height
-    config["front"]["width"] = new_width
-
-    soundboard_restart = (
-        not config["settings"]["soundboard"] == new_config["settings"]["soundboard"]
-    )
-    
-    obs_reload = not config["settings"]["obs"] == new_config["settings"]["obs"]
-    
-    language_changed = not config["settings"]["language"] == new_config["settings"]["language"]
-
-    soundboard_start = False
-    soundboard_stop = False
-    if (
-        not config["settings"]["soundboard"]["enabled"]
-        == new_config["settings"]["soundboard"]["enabled"]
-    ):
-        soundboard_start = new_config["settings"]["soundboard"]["enabled"]
-        soundboard_stop = not soundboard_start
-
-
-    if (
-        config["settings"]["windows_startup"] == False
-        and new_config["settings"]["windows_startup"] == True
-    ):
-        if getattr(sys, "frozen", False):
-            dir = (
-                os.getenv("APPDATA") + r"\Microsoft\Windows\Start Menu\Programs\Startup"
-            )
-            path = os.path.join(dir, "WebDeck.lnk")
-            target = os.getcwd() + r"\\WebDeck.exe"
-            working_dir = os.getcwd()
-            icon = os.getcwd() + r"\\WebDeck.exe"
-
-            shell = Dispatch("WScript.Shell")
-            shortcut = shell.CreateShortCut(path)
-            shortcut.Targetpath = target
-            shortcut.WorkingDirectory = working_dir
-            shortcut.IconLocation = icon
-            shortcut.save()
-    elif (
-        config["settings"]["windows_startup"] == True
-        and new_config["settings"]["windows_startup"] == False
-    ):
-        if getattr(sys, "frozen", False):
-            file_path = (
-                os.getenv("APPDATA")
-                + r"\Microsoft\Windows\Start Menu\Programs\Startup\WebDeck.lnk"
-            )
-            if os.path.exists(file_path):
-                os.remove(file_path)
-
-    config = check_config_update(create_folders(merge_dicts(config, new_config), folders_to_create))
-
-    
-    folders_to_create = []
-    config = save_config(config)
-
-    if isinstance(config["front"]["background"], str):
-        try:
-            config["front"]["background"] = config["front"]["background"].replace("['", '["').replace("']", '"]').replace("', '", "','").replace("','", '","')
-            config["front"]["background"] = ast.literal_eval(config["front"]["background"])
-        except (TypeError, ValueError):
-            pass
-
-    save_config(config)
-
-    if obs_reload:
-        reload_obs()
-
-    if language_changed:
-        set_default_language(new_config["settings"]["language"])
-        change_tray_language(new_config["settings"]["language"])
-    
-    if soundboard_stop:
-        soundboard.mic.stop()
-    elif soundboard_restart or soundboard_start:
-        if config["settings"]["soundboard"]["enabled"]:
-            try:
-                soundboard.mic.restart()
-            except Exception as e:
-                log.exception(e, "Failed to restart soundboard")
-                return jsonify({"success": False, "message": str(e)})
-
-    log.success("Config saved successfully")
-    return jsonify({"success": True})
-
-
-# Save the config ENTIRELY, it does not merge anything
-@app.route("/COMPLETE_save_config", methods=["POST"])
-def complete_save_config():
-    global folders_to_create
-    
-    old_height = config["front"]["height"]
-    old_width = config["front"]["width"]
-    config = request.get_json()
-    new_height = config["front"]["height"]
-    new_width = config["front"]["width"]
-
-    config = create_folders(config, folders_to_create)
-    folders_to_create = []
-    config = save_config(config)
-
-    config["front"]["height"] = old_height
-    config["front"]["width"] = old_width
-    config = update_gridsize(config, new_height, new_width)
-    config["front"]["height"] = new_height
-    config["front"]["width"] = new_width
-
-    save_config(config)
-
-    log.success("Config saved successfully")
-    return jsonify({"success": True})
-
-
-@app.route("/save_single_button", methods=["POST"])
-def save_single_button():
+@app.route("/save_settings", methods=["POST"])
+def save_settings():
+    global settings
     data = request.get_json()
-    button_folder = int(data.get("location_Folder"))
-    button_index = int(data.get("location_Id"))
-    button_content = data.get("content")
-
-    config = get_config()
-
-    button_folderName = list(config["front"]["buttons"])[button_folder]
-    log.debug(
-        "FETCH /save_single_button -> before :"
-        + str(config["front"]["buttons"][button_folderName][button_index])
-    )
-    config["front"]["buttons"][button_folderName][button_index] = button_content
-    log.debug(
-        "FETCH /save_single_button -> after  :"
-        + str(config["front"]["buttons"][button_folderName][button_index])
-    )
-
-    save_config(config)
-
-    log.success("Button saved successfully")
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+    
+    new_merge = deep_merge(deep_merge(default_settings, settings), data)
+    load_settings(new_merge)
+    #update the settings
+    settings = get_settings()
+    
     return jsonify({"success": True})
-
-
-# Save the config but only the buttons
-@app.route("/save_buttons_only", methods=["POST"])
-def save_buttons_only():
-    global folders_to_create
-
-    # Get current config first
-    config = get_config()
-
-    # Retrieve form data
-    new_config = request.get_json()["front"]["buttons"]
-    temp_order_list = [key for key, value in config["front"]["buttons"].items()]
-
-    sorted_buttons = {}
-    for folder in temp_order_list:
-        sorted_buttons[folder] = new_config.get(folder)
-
-    config["front"]["buttons"] = sorted_buttons
-    config = create_folders(config, folders_to_create)
-    folders_to_create = []
-    config = save_config(config)
-    
-    log.success("Buttons saved successfully")
-    return jsonify({"success": True})
-
-
-@app.route("/get_config", methods=["GET"])
-def get_config_route():
-    global folders_to_create, config
-
-    config = get_config()
-    
-
-    config = create_folders(config, folders_to_create)
-    folders_to_create = []
-    set_global_variable("config", config)
-
-    save_config(config)
-
-    return jsonify(config)
-
-
-
-    
-
-@app.route("/upload_folderpath", methods=["POST"])
-def upload_folderpath():
-    path = easygui.diropenbox()
-    if path is None:
-        path = ""
-        
-    return path
-
-@app.route("/upload_filepath", methods=["POST"])
-def upload_filepath():
-    filetypes = request.args.get("filetypes")
-    default = '*'
-    if filetypes is not None:
-        filetypes = filetypes.split('_')
-        filetypes = [f"*{item}" for item in filetypes]
-        default = filetypes[0]
-
-    path = easygui.fileopenbox(filetypes=filetypes, default=default)
-    if path is None:
-        path = ""
-        
-    return path
-
 
 @app.route("/upload_file", methods=["POST"])
 def upload_file():
@@ -461,25 +263,6 @@ def upload_file():
     return jsonify({"success": True, "message": text("downloaded_successfully"),"file_path": f"{save_path}"})
 
 
-@app.route("/create_folder", methods=["POST"])
-def create_folder():
-    global folders_to_create
-    data = request.get_json()
-    folder_name = data.get("name")
-    parent_folder_name = data.get("parent_folder")
-
-    if (
-        all(item["name"] != folder_name for item in folders_to_create)
-        and folder_name not in config["front"]["buttons"].keys()
-    ):
-        folders_to_create.append(
-            {"name": f"{folder_name}", "parent_folder": f"{parent_folder_name}"}
-        )
-        log.info(f"Folder '{folder_name}' is in the queue to be created")
-        return jsonify({"success": True})
-    else:
-        log.error("Folder already exists")
-        return jsonify({"success": False, "message": "Folder already exists"})
 
 
 
@@ -542,8 +325,7 @@ def send_data_socketio(message):
 @app.route("/send-data", methods=["POST"])
 def send_data_route():
     try:
-        result = command(message=request.get_json().get("message", ""))
-        print(f"result from send_data: {result}")
+        result = command(message=request.get_json().get("message", ""))        
     except Exception as e:
         log.exception(e, "An error occurred while handling a command")
         return jsonify({"success": False, "message": str(e)})

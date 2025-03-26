@@ -13,8 +13,6 @@ from settings import *
 from app.updater import check_files, check_for_updates
 from app.utils.settings.get_config import get_config
 from app.utils.settings.save_config import save_config
-from app.utils.global_variables import set_global_variable
-from app.utils.plugins.load_plugins import load_plugins
 from app.utils.get_local_ip import get_local_ip
 from app.utils.args import get_arg
 from app.utils.logger import log

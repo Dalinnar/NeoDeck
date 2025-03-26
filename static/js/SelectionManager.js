@@ -1,6 +1,3 @@
-
-
-
 class Selection {
     constructor({
         selectionBorder = "1px solid rgba(255,255,255,.7)",
@@ -156,12 +153,12 @@ function resize_element(element) {
     // Check if the selected area overlaps with other buttons
     const buttons = document.querySelectorAll(".button_div");
     for (let button of buttons) {
+        [ogrow, ogcol] = element.style.gridArea.split(" / ").map(Number);
         if (button === element) continue;
 
-        [buttonRow, buttonCol] = button.style.gridArea.split(" / ").map(Number);
-
-        // Original values of the button
-        [ogrow, ogcol] = element.style.gridArea.split(" / ").map(Number);
+        [buttonRow, buttonCol] = button.style.gridArea.split(" / ").map(Number);;
+        
+        
         
         // Check if the button overlaps with the new button area
         if (buttonRow >= minRow && buttonRow <= maxRow && buttonCol >= minCol && buttonCol <= maxCol) {
@@ -172,6 +169,7 @@ function resize_element(element) {
 
     // Set the new grid area for the element
     element.style.gridArea = `${minRow} / ${minCol} / ${maxRow + 1} / ${maxCol + 1}`;
+
 
     let button_to_update = window.folder_data.buttons.find(button => button.row === ogrow && button.column === ogcol);
 

@@ -749,3 +749,30 @@ success_generic=Success
 warning_generic=Warning
 info_generic=Info
 no_image_generic=No image
+
+# settings
+webdeck_setting_allowed_networks=Allowed networks
+webdeck_setting_app_admin=Run app as admin
+webdeck_setting_auto_updates=Auto updates
+webdeck_setting_automatic_firewall_bypass=Bypass  firewall at startup
+webdeck_setting_data_transfer_method=Data transfer method
+webdeck_setting_dev_mode=Developer mode
+webdeck_setting_ear_soundboard=Ear soundboard
+webdeck_setting_fix_stop_soundboard= Fix stop soundboard 
+webdeck_setting_flask_debug=Flask debug
+webdeck_setting_flask_reloader=Flask reloader
+webdeck_setting_flask_secret_key=Flask secret key
+
+webdeck_setting_gpu_method=GPU method
+webdeck_setting_language=Language
+webdeck_setting_netmask=Netmask
+webdeck_setting_open_settings_in_integrated_browser=Open settings in integrated browser
+webdeck_setting_optimized_usage_display=Optimized usage display
+webdeck_setting_server=Server
+webdeck_setting_show_console=Show console
+webdeck_setting_show_popup=Show popup
+webdeck_setting_sort_colors_on_startup=Sort colors on startup
+webdeck_setting_update_channel=Update channel
+webdeck_setting_update_repo=Update repo
+webdeck_setting_windows_start_menu_shortcut=Windows start menu shortcut
+webdeck_setting_windows_startup=Windows startup
