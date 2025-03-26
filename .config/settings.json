@@ -1,7 +1,7 @@
 {
     "webdeck": {
         "ip": "0.0.0.0",
-        "port": "59997",
+        "port": "59998",
         "language": "en_US",
         "show_popup": false,
         "windows_startup": true,
@@ -20,14 +20,11 @@
         "show_console": false,
         "open_settings_in_integrated_browser": false,
         "data_transfer_method": "http",
-        "automatic_firewall_bypass": true,
+        "automatic_firewall_bypass": false,
         "sort_colors_on_startup": false,
         "fix_stop_soundboard": false,
         "ear_soundboard": true,
-        "allowed_networks": [
-            "192.168.1.0/24",
-            "10.0.0.0/16"
-        ],
+        "allowed_networks": [],
         "netmask": "16"
     },
     "plugin_template": {

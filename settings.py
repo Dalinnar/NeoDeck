@@ -1,11 +1,15 @@
 import os
 import json
 from app.utils.working_dir import get_base_dir
-
-
 BASE_DIR = get_base_dir()
-default_settings = {}
-loaded_settings = {}
+## BUSCAR get_config() para elikminarlos
+##buscar config[
+#buscar setting[
+#buscar settings[
+
+#GLOBAL VARIABLES OF SETTINGS
+
+
 
 def get_availeable_languages():
     languages = {}
@@ -19,17 +23,29 @@ def get_availeable_languages():
 
 #this gets all the saved settings,
 def get_settings():
+    """gets the saved configs """
     with open(os.path.join(BASE_DIR, ".config/settings.json"), "r", encoding="utf-8") as f:
         json_data = f.read()
         return json.loads(json_data)
     
+def get_default_settings():
+    """returns a python type dyct with the sum of all settings"""
+    return default_settings
+    
+def get_base_settings():
+    """returns only the base settings"""
+    return get_settings()["webdeck"]
 
 def load_settings(settings):
+    
     """
-    passing the settings, saves them on the json
+    Saves the given settings to the 'settings.json' file inside the '.config' directory.
     """
+    if not settings:
+        return
     with open(os.path.join(get_base_dir(), ".config","settings.json"), "w") as f:
         json.dump(settings, f, indent=4)
+    return settings
     
 base_settings = {
         "ip": "0.0.0.0",
@@ -62,4 +78,7 @@ base_settings = {
 
 
 #append the default settings 
+loaded_settings = get_settings()
+
+default_settings = {}
 default_settings["webdeck"] = base_settings

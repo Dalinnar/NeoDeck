@@ -10,6 +10,7 @@ from .updater import compare_versions, prepare_update_directory
 from app.utils.settings.get_config import get_config
 from app.utils.show_error import show_error
 from app.utils.languages import text
+from settings import loaded_settings
 from app.utils.logger import log
 from app.utils.args import raw_args, get_arg
 
@@ -18,7 +19,7 @@ def check_for_updates():
     if not getattr(sys, "frozen", False):
         return
     
-    settings = get_config()["settings"]
+    settings = loaded_settings["webdeck"]
     
     if os.path.exists("update"):
         shutil.rmtree("update", ignore_errors=True)
@@ -27,7 +28,7 @@ def check_for_updates():
         with open("webdeck/version.json", encoding="utf-8") as f:
             current_version = json.load(f)["versions"][0]["version"]
 
-        update_repo = settings.get('update_repo', 'Lenochxd/WebDeck')
+        update_repo = settings.get('update_repo', 'Dalinnar/NeoDeck')
         url = f"https://api.github.com/repos/{update_repo}/releases"
         response = requests.get(url)
         releases = response.json()
@@ -68,9 +69,6 @@ def check_for_updates():
 
 def check_for_updates_loop():
     while True:
-        config = get_config()
-        
-        if (config["settings"].get("auto-updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
+        if (loaded_settings["webdeck"].get("auto-updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
             check_for_updates()
-
         time.sleep(3600)

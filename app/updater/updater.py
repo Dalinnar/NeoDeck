@@ -9,14 +9,14 @@ import zipfile
 from tqdm import tqdm
 from app.utils.exit import exit_program
 from app.utils.working_dir import get_base_dir, get_update_dir, chdir_base, chdir_update
-from app.utils.settings.get_config import get_config
+from settings import loaded_settings
 from app.utils.show_error import show_error
 from app.utils.logger import Logger
 from app.utils.args import parse_args, raw_args, get_arg
 
 log = Logger(from_updater=True)
-config = get_config()
-settings = config["settings"]
+
+settings = loaded_settings["webdeck"]
 
 
 def check_files():

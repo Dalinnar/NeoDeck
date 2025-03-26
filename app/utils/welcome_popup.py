@@ -4,11 +4,11 @@ from PIL import Image
 from .settings.get_config import get_config, save_config
 from .logger import log
 from .languages import text
+from settings import loaded_settings,load_settings
 
 
 def show_popup():
-    config = get_config()
-    if not config["settings"].get("show_popup", True):
+    if not loaded_settings["webdeck"].get("show_popup", True):
         return
     
     # Create a popup window
@@ -43,8 +43,8 @@ def show_popup():
 
     def disable_message():
         log.info("Disabling popup message")
-        config["settings"]["show_popup"] = False
-        save_config(config)
+        loaded_settings["webdeck"]["show_popup"] = False
+        load_settings(loaded_settings)
         popup.destroy()
 
     def ok():

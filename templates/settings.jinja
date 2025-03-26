@@ -30,8 +30,6 @@
 <script>
     const default_settings = {{ context['default_settings'] | tojson | safe }};
     const saved_settings = {{ context['saved_settings'] | tojson }};
-    console.log(default_settings);
-    console.log("saved_settings: ", saved_settings);
 
 
     const section_container = document.querySelector('.section_container');

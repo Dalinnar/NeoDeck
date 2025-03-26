@@ -12,7 +12,6 @@ from settings import default_settings,loaded_settings, get_settings, load_settin
 
 
 
-
 # Third-party library imports
 from PIL import Image
 from GPUtil import getGPUs
@@ -23,7 +22,6 @@ from flask_socketio import SocketIO
 from flask_minify import Minify
 from engineio.async_drivers import gevent # DO NOT REMOVE
 from win32com.client import Dispatch
-import easygui
 from app.utils.plugins.load_plugins import load_plugins
 
 
@@ -31,9 +29,9 @@ from app.utils.plugins.load_plugins import load_plugins
 from .on_start import on_start
 from .utils.global_variables import set_global_variable, get_global_variable
 
-config, local_ip = on_start()
+local_ip = on_start()
+print(f"local ip: {local_ip}")
 folders_to_create = []
-set_global_variable("config", config)
 
 from app.tray import change_tray_language, change_server_state
 from .utils.themes.parse_themes import parse_themes
@@ -65,8 +63,6 @@ app = Flask(__name__, template_folder=template_folder, static_folder=static_fold
 
 socketio = SocketIO(app)
 commands = load_plugins(app)
-#load all the settings now with all the plugins on
-settings =get_settings()
 
 logging.getLogger("werkzeug").disabled = True
 app.jinja_env.globals.update(
@@ -75,7 +71,7 @@ app.jinja_env.globals.update(
 )
 if getattr(sys, "frozen", False):
     Minify(app=app, html=True, js=True, cssless=True)
-app.config["SECRET_KEY"] = get_config()["settings"]["flask_secret_key"]
+app.config["SECRET_KEY"] = loaded_settings["webdeck"].get("secret_key", "secret_key")
 
 
 
@@ -101,7 +97,8 @@ def check_local_network():
                IP is not authorized.
     """
     
-    netmask = config["settings"].get("netmask", 16)
+    
+    netmask =  loaded_settings["webdeck"].get("netmask", 16)
     remote_ip = ipaddress.ip_address(request.remote_addr)
     local_ip_network = ipaddress.ip_network(f"{local_ip}/{netmask}", strict=False)
     
@@ -110,9 +107,9 @@ def check_local_network():
     # log.debug(f"{remote_ip in local_ip_network = }")
     
     if remote_ip not in local_ip_network:
-        
-        for network in config["settings"].get("allowed_networks", []):
+        for network in loaded_settings["webdeck"].get("allowed_networks", []):
             if remote_ip in ipaddress.ip_address(network):
+                print("Access granted: IP in allowed network")
                 return None
         
         return jsonify({"success": False, "message": "Access denied: IP not in local network"}), 403
@@ -124,71 +121,11 @@ def after_request(response):
         log.httprequest(request, response)
     return response
 
-
-# Function to get all the svgs from the theme file, so we can load them during the loading screen
-def get_svgs():
-    svgs = []
-
-    with open("static/css/style.css", "r") as f:
-        content = f.read()
-
-        # url(...)
-        matches = re.findall(r"url\(([^)]+)\)", content)
-
-        for match in matches:
-            if match.endswith(".svg"):
-                svgs.append(match)
-
-    return svgs
-
-
-@app.route("/")
-def home():
-    
-    return redirect("/home")
-    config = get_config(save_updated_config=True)
-
-    with open("webdeck/version.json", encoding="utf-8") as f:
-        versions = json.load(f)
-
-    is_exe = bool(getattr(sys, "frozen", False))
-
-    random_bg = "//"
-    while random_bg.startswith("//"):
-        random_bg = random.choice(config["front"]["background"])
-        if random_bg.startswith("**uploaded/"):
-            random_bg_path = random_bg.replace("**uploaded/", ".config/user_uploads/")
-            if os.path.exists(random_bg_path):
-                file_name, extension = os.path.splitext(os.path.basename(random_bg_path))
-                random_bg_90_path = f".config/user_uploads/{file_name}-90{extension}"
-                if not os.path.exists(random_bg_90_path):
-                    try:
-                        img = Image.open(random_bg_path)
-                        img_rotated = img.rotate(-90, expand=True)
-                        img_rotated.save(random_bg_90_path)
-                    except Exception as e:
-                        log.exception(e, f"Failed to rotate image {random_bg_path}")
-    log.debug(f"Selected random background image: {random_bg}")
-
-    themes = [
-        file_name for file_name in os.listdir(".config/themes/")
-        if file_name.endswith(".css")
-    ]
-
-    return render_template(
-        "index.jinja",
-        config=config, themes=themes, parsed_themes=parse_themes(),
-        commands=commands, versions=versions, random_bg=random_bg, usage_example=get_usage(True),
-        langs=get_languages_info(), svgs=get_svgs(), is_exe=is_exe, portrait_rotate=config['front']['portrait_rotate'],
-        int=int, str=str, dict=dict, json=json, type=type, eval=eval, open=open,
-        isfile=os.path.isfile, text=text, get_language=get_language,
-    )
-
-
-@app.route('/home')
+   
+@app.route('/')
 def new():
     context = {}
-    config = get_config(save_updated_config=True)
+    
     context["image_list"] = get_image_list()
     #open pages.json if not exist make it 
     with open(".config/pages.json", "r") as f:        
@@ -200,7 +137,7 @@ def new():
         context["text"] = textdir
         context["commands"] = commands
         
-    return render_template("index_new.jinja",config=config,context=context)
+    return render_template("index_new.jinja",context=context)
 
 #add method get and post to settings
 @app.route("/settings", methods=["GET", "POST"])
@@ -209,7 +146,7 @@ def settings_page():
     
     context["text"] = get_new_text()
     context["default_settings"] = default_settings
-    context["saved_settings"] = settings
+    context["saved_settings"] = loaded_settings
     return render_template("settings.jinja", context=context)
 
 @app.route("/api/<value>")
@@ -225,16 +162,14 @@ def api(value):
 
 @app.route("/save_settings", methods=["POST"])
 def save_settings():
-    global settings
+    global loaded_settings
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided"}), 400
     
-    new_merge = deep_merge(deep_merge(default_settings, settings), data)
+    new_merge = deep_merge(deep_merge(default_settings, loaded_settings), data)
     load_settings(new_merge)
-    #update the settings
-    settings = get_settings()
-    
+    loaded_settings = get_settings()
     return jsonify({"success": True})
 
 @app.route("/upload_file", methods=["POST"])
@@ -370,15 +305,15 @@ def get_page(folder_name):
 
 @app.errorhandler(Exception)
 def handle_exception(e):
-    log.exception(e, "An error occurred during a request")
-    if not config["settings"].get("flask_debug"):
+    log.exception(e, "An error occurred during a request")    
+    if not loaded_settings["webdeck"].get("flask_debug"):
         response = jsonify({"success": False, "message": str(e)})
         response.status_code = 500
         return response
 
 
-if (
-    config["settings"]["automatic_firewall_bypass"] == True
+if (    
+    loaded_settings["webdeck"].get("automatic_firewall_bypass") == True
     and check_firewall_permission() == False
 ):
     fix_firewall_permission()
@@ -387,14 +322,14 @@ log.info(f"Local IP address detected: {local_ip}")
 
 def run_server():
     
-    change_server_state(1)
-    if config["settings"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
+    change_server_state(1)    
+    if default_settings["webdeck"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
         server = make_server(local_ip, get_port(), app)
         server.serve_forever()
     else:        
         app.run(
             host=get_arg("host") or local_ip,
             port=get_port(),
-            debug=config["settings"].get("flask_debug"),
-            use_reloader=config["settings"].get("flask_reloader", False),
+            debug=loaded_settings["webdeck"].get("flask_debug"),
+            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False),
         )

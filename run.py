@@ -5,10 +5,11 @@ import threading
 from settings import get_settings, loaded_settings,default_settings
 from app.utils.logger import log
 from app.functions import objetify
-from app.utils.settings.get_config import get_config
 from app.utils.args import parse_args, get_arg
 from app.utils.working_dir import chdir_base
 
+
+settings = objetify(loaded_settings["webdeck"])
 
 def attach_console():
     if not getattr(sys, "frozen", False):
@@ -31,10 +32,12 @@ chdir_base()
 
 parse_args()
 
-config = get_config(check_updates=True, save_updated_config=True)
-settings = config['settings']
 
-if settings['app_admin'] and not get_arg('no_admin'):
+
+
+
+
+if settings.app_admin and not get_arg('no_admin'):
     if not ctypes.windll.shell32.IsUserAnAdmin():
         # Rebuild the command including all arguments
         params = " ".join([__file__] + sys.argv[1:])
@@ -73,7 +76,7 @@ if not is_opened() or get_arg('force_start'):
     languages.init(
         lang_files_directory="webdeck/translations",
         misc_lang_files_directory="webdeck/translations/misc",
-        default_language=settings['language']
+        default_language=settings.language,
     )
     
     log.info("Starting server thread")

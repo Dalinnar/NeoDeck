@@ -15,6 +15,8 @@ from .utils.settings.get_config import get_config
 from .utils.exit import exit_program
 from .utils.restart import restart_program
 from .utils.firewall import fix_firewall_permission
+from settings import *
+from .functions import *
 from .utils.get_local_ip import get_local_ip
 from .utils.settings.get_config import get_port
 from .utils.languages import text, get_languages_info, get_language, set_default_language
@@ -22,19 +24,19 @@ from .utils.logger import log
 
 
 def reload_config():
-    config = get_config(check_updates=True)
-    settings = config.get("settings", {})
+    default_settings = get_settings()
+    settings = objetify(default_settings["webdeck"])
+    
             
     return (
-        config["url"]["port"],
-        config["front"]["dark_theme"],
-        settings["language"],
-        settings["open_settings_in_integrated_browser"]
+        settings.port,                
+        settings.language,
+        settings.open_settings_in_integrated_browser
     )
 
 window = None
 icon = None
-port, dark_theme, language, open_in_integrated_browser = reload_config()
+port, language, open_in_integrated_browser = reload_config()
 local_ip = get_local_ip()
 
 def open_config():
@@ -178,14 +180,10 @@ def change_port_prompt():
     def save_port():
         new_port = port_entry.get()
         if validate_port_input(new_port) and new_port not in ['', str(get_port())]:
-            prompt_window.destroy()  # Close the window if save is successful
+            prompt_window.destroy() 
             
-            with open('.config/config.json', 'r') as config_file:
-                config = json.load(config_file)
-            config['url']['port'] = int(new_port)
-            with open('.config/config.json', 'w') as config_file:
-                json.dump(config, config_file, indent=4)
-            
+            loaded_settings["webdeck"]["port"] = int(new_port)
+            load_settings(loaded_settings)
             restart_program()
 
     def validate_port_input(new_value):
@@ -245,13 +243,8 @@ def update_language(new_lang):
     set_default_language(new_lang)
     change_tray_language(new_lang)
 
-    with open('.config/config.json', 'r') as config_file:
-        config = json.load(config_file)
-    
-    config['settings']['language'] = new_lang
-    
-    with open('.config/config.json', 'w') as config_file:
-        json.dump(config, config_file, indent=4)
+    loaded_settings["webdeck"]["language"] = new_lang
+    load_settings(loaded_settings)
 
 def change_server_state(new_state):
     global icon

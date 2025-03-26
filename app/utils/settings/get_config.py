@@ -3,6 +3,8 @@ import os
 from app.utils.args import get_arg
 from app.utils.settings.check_config_update import check_config_update
 from app.utils.working_dir import get_base_dir
+from settings import loaded_settings
+
 
 base_dir = get_base_dir()
 config_path = os.path.join(base_dir, ".config/config.json")
@@ -38,7 +40,7 @@ def get_config(check_updates=False, save_updated_config=False):
 def get_port():
     port = get_arg("port")
     if port is None:
-        port = get_config().get("url", {}).get("port")
+        port = loaded_settings["webdeck"].get("port", 5000)
     return port
 
 

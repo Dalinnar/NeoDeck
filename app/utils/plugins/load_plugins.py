@@ -5,7 +5,7 @@ import json
 import sys
 import re
 from ..logger import log
-from settings import BASE_DIR, load_settings, default_settings,get_settings
+from settings import BASE_DIR, load_settings, default_settings,get_settings,loaded_settings
 from app.buttons.commands import command_map as base_commands
 from app.utils.languages import load_lang_file
 from app.functions import deep_merge
@@ -57,6 +57,7 @@ def load_plugin_module(app, root, file, plugin_name):
 
 
 def load_plugins(app):
+    global loaded_settings
     if PLUGINS_PATH not in sys.path:
         sys.path.append(PLUGINS_PATH)
 
@@ -116,7 +117,5 @@ def load_plugins(app):
     
     #updates the default settings to add the new config settings to the default settings
     updated_default = deep_merge(default_settings, get_settings())
-    load_settings(updated_default)
+    loaded_settings = load_settings(updated_default)
     return buttons
-
-
