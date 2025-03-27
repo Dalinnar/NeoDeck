@@ -78,7 +78,13 @@ app.config["SECRET_KEY"] = loaded_settings["webdeck"].get("secret_key", "secret_
 @app.route("/monitors", methods=["POST"])
 def usage():
     return jsonify(get_usage())
-    
+
+
+@app.route("/folder_data/<folder>", )   
+def get_folder_data(folder):
+    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
+        pages = json.load(f) 
+        return jsonify({"success": True, "folder":pages[folder]})
 
 
 # Middleware to check request IP address
@@ -174,29 +180,34 @@ def save_settings():
 
 @app.route("/upload_file", methods=["POST"])
 def upload_file():
-    log.debug(f"request: {request}")
-    log.debug(f"request.files: {request.files}")
+    
     if "file" not in request.files:
         log.error("No files were found in the request.")
         return jsonify({"success": False, "message": text("no_files_found_error")})
 
     uploaded_file = request.files["file"]
 
-    save_path = os.path.join(".config/user_uploads", uploaded_file.filename)
+    # Normalizar el nombre del archivo
+    file_name, extension = os.path.splitext(uploaded_file.filename)
+    normalized_filename = re.sub(r'[^\w\-_\.]', '_', file_name).lower() + extension
+
+    save_path = os.path.join(".config/user_uploads", normalized_filename)
+    save_path = os.path.normpath(save_path)  # Normalizar la ruta final
+
     uploaded_file.save(save_path)
 
-    if request.form.get("info") and request.form.get("info") == "background_image":
+    if request.form.get("info") == "background_image":
         try:
             img = Image.open(save_path)
             img_rotated = img.rotate(-90, expand=True)
-            file_name, extension = os.path.splitext(os.path.basename(save_path))
-            img_rotated.save(f".config/user_uploads/{file_name}-90{extension}")
+            rotated_path = os.path.join(".config/user_uploads", f"{file_name}-90{extension}")
+            rotated_path = os.path.normpath(rotated_path)  # Normalizar la ruta de la imagen rotada
+            img_rotated.save(rotated_path)
         except Exception as e:
             log.exception(e, "Failed to rotate image during upload")
 
     log.success(f"File '{uploaded_file.filename}' uploaded successfully")
-    return jsonify({"success": True, "message": text("downloaded_successfully"),"file_path": f"{save_path}"})
-
+    return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path})
 
 
 
@@ -302,6 +313,49 @@ def get_page(folder_name):
     with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
         pages = json.load(f)  # Leer el JSON
         return jsonify(pages[folder_name])
+
+
+@app.route("/create_folder", methods=["POST"])
+def create_folder():
+    data = request.get_json()    
+    folder_name = next(iter(data)) 
+
+    # Obtener los valores de columns y rows y convertirlos a enteros
+    folder_data = data[folder_name]
+    folder_data["columns"] = int(folder_data["columns"]) 
+    folder_data["rows"] = int(folder_data["rows"]) 
+
+
+    with open(os.path.join(base_dir, ".config/pages.json"), "r+") as f:
+        pages = json.load(f)
+    
+    if folder_name in pages:
+        log.warning(f"Folder '{folder_name}' already exists")
+        return jsonify({"success": False, "message": "Folder already exists"})
+
+    pages[folder_name] = data[folder_name]
+
+    with open(os.path.join(base_dir, ".config/pages.json"), "w") as f:
+        json.dump(pages, f, indent=4)
+
+    return jsonify({"success": True, "message": "Folder created successfully"})
+    
+@app.route("/delete_folder/<folder_name>", methods=["DELETE"])
+def delete_folder(folder_name):
+    with open(os.path.join(base_dir, ".config/pages.json"), "r+") as f:
+        pages = json.load(f)
+        #check if its only one folder left
+        if len(pages) == 1:
+            return jsonify({"success": False, "message": "You cannot delete the last folder"})
+        if folder_name in pages:
+            del pages[folder_name]
+            with open(os.path.join(base_dir, ".config/pages.json"), "w") as f:
+                json.dump(pages, f, indent=4)
+            return jsonify({"success": True, "message": "Folder deleted successfully"})
+        else:
+            return jsonify({"success": False, "message": "Folder not found"})
+            
+
 
 @app.errorhandler(Exception)
 def handle_exception(e):

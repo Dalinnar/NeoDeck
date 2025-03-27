@@ -1,3 +1,29 @@
+
+function send_data(message) {
+    return fetch('/send-data', {   // Debes retornar la promesa de fetch
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ message: message })
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success === false) {
+          console.error("Error:", data.message);
+          return null;
+        } else {
+          if (data.data) {
+            return data.data;
+          }
+        }
+      })
+      .catch(error => {
+        console.error("Error:", error);
+        return null; 
+      });
+  }
+
 function folder(PageName) {
     console.log("Loading page:", PageName);
     fetch(`/get_page/${PageName}`)

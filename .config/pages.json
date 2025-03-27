@@ -1,18 +1,8 @@
 {
     "index": {
-        "background": "//#141414",
+        "background": "#000000",
+        "background_img": ".config/user_uploads/part-176-what-are-your-thoughts-on-the-white-palace-v0-561nfe6uakc91.png",
         "buttons": [
-            {
-                "background_color": "#000000",
-                "column": 7,
-                "command": "$folder('drogas')",
-                "endcolumn": 9,
-                "endrow": 4,
-                "image": "/static/img/folder.png",
-                "image_size": "80",
-                "row": 2,
-                "text_color": "#000000"
-            },
             {
                 "background_color": "#b28585",
                 "column": 4,
@@ -37,13 +27,13 @@
             },
             {
                 "background_color": "#1e1e1e",
-                "column": 5,
+                "column": 3,
                 "command": "/obs_scene {scene_name}",
-                "endcolumn": 9,
-                "endrow": 2,
+                "endcolumn": 5,
+                "endrow": 3,
                 "image": "/.config/user_uploads/cat-space.gif",
                 "image_size": "100",
-                "row": 1,
+                "row": 2,
                 "text_color": "#000000"
             },
             {
@@ -94,21 +84,43 @@
             },
             {
                 "background_color": "#a53b3b",
-                "column": 6,
+                "column": 5,
                 "command": "/mediacontrol next",
+                "endcolumn": 6,
+                "endrow": 3,
                 "image": "/static/img/caret-down.svg",
                 "image_size": "80",
-                "row": 2,
+                "row": 1,
                 "text_color": "#000000"
+            },
+            {
+                "command": "$folder('islas')",
+                "column": 7,
+                "row": 3,
+                "background_color": "#1e1e1e",
+                "text_color": "#000000",
+                "image": "/static/img/folder.png",
+                "image_size": "80"
             }
         ],
-        "columns": "8",
-        "rows": "3"
+        "columns": 8,
+        "rows": 3
     },
-    "drogas": {
-        "background": "//#141414",
-        "buttons": [],
-        "columns": "3",
-        "rows": "8"
+    "islas": {
+        "background": "#4e3636",
+        "background_img": ".config/user_uploads/2024-10-30_05.53.25.png",
+        "buttons": [
+            {
+                "command": "$folder('index')",
+                "column": 7,
+                "row": 1,
+                "background_color": "#1e1e1e",
+                "text_color": "#000000",
+                "image": "/static/img/folder.png",
+                "image_size": "80"
+            }
+        ],
+        "columns": 8,
+        "rows": 3
     }
 }

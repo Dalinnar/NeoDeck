@@ -9,9 +9,12 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+    rel="stylesheet">
   <script src="/static/js/default_functions.js"></script>
   <script src="/static/js/button_generator.js"></script>
+  <script defer src="/static/js/folderConfig.js"></script>
   <script defer src="/static/js/SelectionManager.js"></script>
   <link rel="stylesheet" href="/static/css/deck.css">
 </head>
@@ -23,7 +26,7 @@
     <div class="buttons-container"></div>
     <div class="menuContainer hidden" id="menuContainer">
       <div class="QuickMenu" id="category_commands">
-        <a href="/settings" class="quickmenu_icon" title="settings" >
+        <a href="/settings" class="quickmenu_icon" title="settings">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-linecap="round" stroke-linejoin="round" width="20" height="20" stroke-width="1">
             <path
@@ -67,6 +70,21 @@
       });
 
       function updateGrid(pageData) {
+
+        main_container = document.querySelector(".main-container");
+        //the background based on pageData.background
+        if (pageData.background) {
+          main_container.style.background= pageData.background;
+        }
+        if (pageData.background_img) {
+          main_container.style.backgroundImage = `url(${pageData.background_img})`;
+          //no repeat and cover
+          main_container.style.backgroundRepeat = "no-repeat";
+          main_container.style.backgroundSize = "cover";
+          main_container.style.backgroundPosition = "center";
+        }
+
+
         const container = document.querySelector(".buttons-container");
         if (!container) return;
         container.innerHTML = "";
@@ -95,11 +113,8 @@
           button_div.classList.add("button_div");
           button_div.id = "button_" + index;
 
-
           button_div.style.backgroundColor = button.background_color;
           button_div.style.color = button.text_color;
-
-
 
           button_div.style.gridArea = `${button.row} / ${button.column} / ${button.endrow ?? button.row} / ${button.endcolumn ?? button.column}`;
           if (button.image) {
@@ -111,8 +126,6 @@
             });
             button_div.appendChild(img);
           }
-
-
 
           if (button.image) {
             const img = document.createElement("img");
@@ -196,51 +209,6 @@
         toggle_buttons_edition();
       }
 
-    </script>
-
-    <script>
-      // Script to load all folders on pages-container
-      const page_container = document.getElementById("pages-container");
-      let pages = window.pages;
-
-      pages.forEach((page) => {
-        const page_div = document.createElement("div");
-        page_div.classList.add("page");
-        page_div.id = "page-" + page;
-
-        page_div.addEventListener("click", () => {
-          folder(page);
-        })
-
-        const title = document.createElement("p");
-        title.innerText = page;
-
-        // SVG Icon with click event to toggle folder config
-        const svgIcon = `
-      <svg xmlns="http://www.w3.org/2000/svg" class="chevron_svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" stroke-width="1">
-        <path d="M6 9l6 6l6 -6"></path>
-      </svg>
-    `;
-
-        page_div.innerHTML = `${title.outerHTML}${svgIcon}`;
-
-        const svg = page_div.querySelector("svg");
-
-        svg.addEventListener("click", (e) => {
-          // Prevent event propagation to avoid triggering page click event
-          e.stopPropagation();
-
-          // Call folder_config when SVG icon is clicked
-          //folder_config(page);
-        });
-
-        // Close all context menus if clicked outside
-        document.addEventListener("click", () => {
-          // Your logic for closing all menus if necessary
-        });
-
-        page_container.appendChild(page_div);
-      });
     </script>
 
     <script>
@@ -635,7 +603,6 @@
           })
           .catch(() => console.error("Error fetching usage data"))
           .finally(() => {
-            isFetching = false; // Permitir futuras llamadas
             update_monitors();
             setTimeout(fetch_monitors, 5000);
           });
@@ -652,40 +619,6 @@
         });
       }
     </script>
-
-
-    <script>
-      function send_data(message) {
-        return fetch('/send-data', {   // Debes retornar la promesa de fetch
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ message: message })
-        })
-          .then(response => response.json())
-          .then(data => {
-            if (data.success === false) {
-              console.error("Error:", data.message);
-              return null;
-            } else {
-              if (data.data) {
-                return data.data;
-              }
-            }
-          })
-          .catch(error => {
-            console.error("Error:", error);
-            return null;  // Si hay un error en la llamada, retornamos null
-          });
-      }
-    </script>
-
-
-
-
-
-
 
 
 </body>

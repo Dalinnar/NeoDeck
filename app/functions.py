@@ -32,7 +32,7 @@ def objetify(json_data):
     # Si json_data es una cadena (o bytes), procesa el JSON
     return json.loads(json_data, object_hook=lambda d: SimpleNamespace(**d))
 
-def jsonify(obj):
+def to_json(obj):
     return json.dumps(obj, default=lambda o: o.__dict__)
 
 def deep_merge(original, updates):
