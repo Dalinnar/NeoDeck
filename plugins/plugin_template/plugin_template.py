@@ -20,3 +20,7 @@ plugin_template_bp.command_map = {
     "/plugin_template__other function" : lambda:print("porongon"),
     "/template wizlight template"   :lambda message: wizlight_template(message.replace("/template wizlight tepmlate", "").strip()),
 }
+
+plugin_template_bp.monitors= {
+    
+}

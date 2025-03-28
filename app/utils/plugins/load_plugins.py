@@ -7,6 +7,8 @@ import re
 from ..logger import log
 from settings import BASE_DIR, load_settings, default_settings,get_settings,loaded_settings
 from app.buttons.commands import command_map as base_commands
+from app.buttons.commands import monitors_map as base_monitors
+
 from app.utils.languages import load_lang_file
 from app.functions import deep_merge
 
@@ -114,8 +116,8 @@ def load_plugins(app):
             base_commands.update({k: v for k, v in plugin.command_map.items() if k not in base_commands})
         if hasattr(plugin, 'settings'):
             default_settings[name] = plugin.settings
-    
-    #updates the default settings to add the new config settings to the default settings
+        if hasattr(plugin, 'monitors'):
+            base_monitors.update({k: v for k, v in plugin.monitors.items() if k not in base_monitors})
     updated_default = deep_merge(default_settings, get_settings())
     loaded_settings = load_settings(updated_default)
     return buttons

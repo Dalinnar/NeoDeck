@@ -1,7 +1,7 @@
 {
     "index": {
-        "background": "#000000",
-        "background_img": ".config/user_uploads/part-176-what-are-your-thoughts-on-the-white-palace-v0-561nfe6uakc91.png",
+        "background": "#b11616",
+        "background_img": ".config/user_uploads/2024-03-28_20.14.28.png",
         "buttons": [
             {
                 "background_color": "#b28585",
@@ -27,13 +27,13 @@
             },
             {
                 "background_color": "#1e1e1e",
-                "column": 3,
+                "column": 7,
                 "command": "/obs_scene {scene_name}",
-                "endcolumn": 5,
-                "endrow": 3,
+                "endcolumn": 8,
+                "endrow": 4,
                 "image": "/.config/user_uploads/cat-space.gif",
                 "image_size": "100",
-                "row": 2,
+                "row": 3,
                 "text_color": "#000000"
             },
             {
@@ -84,43 +84,43 @@
             },
             {
                 "background_color": "#a53b3b",
-                "column": 5,
+                "column": 6,
                 "command": "/mediacontrol next",
-                "endcolumn": 6,
-                "endrow": 3,
+                "endcolumn": 8,
+                "endrow": 2,
                 "image": "/static/img/caret-down.svg",
                 "image_size": "80",
                 "row": 1,
                 "text_color": "#000000"
             },
             {
-                "command": "$folder('islas')",
-                "column": 7,
-                "row": 3,
                 "background_color": "#1e1e1e",
-                "text_color": "#000000",
+                "column": 3,
+                "command": "$folder('islas')",
+                "endcolumn": 5,
+                "endrow": 3,
                 "image": "/static/img/folder.png",
-                "image_size": "80"
-            }
-        ],
-        "columns": 8,
-        "rows": 3
-    },
-    "islas": {
-        "background": "#4e3636",
-        "background_img": ".config/user_uploads/2024-10-30_05.53.25.png",
-        "buttons": [
+                "image_size": "80",
+                "row": 1,
+                "text_color": "#000000"
+            },
             {
-                "command": "$folder('index')",
-                "column": 7,
+                "command": "#monitor",
+                "column": 5,
                 "row": 1,
                 "background_color": "#1e1e1e",
                 "text_color": "#000000",
-                "image": "/static/img/folder.png",
-                "image_size": "80"
+                "track": "cpu",
+                "collect_data_from": "usage_dict.cpu.usage_percent"
             }
         ],
-        "columns": 8,
+        "columns": 7,
         "rows": 3
+    },
+    "new": {
+        "background": "#3f3f3f",
+        "columns": 8,
+        "rows": 3,
+        "buttons": []
     }
 }

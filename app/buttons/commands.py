@@ -1,37 +1,50 @@
+
 import json
-import sys
 import subprocess
-import time
-import inspect
+import sys
+
+import keyboard
+import pyautogui
 from flask import jsonify
 
-import win32gui
-import pyperclip
-import pyautogui
-import keyboard
-
-from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume, ISimpleAudioVolume
-import comtypes
-
-
-from app.utils.logger import log
-from app.utils.global_variables import get_global_variable
-from app.utils.kill_nircmd import kill_nircmd
 from app.buttons.audio.volume import set_volume
-
 from app.utils.firewall import fix_firewall_permission
-from .usage import extract_asked_device, get_usage
-from . import audio
-from . import window
-from . import exec
-from . import soundboard
-from . import spotify
-from . import obs
-from . import color_picker
-from . import system
-from . import command_actions
+from app.utils.kill_nircmd import kill_nircmd
+from app.utils.logger import log
+
+from . import (actions, audio, color_picker, exec, obs, soundboard, spotify,
+               system, window)
 
 
+def get_monitors(requested_monitors):
+    global monitors_map
+    result = {}
+    for monitor in requested_monitors:
+        if monitor in monitors_map:
+            result[monitor] = monitors_map[monitor]()
+    return json.dumps(result, indent=4)
+
+
+def handle_command(message: str = None):
+    """Executes a command from `command_map` based on the received message, cleaning it and returning its result or a success JSON."""
+    global command_map
+    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "")
+   
+    for command, func in command_map.items():
+        if isinstance(command, (str, tuple)):            
+            if isinstance(command, str) and message.startswith(command) or isinstance(command, tuple) and any(cmd in message for cmd in command):
+                # Ejecutar la función asociada al comando
+                result = func(message) if 'message' in func.__code__.co_varnames else func()
+                return result if result is not None else ""
+    return jsonify({"success": True})
+
+
+monitors_map = {
+    "cpu": actions.get_cpu_usage,
+    "memory": actions.get_memory_usage,
+    "disks": actions.get_disks_usage,
+    "network": actions.get_network_usage,
+}
 
 command_map ={
         "/debug-send":              lambda: log.info("Debug message sent"),
@@ -52,28 +65,28 @@ command_map ={
         "/speechrecognition":       lambda: pyautogui.hotkey("win", "h"),
         "/cut":                     lambda: pyautogui.hotkey("ctrl", "x"),
         "/clipboard":               lambda: pyautogui.hotkey("win", "v"),
-        "/restartexplorer":         lambda: command_actions.restart_explorer(),
+        "/restartexplorer":         lambda: actions.restart_explorer(),
 
         "/key":                     lambda message: pyautogui.press(message.replace("/key", "", 1).strip()),
-        "/delete_folder":           lambda message: command_actions.delete_folder(message.replace("/delete_folder ", "")),
+        "/delete_folder":           lambda message: actions.delete_folder(message.replace("/delete_folder ", "")),
         "/writeandsend":            lambda message: (keyboard.write(message.replace("/writeandsend ","")) or keyboard.press("ENTER")),
         "/write":                   lambda message: keyboard.write(message.replace("/write ", "")),
         "/setmicrophone":           lambda message: audio.set_microphone_by_name(message.replace("/setmicrophone", "").strip()),
         "/setoutputdevice":         lambda message: audio.set_speakers_by_name(message.replace("/setoutputdevice", "").strip()),
-        "/usage" :                  lambda message: command_actions.handle_device_usage(message),
-        "/restart":                 lambda message: command_actions.restarttask(message),
+        "/usage" :                  lambda message: actions.handle_device_usage(message),
+        "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
         "/spotify":                 lambda message: spotify.handle_command(message),
         "/obs":                     lambda message: obs.handle_command(message),
         "/colorpicker":             lambda message: color_picker.handle_command(message),
         "/exec":                    lambda message: exec.python(message),
         "/batch":                   lambda message: exec.batch(message),
-        "/firstplan":               lambda message: command_actions.bring_window_to_foreground(message),
+        "/firstplan":               lambda message: actions.bring_window_to_foreground(message),
 
         ("/playsound", "/playlocalsound"):                      lambda message : soundboard.playsound(*soundboard.get_params(message)),
-        ("/kill", "/taskill", "/taskkill", "/forceclose"):      lambda message: command_actions.killtask(message),
-        ("/appvolume +", "/appvolume -", "/appvolume set"):     lambda message: command_actions.adjust_app_volume(message),
-        ("/copy","/paste"):                                     lambda message: command_actions.clipboard_action(message),
+        ("/kill", "/taskill", "/taskkill", "/forceclose"):      lambda message: actions.killtask(message),
+        ("/appvolume +", "/appvolume -", "/appvolume set"):     lambda message: actions.adjust_app_volume(message),
+        ("/copy","/paste"):                                     lambda message: actions.clipboard_action(message),
         ("/openfolder", "/opendir","/openfile", "/start"):      lambda message: system.handle_command(message),
 
 
@@ -88,29 +101,3 @@ command_map ={
             subprocess.Popen(f"taskkill /f /im {window.get_focused()}",shell=True),
             subprocess.Popen(f"taskkill /f /im {window.get_focused()}.exe", shell=True)) if window.get_focused() else None,
     }
-
-
-
-def handle_command(message: str = None):
-    global command_map
-    # Limpiar el mensaje de caracteres no deseados
-    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "")
-    
-    if message:
-        log.info(f"Command received: {message}")
-    
-    # Buscar si el mensaje coincide con alguno de los comandos
-    for command, func in command_map.items():
-        if isinstance(command, (str, tuple)):            
-            if isinstance(command, str) and message.startswith(command) or isinstance(command, tuple) and any(cmd in message for cmd in command):
-                # Ejecutar la función asociada al comando
-                result = func(message) if 'message' in func.__code__.co_varnames else func()
-                
-                # Si el resultado no es None, devolver el resultado
-                
-                return result if result is not None else ""
-    
-    # Si no se encuentra el comando, devolver un valor vacío (o puedes devolver un mensaje de error si lo prefieres)
-    return jsonify({"success": True})
-
-

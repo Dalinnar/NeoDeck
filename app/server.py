@@ -20,6 +20,7 @@ from flask import Flask, request, jsonify, render_template, send_file, make_resp
 from flask.wrappers import Response
 from flask_socketio import SocketIO
 from flask_minify import Minify
+
 from engineio.async_drivers import gevent # DO NOT REMOVE
 from win32com.client import Dispatch
 from app.utils.plugins.load_plugins import load_plugins
@@ -29,9 +30,7 @@ from app.utils.plugins.load_plugins import load_plugins
 from .on_start import on_start
 from .utils.global_variables import set_global_variable, get_global_variable
 
-local_ip = on_start()
-print(f"local ip: {local_ip}")
-folders_to_create = []
+
 
 from app.tray import change_tray_language, change_server_state
 from .utils.themes.parse_themes import parse_themes
@@ -47,20 +46,19 @@ from .utils.args import get_arg
 from .buttons.usage import get_usage
 
 from .functions import *
-from .buttons import handle_command as command
+from .buttons.commands import get_monitors ,handle_command
 
 
 change_server_state(0)
 
 
+local_ip = on_start()
 base_dir = get_base_dir()
 template_folder = os.path.join(base_dir, 'templates')
 static_folder = os.path.join(base_dir, 'static')
 
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
-
-
 socketio = SocketIO(app)
 commands = load_plugins(app)
 
@@ -77,7 +75,7 @@ app.config["SECRET_KEY"] = loaded_settings["webdeck"].get("secret_key", "secret_
 
 @app.route("/monitors", methods=["POST"])
 def usage():
-    return jsonify(get_usage())
+    return get_monitors(request.get_json()["track"])
 
 
 @app.route("/folder_data/<folder>", )   
@@ -123,15 +121,14 @@ def check_local_network():
 
 @app.after_request
 def after_request(response):
-    if request.path != "/usage":
+    if request.path != "/monitors":
         log.httprequest(request, response)
     return response
 
    
 @app.route('/')
-def new():
+def home():
     context = {}
-    
     context["image_list"] = get_image_list()
     #open pages.json if not exist make it 
     with open(".config/pages.json", "r") as f:        
@@ -238,40 +235,11 @@ def get_config_file(directory, filename):
 
 
 
-@socketio.on("connect")
-def socketio_connect():
-    log.info("Socketio client connected")
-
-@socketio.event
-def send(data):
-    socketio.emit("json_data", data)
-
-@socketio.on("message_from_socket")
-def send_data_socketio(message):
-    try:
-        result = command(message=message)
-    except Exception as e:
-        log.exception(e, "An error occurred while handling a command")
-        return jsonify({"success": False, "message": str(e)})
-    
-    if result is False:
-        socketio.emit("json_data", {"success": False})
-    elif isinstance(result, Response):
-        response_data = {
-            "status_code": result.status_code,
-            "headers": dict(result.headers),
-            "data": result.get_json() if result.is_json else result.get_data(as_text=True)
-        }
-        socketio.emit("json_data", response_data)
-    elif not isinstance(result, dict):
-        socketio.emit("json_data", {"success": True})
-    else:
-        socketio.emit("json_data", result)
 
 @app.route("/send-data", methods=["POST"])
 def send_data_route():
     try:
-        result = command(message=request.get_json().get("message", ""))        
+        result = handle_command(message=request.get_json().get("message", ""))        
     except Exception as e:
         log.exception(e, "An error occurred while handling a command")
         return jsonify({"success": False, "message": str(e)})

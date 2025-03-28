@@ -2,7 +2,7 @@ import ctypes
 import sys
 import os.path
 import threading
-from settings import get_settings, loaded_settings,default_settings
+from settings import loaded_settings
 from app.utils.logger import log
 from app.functions import objetify
 from app.utils.args import parse_args, get_arg

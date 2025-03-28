@@ -1,8 +1,8 @@
-import inspect
-import json
 import subprocess
 import sys
 import time
+import psutil
+import json
 
 
 import comtypes
@@ -135,23 +135,36 @@ def bring_window_to_foreground(message):
         log.error(f"Window '{window_name}' not found")
         raise RuntimeError(f"Window '{window_name}' not found")
 
-#OUTDATED
 
-# def delete_folder(message):
-#     config = get_config()
-#     folders = config["front"]["buttons"]
-    
-#     if len(folders) == 1 and message in folders:
-#         log.warning(f"No se puede eliminar {message}, ya que es la única carpeta restante.")
-#         return
-#     for folder_name,buttons in folders.copy().items():
-#         if folder_name == message:
-#             folders.pop(folder_name)
-#             log.info(f"Removed folder {folder_name}")
-#         else:
-#             for id,button in enumerate(buttons):             
-#                 if "message" in button and button["message"] == f"/folder {message}":                    
-#                     folders[folder_name][id] = {"VOID": "VOID"}
-#                     log.info(f"Removed {message} button reference from folder {folder_name}")
-#     config["front"]["buttons"] = folders
-#     save_config(config)
+# Definir funciones específicas para cada monitor
+def get_cpu_usage():
+    return {"usage_percent": psutil.cpu_percent(interval=1)}
+
+def get_memory_usage():
+    memory = psutil.virtual_memory()
+    return {
+        "total_gb": round(memory.total / 1024**3, 2),
+        "used_gb": round((memory.total - memory.available) / 1024**3, 2),
+        "available_gb": round(memory.available / 1024**3, 2),
+        "usage_percent": memory.percent
+    }
+
+def get_disks_usage():
+    disks_info = {}
+    for disk in psutil.disk_partitions():
+        try:
+            usage = psutil.disk_usage(disk.device)
+            disk_name = disk.device.replace("\\", "").replace(":", "")
+            disks_info[disk_name] = {
+                "total_gb": round(usage.total / 1024**3, 2),
+                "used_gb": round(usage.used / 1024**3, 2),
+                "free_gb": round(usage.free / 1024**3, 2),
+                "usage_percent": usage.percent
+            }
+        except Exception:
+            pass
+    return disks_info
+
+def get_network_usage():
+    network = psutil.net_io_counters()
+    return {"bytes_sent": network.bytes_sent, "bytes_recv": network.bytes_recv}
