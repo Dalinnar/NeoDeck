@@ -22,11 +22,22 @@ def get_availeable_languages():
     return languages
 
 #this gets all the saved settings,
-def get_settings():
-    """gets the saved configs """
-    with open(os.path.join(BASE_DIR, ".config/settings.json"), "r", encoding="utf-8") as f:
-        json_data = f.read()
-        return json.loads(json_data)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+def get_settings(category=None, specific_setting=None):
+    """Obtiene la configuración guardada y permite acceder a categorías y ajustes específicos."""
+    settings_path = os.path.join(BASE_DIR, ".config/settings.json")
+    try:
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f) 
+        if category is not None:
+            settings = settings.get(category, {})  
+            if specific_setting is not None:
+                return settings.get(specific_setting, None)          
+        return settings
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error cargando configuración: {e}")
+        return None
     
 def get_default_settings():
     """returns a python type dyct with the sum of all settings"""

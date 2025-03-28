@@ -18,7 +18,6 @@ from GPUtil import getGPUs
 from werkzeug.serving import make_server
 from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, redirect, url_for
 from flask.wrappers import Response
-from flask_socketio import SocketIO
 from flask_minify import Minify
 
 from engineio.async_drivers import gevent # DO NOT REMOVE
@@ -59,8 +58,12 @@ static_folder = os.path.join(base_dir, 'static')
 
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
-socketio = SocketIO(app)
+# app custon functions
+app.get_settings = get_settings
+app.load_settings = load_settings
 commands = load_plugins(app)
+
+
 
 logging.getLogger("werkzeug").disabled = True
 app.jinja_env.globals.update(

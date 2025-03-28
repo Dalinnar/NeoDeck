@@ -53,8 +53,10 @@ def load_plugin_module(app, root, file, plugin_name):
     sys.modules[module_name] = plugin_module
     spec.loader.exec_module(plugin_module)
 
-    if hasattr(plugin_module, 'plugin_template_bp'):
-        app.register_blueprint(plugin_module.plugin_template_bp)
+    if hasattr(plugin_module, 'plugin'):
+        app.register_blueprint(plugin_module.plugin)
+    #chefk if not if has attr, but if its a class blueprint
+
     
 
 

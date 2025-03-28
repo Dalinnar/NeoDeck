@@ -7,7 +7,7 @@ temp/*
 .config/themes
 .config/plugins
 app/plugins/*
-
+plugins/*
 # virtual environment directory
 venv
 .venv/
@@ -33,3 +33,4 @@ __pycache__/
 tests/*
 data.json
 .temp/*
+
