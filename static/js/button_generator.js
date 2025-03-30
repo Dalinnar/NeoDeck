@@ -180,7 +180,7 @@ const createButtonTemplate = (button_data) => {
         rangeInput.type = "range";
         rangeInput.classList.add("slider");
         rangeInput.min = button_data.min ?? 0;
-        text_div.style.zIndex= "3";
+        text_div.style.zIndex = "3";
         text_div.style.bottom = "0";
         
         rangeInput.max = button_data.max ?? 100;
@@ -323,14 +323,11 @@ function createUploadInput(imgOrSvg, dialog, gallery) {
         const file = e.target.files[0];
         if (!file) return;
 
-        const previewImg = createGalleryImage(URL.createObjectURL(file), imgOrSvg, dialog);
+        let data = await handleFileUpload(file);
+        const previewImg = createGalleryImage(data.file_path, imgOrSvg, dialog);
 
-        // Subir imagen al servidor y actualizar src
-        data = await handleFileUpload(file, previewImg);
-        previewImg.src = data.file_path;
         window.image_list.push(data.file_path);
-
-        gallery.appendChild(previewImg);
+        gallery.insertBefore(previewImg, gallery.children[3]);
     });
 
     return input;
@@ -352,9 +349,8 @@ async function handleFileUpload(file) {
 
     try {
         const response = await fetch("/upload_file", { method: "POST", body: formData });
-        const data = await response.json();
+        let data = await response.json();
         if (!data.success) throw new Error(data.message);
-        console.log(data);
         return data;
     } catch (error) {
         console.error("Error en la subida:", error);
@@ -404,7 +400,6 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         obj.command = obj.command.replace(/\{(.*?)\}/g, (_, v) =>
             inputs.find(i => i.name === v)?.value || `{${v}}`
         );
-
         const image_element = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)(.*)$/, '$2');
         if (image_element !== "/static/img/empty_img.png") {
             obj.image = image_element;

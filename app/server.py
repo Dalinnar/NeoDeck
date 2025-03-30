@@ -173,26 +173,17 @@ def upload_file():
     uploaded_file = request.files["file"]
 
     # Normalizar el nombre del archivo
-    file_name, extension = os.path.splitext(uploaded_file.filename)
-    file_name = re.sub(r'[^\w\-_\.]', '_', file_name).lower()  # Reemplazar caracteres inválidos
-    
+    file_name = re.sub(r'[^\w\-_\.]', '_', os.path.splitext(uploaded_file.filename)[0]).lower()
+
     save_dir = ".config/user_uploads"
     os.makedirs(save_dir, exist_ok=True)  # Crear directorio si no existe
 
-    # Evitar sobrescribir archivos existentes
-    normalized_filename = f"{file_name}{extension}"
-    save_path = os.path.join(save_dir, normalized_filename)
-
-    counter = 1
-    while os.path.exists(save_path):
-        normalized_filename = f"{file_name}({counter}){extension}"
-        save_path = os.path.join(save_dir, normalized_filename)
-        counter += 1
+    # Crear la ruta y guardar el archivo
+    save_path = os.path.join(save_dir, f"{file_name}{os.path.splitext(uploaded_file.filename)[1]}")
     uploaded_file.save(save_path)
 
-    log.success(f"File '{uploaded_file.filename}' uploaded successfully as '{normalized_filename}'")
+    log.success(f"File '{uploaded_file.filename}' uploaded successfully as '{file_name}'")
     return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path})
-
 
 
 
