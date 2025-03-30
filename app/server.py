@@ -58,10 +58,11 @@ static_folder = os.path.join(base_dir, 'static')
 
 
 app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+commands = load_plugins(app)
 # app custon functions
 app.get_settings = get_settings
-app.load_settings = load_settings
-commands = load_plugins(app)
+app.BASE_DIR = base_dir
+app.local_ip = local_ip
 
 
 
@@ -88,22 +89,9 @@ def get_folder_data(folder):
         return jsonify({"success": True, "folder":pages[folder]})
 
 
-# Middleware to check request IP address
+
 @app.before_request
 def check_local_network():
-    """
-    Checks if the remote IP address of the incoming request is within the same local network
-    as the server or within the allowed networks specified in the configuration.
-    The function compares the remote IP address with the server's local IP address using a 
-    specified netmask. If the remote IP is not within the same network, it checks if the 
-    remote IP is within any of the allowed networks defined in the configuration settings.
-    
-    Returns:
-        None: If the remote IP is within the same network or an allowed network.
-        tuple: A tuple containing an error message and an HTTP status code 403 if the remote 
-               IP is not authorized.
-    """
-    
     
     netmask =  loaded_settings["webdeck"].get("netmask", 16)
     remote_ip = ipaddress.ip_address(request.remote_addr)
@@ -180,7 +168,6 @@ def save_settings():
 
 @app.route("/upload_file", methods=["POST"])
 def upload_file():
-    
     if "file" not in request.files:
         log.error("No files were found in the request.")
         return jsonify({"success": False, "message": text("no_files_found_error")})
@@ -189,24 +176,23 @@ def upload_file():
 
     # Normalizar el nombre del archivo
     file_name, extension = os.path.splitext(uploaded_file.filename)
-    normalized_filename = re.sub(r'[^\w\-_\.]', '_', file_name).lower() + extension
+    file_name = re.sub(r'[^\w\-_\.]', '_', file_name).lower()  # Reemplazar caracteres inválidos
+    
+    save_dir = ".config/user_uploads"
+    os.makedirs(save_dir, exist_ok=True)  # Crear directorio si no existe
 
-    save_path = os.path.join(".config/user_uploads", normalized_filename)
-    save_path = os.path.normpath(save_path)  # Normalizar la ruta final
+    # Evitar sobrescribir archivos existentes
+    normalized_filename = f"{file_name}{extension}"
+    save_path = os.path.join(save_dir, normalized_filename)
 
+    counter = 1
+    while os.path.exists(save_path):
+        normalized_filename = f"{file_name}({counter}){extension}"
+        save_path = os.path.join(save_dir, normalized_filename)
+        counter += 1
     uploaded_file.save(save_path)
 
-    if request.form.get("info") == "background_image":
-        try:
-            img = Image.open(save_path)
-            img_rotated = img.rotate(-90, expand=True)
-            rotated_path = os.path.join(".config/user_uploads", f"{file_name}-90{extension}")
-            rotated_path = os.path.normpath(rotated_path)  # Normalizar la ruta de la imagen rotada
-            img_rotated.save(rotated_path)
-        except Exception as e:
-            log.exception(e, "Failed to rotate image during upload")
-
-    log.success(f"File '{uploaded_file.filename}' uploaded successfully")
+    log.success(f"File '{uploaded_file.filename}' uploaded successfully as '{normalized_filename}'")
     return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path})
 
 
@@ -327,9 +313,14 @@ def delete_folder(folder_name):
             return jsonify({"success": False, "message": "Folder not found"})
             
 
+@app.route("/favicon.ico", methods=["GET"])
+def favicon():
+    return send_from_directory(os.path.join(base_dir, "static", "icons"), "icon.ico")
 
 @app.errorhandler(Exception)
 def handle_exception(e):
+    if request.url:
+        log.warning(f"An error occurred while handling a request to {request.url}")
     log.exception(e, "An error occurred during a request")    
     if not loaded_settings["webdeck"].get("flask_debug"):
         response = jsonify({"success": False, "message": str(e)})

@@ -77,7 +77,6 @@ command_map ={
         "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
         "/spotify":                 lambda message: spotify.handle_command(message),
-        "/obs":                     lambda message: obs.handle_command(message),
         "/colorpicker":             lambda message: color_picker.handle_command(message),
         "/exec":                    lambda message: exec.python(message),
         "/batch":                   lambda message: exec.batch(message),

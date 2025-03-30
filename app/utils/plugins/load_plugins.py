@@ -55,10 +55,7 @@ def load_plugin_module(app, root, file, plugin_name):
 
     if hasattr(plugin_module, 'plugin'):
         app.register_blueprint(plugin_module.plugin)
-    #chefk if not if has attr, but if its a class blueprint
-
-    
-
+        log.info(f"Loaded plugin: {plugin_name}")
 
 def load_plugins(app):
     global loaded_settings
@@ -98,7 +95,7 @@ def load_plugins(app):
         
         for file in files:
             try:
-                if file.endswith(".py"):
+                if file == "__init__.py":
                     load_plugin_module(app, root, file, plugin_name)
                 elif file == "buttons.json":
                     with open(os.path.join(root, file), "r") as buttons_file:
@@ -119,7 +116,8 @@ def load_plugins(app):
         if hasattr(plugin, 'settings'):
             default_settings[name] = plugin.settings
         if hasattr(plugin, 'monitors'):
-            base_monitors.update({k: v for k, v in plugin.monitors.items() if k not in base_monitors})
+            base_monitors.update({k: v for k, v in plugin.monitors.items() if k not in base_monitors})       
+
     updated_default = deep_merge(default_settings, get_settings())
     loaded_settings = load_settings(updated_default)
     return buttons

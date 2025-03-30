@@ -2,12 +2,6 @@ import os
 import json
 from app.utils.working_dir import get_base_dir
 BASE_DIR = get_base_dir()
-## BUSCAR get_config() para elikminarlos
-##buscar config[
-#buscar setting[
-#buscar settings[
-
-#GLOBAL VARIABLES OF SETTINGS
 
 
 
