@@ -15,14 +15,11 @@ from pycaw.pycaw import (AudioUtilities, IAudioEndpointVolume,
                          ISimpleAudioVolume)
 
 
-from ..utils.settings.get_config import get_port, get_config
-from ..utils.settings.save_config import save_config
 
 from app.utils.logger import log
 
 from . import window
 from settings import loaded_settings
-from .usage import extract_asked_device, get_usage
 
 
 def restart_explorer():
@@ -33,18 +30,7 @@ def restart_explorer():
     if hwnd:
         window.close(hwnd)
 
-def handle_device_usage(message):
-    asked_device = []
 
-    device = extract_asked_device(message)
-    if device is not None:
-        asked_device.append(device)
-
-    log.debug(f"Asked device: {asked_device}")
-    usage = get_usage(False, asked_device)
-    log.debug(f"Usage data: {usage}")
-    
-    return jsonify(usage)
 
 
 def killtask(message):

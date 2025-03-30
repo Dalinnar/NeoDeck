@@ -3,7 +3,7 @@ import json
 from app.utils.working_dir import get_base_dir
 from types import SimpleNamespace
 #returns a list of the names of all the folders
-def load_deck_folders(return_data=""):
+def load_deck_folders():
     folder_list = []
     with open(os.path.join(get_base_dir(), ".config","pages.json"), "r") as f:
         data = json.load(f)
@@ -14,23 +14,20 @@ def load_deck_folders(return_data=""):
 def get_image_list():
     folders = [".config/user_uploads", "temp", "static/img"]
     image_list = []
-    
     for folder in folders:
         for root, dirs, files in os.walk(folder):
             for file in files:
                 if file.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.bmp','.webp','.svg')):
-                    # Normalizar la ruta para usar "/"
+                    
                     normalized_path = os.path.join(root, file).replace("\\", "/")
                     image_list.append(normalized_path)
     return image_list
 
 def objetify(json_data):
-    # Verifica si json_data es un diccionario
     if isinstance(json_data, dict):
         return SimpleNamespace(**json_data)
-    
-    # Si json_data es una cadena (o bytes), procesa el JSON
     return json.loads(json_data, object_hook=lambda d: SimpleNamespace(**d))
+
 
 def to_json(obj):
     return json.dumps(obj, default=lambda o: o.__dict__)

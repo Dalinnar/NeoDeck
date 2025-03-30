@@ -42,7 +42,6 @@ from .utils.firewall import fix_firewall_permission, check_firewall_permission
 from .utils.languages import text, get_languages_info, get_language,get_new_text
 from .utils.logger import log
 from .utils.args import get_arg
-from .buttons.usage import get_usage
 
 from .functions import *
 from .buttons.commands import get_monitors ,handle_command
@@ -150,9 +149,8 @@ def api(value):
         "disks": [p.device[0] for p in psutil.disk_partitions()],
         "gpus" : [f"GPU{i+1}" for i in range(len(getGPUs()))],
         "deck_folders" : load_deck_folders()
-    }    
+    }
     return jsonify(value_map[value])
-
 
 @app.route("/save_settings", methods=["POST"])
 def save_settings():
@@ -209,7 +207,6 @@ def serve_temp_file(filename):
 def get_config_file(directory, filename):
     if not directory in ['user_uploads', 'themes']:
         return "Unauthorized", 401
-    
     try:
         filename = os.path.basename(filename)  # Sanitize the filename
         file_path = os.path.join(app.root_path.replace('app',''), f".config/{directory}", filename)
@@ -221,9 +218,6 @@ def get_config_file(directory, filename):
     except Exception as e:
         log.exception(e, f"An error occurred while trying to get the file '{file_path}'")
         return make_response(f"Error: {str(e)}", 500)
-
-
-
 
 @app.route("/send-data", methods=["POST"])
 def send_data_route():

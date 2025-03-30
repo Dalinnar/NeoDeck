@@ -12,9 +12,8 @@ from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
 
-from . import (actions, audio, color_picker, exec, obs, soundboard, spotify,
+from . import (actions, audio, color_picker, exec, soundboard, spotify,
                system, window)
-
 
 def get_monitors(requested_monitors):
     global monitors_map

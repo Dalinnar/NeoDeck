@@ -26,7 +26,6 @@ def set_volume(message):
         )
         volume = interface.QueryInterface(IAudioEndpointVolume)
         volume.SetMasterVolumeLevelScalar(volume_level, None)        
-        print(f"✔ Volumen ajustado a {delta}%")
 
     except (IndexError, ValueError):
         print("⚠ Error: Usa el formato 'set 50' (donde 50 es el porcentaje)")

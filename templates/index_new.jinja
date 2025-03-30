@@ -180,8 +180,13 @@
               range.classList.add("slider");
               range.min = button.min;
               range.style.zIndex = 2;
+              if (button.btn_text){
+                button_div.style.flexDirection = "column-reverse";
+                range.style.marginBottom = "10px";
+              }
               range.max = button.max;
               button_div.appendChild(range);
+              
 
               range.addEventListener("change", function () {
                 send_data(button.command + " " + range.value);
@@ -388,7 +393,9 @@
           let Q1 = _category + "_CATEGORY_NAME";
           let category_name = getTranslation(Q1);
           if (category_name == Q1) {
-            category_name = category;
+            category_name = category;            
+            console.log("missig translation for " + Q1);
+
           }
 
           // create the category div

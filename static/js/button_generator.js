@@ -178,15 +178,17 @@ const createButtonTemplate = (button_data) => {
     if (button_data.command.startsWith("!")) {
         const rangeInput = document.createElement("input");
         rangeInput.type = "range";
+        rangeInput.classList.add("slider");
         rangeInput.min = button_data.min ?? 0;
+        text_div.style.zIndex= "3";
+        text_div.style.bottom = "0";
         
         rangeInput.max = button_data.max ?? 100;
         rangeInput.style.writingMode = "sideways-lr";
         rangeInput.style.position = "absolute";
         rangeInput.style.height = "95%";
+        rangeInput.style.width = "inherit";
         button_template.appendChild(rangeInput);
-
-
     }
 
 
