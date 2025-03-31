@@ -1,4 +1,4 @@
-# Standard library imports
+
 import re
 import random
 import json
@@ -27,7 +27,6 @@ from app.utils.plugins.load_plugins import load_plugins
 
 # WebDeck imports
 from .on_start import on_start
-from .utils.global_variables import set_global_variable, get_global_variable
 
 
 
@@ -96,10 +95,6 @@ def check_local_network():
     remote_ip = ipaddress.ip_address(request.remote_addr)
     local_ip_network = ipaddress.ip_network(f"{local_ip}/{netmask}", strict=False)
     
-    # log.debug(f"Remote IP address: {remote_ip}")
-    # log.debug(f"Local IP network: {local_ip_network}")
-    # log.debug(f"{remote_ip in local_ip_network = }")
-    
     if remote_ip not in local_ip_network:
         for network in loaded_settings["webdeck"].get("allowed_networks", []):
             if remote_ip in ipaddress.ip_address(network):
@@ -121,7 +116,11 @@ def home():
     context = {}
     context["image_list"] = get_image_list()
     #open pages.json if not exist make it 
-    with open(".config/pages.json", "r") as f:        
+
+    if not os.path.exists(os.path.join(base_dir ,".config/pages.json")):
+        with open(os.path.join(base_dir ,".config/pages.json"), "w") as f:
+            json.dump({}, f)
+    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
         pages = json.load(f)
         context["pages"] = list(pages.keys())
         context["deck_folder"] = pages[next(iter(pages))]  
@@ -129,7 +128,6 @@ def home():
         textdir = get_new_text()
         context["text"] = textdir
         context["commands"] = commands
-        
     return render_template("index_new.jinja",context=context)
 
 #add method get and post to settings
@@ -236,14 +234,16 @@ def send_data_route():
 @app.route("/update_folder_data/<folder_name>", methods=["POST"])
 def update_folder_data(folder_name):
     data = request.get_json()
-
+    #if data background_img i sremove_image , remove it from the folder
+    if "background_img" in data and data["background_img"] == "remove_image":
+        data["background_img"] = ""
     with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
-        pages = json.load(f)  # Leer el JSON
-        pages[folder_name] = data  # Modificar datos
+        pages = json.load(f)  
+        pages[folder_name] = data 
 
-        f.seek(0)  # Volver al inicio del archivo
-        json.dump(pages, f, indent=4)  # Escribir el JSON formateado
-        f.truncate()  # Eliminar contenido sobrante si el nuevo JSON es más corto
+        f.seek(0)  
+        json.dump(pages, f, indent=4)
+        f.truncate()
 
     return jsonify({"success": True, "message": "Folder data updated successfully", "folder":pages[folder_name] })
     
@@ -253,7 +253,7 @@ def update_folder_data(folder_name):
 @app.route("/get_page/<folder_name>", methods=["GET"])
 def get_page(folder_name):
     with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
-        pages = json.load(f)  # Leer el JSON
+        pages = json.load(f) 
         return jsonify(pages[folder_name])
 
 
@@ -322,7 +322,7 @@ if (
 log.info(f"Local IP address detected: {local_ip}")
 
 def run_server():
-    
+
     change_server_state(1)    
     if default_settings["webdeck"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
         server = make_server(local_ip, get_port(), app)
