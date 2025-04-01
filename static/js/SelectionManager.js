@@ -32,7 +32,11 @@ class Selection {
     }
 
     _handleMouseDown(event) {
-        if (event.target.closest("button, input, textarea, .button_div")) return;
+        //!if we are not on edition mode , cannot select
+        if (document.querySelector("#pages-container").classList.contains("hidden")) return;
+
+        //! exception zones where the selection is not allowed        
+        if (event.target.closest("button, input, textarea, .button_div, .menuContainer, #pages-container")) return;
 
         const buttonsContainer = document.querySelector("#buttons-container");
         const isInsideGridItem = event.target.closest(".grid-item");

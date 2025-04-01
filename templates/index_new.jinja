@@ -180,7 +180,7 @@
               range.classList.add("slider");
               range.min = button.min;
               range.style.zIndex = 2;
-              if (button.btn_text){
+              if (button.btn_text) {
                 button_div.style.flexDirection = "column-reverse";
                 range.style.marginBottom = "10px";
               }
@@ -495,28 +495,34 @@
 
 
       function addButton(parentElement, name, data, categ = "", subcateg = "") {
-        var button = document.createElement("button");
-        //check if name is an integer, and not a string
+        var div = document.createElement("div");
+        div.classList.add("button_opt");
+
+        // Agregar una imagen dentro del div si data.image está definido
+        if (data.image) {
+          var img = document.createElement("img");
+          img.src = data.image;
+          div.appendChild(img);
+        }
+
+        // Verificar si el nombre es un número (entero), y no una cadena
+        let query;
         if (Number.isInteger(Number(name))) {
-
-          query = subcateg + "_sub" + (Number(name) + 1) + "__btn_name"
-          button.innerText = getTranslation(query);
-        }
-        else {
+          query = subcateg + "_sub" + (Number(name) + 1) + "__btn_name";
+          div.innerText = getTranslation(query);
+        } else {
           query = categ + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase() + "__btn_name";
-          button.innerText = getTranslation(query);
+          div.innerText = getTranslation(query);
         }
-        button.id = query
-        window.buttonData[button.id] = data
 
-        button.draggable = true;
+        div.id = query;
+        window.buttonData[div.id] = data;
 
-        parentElement.appendChild(button);
+        div.draggable = true;
+        parentElement.appendChild(div);
       }
 
     </script>
-
-
     <script>
       //scrupt to show the menu contents
       function toggleCategory(menu) {
@@ -531,7 +537,7 @@
         document.addEventListener("dragover", (event) => event.preventDefault());
 
         // Obtener los botones del menú
-        const buttons = document.getElementById('menuContainer').querySelectorAll('button');
+        const buttons = document.getElementById('menuContainer').querySelectorAll('.button_opt');
         const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
 
         const buttonIds = new Set([...buttons].map(button => button.id)); // Crear un set con los IDs de los botones permitidos
@@ -539,6 +545,29 @@
         // Configurar el evento de dragstart para los botones
         buttons.forEach(button => {
           button.addEventListener('dragstart', (event) => {
+            // Crea un div falso o cualquier otro elemento que desees usar como imagen del drag
+            const dragImage = document.createElement('div');
+            dragImage.style.width = '100px';
+            dragImage.style.height = '100px';
+            dragImage.style.opacity = "0.8"; // Ajusta la opacidad para que no sea completamente transparente
+            dragImage.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            dragImage.style.borderRadius = '8px';
+            dragImage.style.pointerEvents = 'none';
+            dragImage.style.position = 'absolute';
+            dragImage.style.zIndex = '9999'; // Asegúrate de que esté por encima de otros elementos
+            document.body.appendChild(dragImage);
+
+            // Establece el div como la imagen de arrastre
+            event.dataTransfer.setDragImage(dragImage, 50, 50);  // Puedes ajustar las coordenadas del cursor si es necesario
+
+            // Elimina el div después de que se haya soltado
+            event.target.addEventListener('dragend', () => {
+              if (dragImage && dragImage.parentNode) {
+                document.body.removeChild(dragImage);
+              }
+            });
+
+            // Establece el contenido de los datos que se arrastran
             event.dataTransfer.setData("text", event.target.id);
           });
         });
@@ -615,8 +644,7 @@
           });
       }
 
-      function update_monitors() {
-        console.log(window.usage_dict);
+      function update_monitors() {      
         var monitors = document.querySelectorAll('[data_from]');
         monitors.forEach(monitor => {
           const dataFrom = monitor.getAttribute('data_from');

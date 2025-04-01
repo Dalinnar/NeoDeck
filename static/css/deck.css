@@ -40,12 +40,10 @@ body {
     display: flex;
     flex-direction: row;
     gap: 10px;
-    border-radius: 20px;
     align-items: center;
     justify-content: start;
     transition: .3s;
     background: #ffffff0a;
-    margin: 10px 0;
 }
 
 .title_container:hover {
@@ -93,17 +91,15 @@ body {
 }
 
 
-.menuContainer button {
+.button_opt {
     padding: 10px;
     background-color: #3b3b3b;
     color: whitesmoke;
-    border-radius: 10px;
-    margin: 5px;
     border: none;
+    border-bottom: 2px solid gray;
     outline: none;
     transition: .3s;
 }
-
 .menuContainer input {
     background-color: transparent;
     width: 100%;
@@ -142,6 +138,11 @@ body {
     h2,
     h3 {
         color: white;
+    }
+    .container:not(.hidden){
+        display: flex;
+        flex-direction: column;
+        border-left: 5px solid #429c51;
     }
 }
 
