@@ -84,6 +84,9 @@ def load_plugins(app):
         
         if root.endswith("assets"):
             shutil.copytree(root, TEMP_PATH, dirs_exist_ok=True)
+            continue        
+        if root.endswith("scripts"):
+            shutil.copytree(root, TEMP_PATH, dirs_exist_ok=True)
             continue
         
         if "requirements.txt" in files and plugin_name not in satisfied_plugins:

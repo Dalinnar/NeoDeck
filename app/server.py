@@ -115,7 +115,7 @@ def after_request(response):
 def home():
     context = {}
     context["image_list"] = get_image_list()
-    #open pages.json if not exist make it 
+    context["temp_scripts"] = get_temp_scripts()
 
     if not os.path.exists(os.path.join(base_dir ,".config/pages.json")):
         with open(os.path.join(base_dir ,".config/pages.json"), "w") as f:

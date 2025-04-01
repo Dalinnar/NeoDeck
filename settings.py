@@ -15,8 +15,6 @@ def get_availeable_languages():
     
     return languages
 
-#this gets all the saved settings,
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def get_settings(category=None, specific_setting=None):
     """Obtiene la configuración guardada y permite acceder a categorías y ajustes específicos."""
@@ -48,7 +46,7 @@ def load_settings(settings):
     """
     if not settings:
         return
-    with open(os.path.join(get_base_dir(), ".config","settings.json"), "w") as f:
+    with open(os.path.join(BASE_DIR, ".config","settings.json"), "w") as f:
         json.dump(settings, f, indent=4)
     return settings
     

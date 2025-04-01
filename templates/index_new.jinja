@@ -16,6 +16,10 @@
   <script src="/static/js/default_functions.js"></script>
   <script defer src="/static/js/folderConfig.js"></script>
   <script defer src="/static/js/SelectionManager.js"></script>
+
+  {% for script in context["temp_scripts"] %}
+  <script src="/temp/{{script}}" ></script>
+  {% endfor %}
   <link rel="stylesheet" href="/static/css/deck.css">
 </head>
 

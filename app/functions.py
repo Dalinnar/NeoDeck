@@ -53,3 +53,10 @@ def deep_merge(original, updates):
                 merged[key] = value
 
     return merged
+def get_temp_scripts():
+    scripts = []
+    for root, dirs, files in os.walk(os.path.join(get_base_dir(), ".temp")):
+        for file in files:
+            if file.endswith(".js"):
+                scripts.append(file)
+    return scripts
