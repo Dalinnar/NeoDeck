@@ -145,6 +145,9 @@ swap_buttons=Swap 2 Buttons
 stop_swap_mode=Stop Swap Mode
 no_changes_to_undo=There are no changes to undo.
 
+ACTION_NAME_single_click= When clicked
+ACTION_NAME_double_click= When double clicked
+ACTION_NAME_hold= When held
 
 // Settings tab
 configuration=Configuration

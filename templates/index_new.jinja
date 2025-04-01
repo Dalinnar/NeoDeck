@@ -69,150 +69,246 @@
         set_menu_commands(commands);
       });
 
-      function updateGrid(pageData) {
+ function updateGrid(pageData) {
+  // Background handling
+  const main_container = document.querySelector(".main-container");
+  if (pageData.background) {
+    main_container.style.background = pageData.background;
+  }
+  if (pageData.background_img) {
+    Object.assign(main_container.style, {
+      backgroundImage: `url(${pageData.background_img})`,
+      backgroundRepeat: "no-repeat",
+      backgroundSize: "cover",
+      backgroundPosition: "center"
+    });
+  }
 
-        main_container = document.querySelector(".main-container");
-        //the background based on pageData.background
-        if (pageData.background) {
-          main_container.style.background = pageData.background;
-        }
-        if (pageData.background_img) {
-          main_container.style.backgroundImage = `url(${pageData.background_img})`;
-          //no repeat and cover
-          main_container.style.backgroundRepeat = "no-repeat";
-          main_container.style.backgroundSize = "cover";
-          main_container.style.backgroundPosition = "center";
-        }
+  // Grid container setup
+  const container = document.querySelector(".buttons-container");
+  if (!container) return;
+  container.innerHTML = "";
 
+  const rows = Number(pageData.rows);
+  const cols = Number(pageData.columns);
+  if (!rows || !cols) return;
 
-        const container = document.querySelector(".buttons-container");
-        if (!container) return;
-        container.innerHTML = "";
+  Object.assign(container.style, {
+    display: "grid",
+    gridTemplateRows: `repeat(${rows}, 1fr)`,
+    gridTemplateColumns: `repeat(${cols}, 1fr)`,
+    aspectRatio: `${cols} / ${rows}`
+  });
 
-        const rows = Number(pageData.rows);
-        const cols = Number(pageData.columns);
+  // Track occupied positions for empty grid filling
+  const occupiedPositions = new Set();
 
-        if (!rows || !cols) return;
+  // Create buttons
+  pageData.buttons.forEach((button, index) => {
+    // Handle custom generators
+    if (button.custom_generator) {
+      eval(button.custom_generator);
+      return;
+    }
 
-        // Configurar el grid
-        container.style.display = "grid";
-        container.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
-        container.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
-        container.style.aspectRatio = `${cols} / ${rows}`;
+    // Create button element
+    const button_div = document.createElement("div");
+    button_div.classList.add("button_div");
+    button_div.id = "button_" + index;
+    
+    // Set button styling
+    Object.assign(button_div.style, {
+      backgroundColor: button.background_color,
+      color: button.text_color,
+      gridArea: `${button.row} / ${button.column} / ${button.endrow ?? button.row} / ${button.endcolumn ?? button.column}`
+    });
 
-        // Usar un Set para rastrear posiciones ocupadas
-        const occupiedPositions = new Set();
+    // Add button image if specified
+    if (button.image) {
+      const img = document.createElement("img");
+      Object.assign(img, {
+        src: button.image,
+        draggable: false,
+        alt: "Button Image"
+      });
+      Object.assign(img.style, {
+        width: `${button.image_size}%`,
+        height: `${button.image_size}%`
+      });
+      button_div.appendChild(img);
 
-        pageData.buttons.forEach((button, index) => {
-
-          if (button.custom_generator) {
-            eval(button.custom_generator);
-            return;
-          }
-          const button_div = document.createElement("div");
-          button_div.classList.add("button_div");
-          button_div.id = "button_" + index;
-
-          button_div.style.backgroundColor = button.background_color;
-          button_div.style.color = button.text_color;
-
-          button_div.style.gridArea = `${button.row} / ${button.column} / ${button.endrow ?? button.row} / ${button.endcolumn ?? button.column}`;
-          if (button.image) {
-            const img = document.createElement("img");
-            Object.assign(img, {
-              src: button.image,
-              style: `width: ${button.image_size}%; height: ${button.image_size}%;`,
-              draggable: false
-            });
-            button_div.appendChild(img);
-          }
-
-          if (button.image) {
-            const img = document.createElement("img");
-            img.src = button.image;
-            //make the image not draggable
-            img.draggable = false;
-            img.alt = "Button Image";
-            img.style.width = `${button.image_size}%`;
-            img.style.height = `${button.image_size}%`;
-            button_div.appendChild(img);
-
-            //if button image size is 100% then remove background color
-            if (button.image_size == 100) {
-              button_div.style.backgroundColor = "transparent";
-            }
-          }
-
-          if (button.btn_text) {
-            const btn_text = document.createElement("h3");
-            btn_text.innerText = button.btn_text;
-            btn_text.style.zIndex = 2;
-            button_div.appendChild(btn_text);
-          }
-
-          if (button.command) {
-            button_div.addEventListener("click", () => {
-              //if the command starts with "$" its an eval
-              if (button.command.startsWith("$")) {
-                eval(button.command.slice(1));
-              }
-              //if the command starts with / its a command
-              if (button.command.startsWith("/")) {
-                send_data(button.command);
-              }
-
-            })
-            //if the commands is "#monitor"
-            if (button.command === "#monitor") {
-              console.log(button.track);
-              Initialize_monitors(button.track ?? undefined);
-              const monitor = document.createElement("h2");
-
-              monitor.style.zIndex = 2;
-              monitor.setAttribute("data_from", button.collect_data_from);
-
-              button_div.appendChild(monitor);
-            }
-            if (button.command.startsWith("!")) {
-
-              const range = document.createElement("input");
-              range.type = "range";
-              range.classList.add("slider");
-              range.min = button.min;
-              range.style.zIndex = 2;
-              if (button.btn_text) {
-                button_div.style.flexDirection = "column-reverse";
-                range.style.marginBottom = "10px";
-              }
-              range.max = button.max;
-              button_div.appendChild(range);
-              
-
-              range.addEventListener("change", function () {
-                send_data(button.command + " " + range.value);
-              });
-            }
-          }
-
-          container.appendChild(button_div);
-
-          // Marcar la posición como ocupada
-          occupiedPositions.add(`${button.row}-${button.column}`);
-        });
-        // Crear los elementos vacíos SOLO en las posiciones libres
-        for (let r = 1; r <= rows; r++) {
-          for (let c = 1; c <= cols; c++) {
-
-            const element = document.createElement("div");
-            element.style.gridArea = `${r} / ${c}`;
-            element.classList.add("grid-item");
-            container.appendChild(element);
-
-          }
-        }
-        setupDragAndDrop();
-        toggle_buttons_edition();
+      if (button.image_size == 100) {
+        button_div.style.backgroundColor = "transparent";
       }
+    }
+
+    // Add button text if specified
+    if (button.btn_text) {
+      const btn_text = document.createElement("h3");
+      btn_text.innerText = button.btn_text;
+      btn_text.style.zIndex = 2;
+      button_div.appendChild(btn_text);
+    }
+
+    // Handle button commands
+    setupButtonCommands(button, button_div);
+    
+    // Handle button click events (single, double, hold)
+    setupButtonClickEvents(button, button_div);
+
+    // Add button to container and track position
+    container.appendChild(button_div);
+    occupiedPositions.add(`${button.row}-${button.column}`);
+  });
+
+  // Fill empty grid cells
+  fillEmptyGridCells(container, rows, cols);
+
+  // Setup additional functionality
+  setupDragAndDrop();
+  toggle_buttons_edition();
+}
+
+// Helper function to set up button commands
+function setupButtonCommands(button, button_div) {
+  if (!button.command) return;
+  
+  // Handle JavaScript evaluation commands
+  if (button.command.startsWith("$")) {
+    button_div.addEventListener("click", () => {
+      eval(button.command.slice(1));
+    });
+  }
+  
+  // Handle server commands
+  if (button.command.startsWith("/")) {
+    button_div.addEventListener("click", () => {
+      send_data(button.command);
+    });
+  }
+  
+  // Handle monitor commands
+  if (button.command === "#monitor") {
+    Initialize_monitors(button.track ?? undefined);
+    const monitor = document.createElement("h2");
+    monitor.style.zIndex = 2;
+    monitor.setAttribute("data_from", button.collect_data_from);
+    button_div.appendChild(monitor);
+  }
+  
+  // Handle slider commands
+  if (button.command.startsWith("!")) {
+    const range = document.createElement("input");
+    Object.assign(range, {
+      type: "range",
+      min: button.min,
+      max: button.max
+    });
+    range.classList.add("slider");
+    range.style.zIndex = 2;
+    
+    if (button.btn_text) {
+      button_div.style.flexDirection = "column-reverse";
+      range.style.marginBottom = "10px";
+    }
+    
+    button_div.appendChild(range);
+    range.addEventListener("change", () => {
+      send_data(button.command + " " + range.value);
+    });
+  }
+}
+
+// Helper function to set up button click events
+function setupButtonClickEvents(button, button_div) {
+  if (!(button.single_click || button.double_click || button.hold)) return;
+  
+  // Event state tracking variables
+  const state = {
+    clickTimeout: null,
+    isHolding: false,
+    doubleClickPending: false,
+    lastClickTime: 0,
+    doubleClickThreshold: 300, // ms
+    holdThreshold: 1000 // ms
+  };
+  
+  // Handle single clicks
+  button_div.addEventListener("click", (event) => {
+    const currentTime = new Date().getTime();
+    
+    // Handle potential double-click detection
+    if (currentTime - state.lastClickTime < state.doubleClickThreshold) {
+      state.doubleClickPending = true;
+      clearTimeout(state.clickTimeout);
+      return; // Wait for dblclick event
+    }
+    
+    state.lastClickTime = currentTime;
+    
+    // Process single click with delay for possible double-click
+    if (!state.isHolding && button.single_click) {
+      state.clickTimeout = setTimeout(() => {
+        if (!state.doubleClickPending && !state.isHolding) {
+          send_data(button.single_click);
+        }
+        state.doubleClickPending = false;
+      }, state.doubleClickThreshold);
+    }
+  });
+  
+  // Handle double clicks
+  if (button.double_click) {
+    button_div.addEventListener("dblclick", () => {
+      clearTimeout(state.clickTimeout);
+      state.doubleClickPending = false;
+      send_data(button.double_click);
+      state.lastClickTime = 0; // Prevent subsequent single click
+    });
+  }
+  
+  // Handle press and hold
+  if (button.hold) {
+    let holdTimeout;
+    
+    button_div.addEventListener("mousedown", () => {
+      clearTimeout(state.clickTimeout);
+      
+      holdTimeout = setTimeout(() => {
+        state.isHolding = true;
+        state.doubleClickPending = false;
+        send_data(button.hold);
+      }, state.holdThreshold);
+    });
+    
+    // Handle release events (mouseup, mouseleave)
+    const handleRelease = () => {
+      clearTimeout(holdTimeout);
+      
+      if (state.isHolding) {
+        setTimeout(() => {
+          state.isHolding = false;
+          state.lastClickTime = 0;
+        }, 300);
+      }
+    };
+    
+    button_div.addEventListener("mouseup", handleRelease);
+    button_div.addEventListener("mouseleave", handleRelease);
+  }
+}
+
+// Helper function to fill empty grid cells
+function fillEmptyGridCells(container, rows, cols) {
+  for (let r = 1; r <= rows; r++) {
+    for (let c = 1; c <= cols; c++) {
+      const element = document.createElement("div");
+      element.style.gridArea = `${r} / ${c}`;
+      element.classList.add("grid-item");
+      container.appendChild(element);
+    }
+  }
+}
 
     </script>
 
@@ -393,7 +489,7 @@
           let Q1 = _category + "_CATEGORY_NAME";
           let category_name = getTranslation(Q1);
           if (category_name == Q1) {
-            category_name = category;            
+            category_name = category;
             console.log("missig translation for " + Q1);
 
           }
@@ -644,7 +740,7 @@
           });
       }
 
-      function update_monitors() {      
+      function update_monitors() {
         var monitors = document.querySelectorAll('[data_from]');
         monitors.forEach(monitor => {
           const dataFrom = monitor.getAttribute('data_from');
@@ -654,7 +750,6 @@
         });
       }
     </script>
-
 
 </body>
 

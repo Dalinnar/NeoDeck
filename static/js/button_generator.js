@@ -31,7 +31,16 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
 
     dialog_content.appendChild(text_generic);
 
-    button_data.inputs.forEach(input => dialog_content.appendChild(createInputField(input)));
+
+    //* esto me genera el input para el nombre del boton
+    //check if the button_data has commands, is a object and dont have a command
+    if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
+        //call a function to build and select the actions
+        dialog_content.appendChild(setup_actions(button_data));
+    }
+    else {
+        button_data.inputs.forEach(input => dialog_content.appendChild(createInputField(input)));
+    }
 
     // Crear contenedor del botón
     const button_template = createButtonTemplate(button_data);
@@ -53,7 +62,15 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     submit_button.textContent = "Submit";
     //click event function
     submit_button.addEventListener("click", function () {
-        buildButton(button_data, folder_name, folder_data, column, row)
+        if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
+            //call a function to build and select the actions
+            buildActions(button_data, folder_name, folder_data, column, row)
+        }
+        else {
+            buildButton(button_data, folder_name, folder_data, column, row)
+        }
+        
+        
         modal.close();
     })
     dialog_content.appendChild(submit_button);
@@ -84,6 +101,7 @@ const createInputField = (input) => {
     return container;
 };
 
+//! first option is the html input, second is the json input data
 const setupSelectInput = (_input, input) => {
     let options = input.options ?? [];
     if (input.options_url) {
@@ -136,7 +154,7 @@ const createButtonTemplate = (button_data) => {
 
     button_template.appendChild(text_div);
 
-    // if the command is "#monitor", initialize monitors
+
     if (button_data.command === "#monitor") {
         Initialize_monitors();
         const h2 = document.createElement("h2");
@@ -175,14 +193,14 @@ const createButtonTemplate = (button_data) => {
         text_div.appendChild(h2);
     }
     //if the button command starts with "!", it is a level
-    if (button_data.command.startsWith("!")) {
+    if (button_data.command?.startsWith("!")) {
         const rangeInput = document.createElement("input");
         rangeInput.type = "range";
         rangeInput.classList.add("slider");
         rangeInput.min = button_data.min ?? 0;
         text_div.style.zIndex = "3";
         text_div.style.bottom = "0";
-        
+
         rangeInput.max = button_data.max ?? 100;
         rangeInput.style.writingMode = "sideways-lr";
         rangeInput.style.position = "absolute";
@@ -378,56 +396,236 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 }
 async function buildButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
-    const inputs = [...dialog.querySelectorAll("[name]:not([disabled])")];
-
-    const obj = { command: button_data.command, column: column, row: row };
-
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")]
+        .map(input => [input.name, input]))
+    
+    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (_, v) => inputs[v]?.value || `{${v}}`);
+    
+    const obj = {
+        command: replacePlaceholders(button_data.command),
+        column,
+        row,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+    };
+    
+    if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
+        obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+    
+    if (button_data.command === "#monitor") {
+        obj.track = button_data.track;
+        obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+    }
+    
+    if (button_data.command.startsWith("!")) {
+        obj.min = button_data.min;
+        obj.max = button_data.max;
+    }
+    
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            const fileData = await handleFileUpload(input.files[0]);
+            obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
+        }
+    }));
+    
+    folder_data.buttons.push(obj);
+    
     try {
-        await Promise.all(inputs.map(async (input) => {
-            const value = input.type === "file" && input.files.length > 0
-                ? await handleFileUpload(input.files[0]).then(fileData => fileData?.file_path)
-                : input.value;
-
-            if (value) {
-                obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), value);
-            }
-        }));
-
-        // setup the colors
-        obj.background_color = inputs.find(input => input.name === "background_color")?.value || "#1e1e1e";
-        obj.text_color = inputs.find(input => input.name === "text_color")?.value || "#ffffff";
-
-        obj.command = obj.command.replace(/\{(.*?)\}/g, (_, v) =>
-            inputs.find(i => i.name === v)?.value || `{${v}}`
-        );
-        const image_element = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)(.*)$/, '$2');
-        if (image_element !== "/static/img/empty_img.png") {
-            obj.image = image_element;
-            obj.image_size = inputs.find(input => input.name === "img_size")?.value || "80";
-        }
-
-        const buttonTextInput = inputs.find(input => input.name === "button_text");
-        if (buttonTextInput?.value) obj.btn_text = buttonTextInput.value;
-
-        if (button_data.command === "#monitor") {
-            obj.track = button_data.track;
-            obj.collect_data_from = button_data.collect_data_from.replace(/\{(.*?)\}/g, (_, v) =>
-                inputs.find(i => i.name === v)?.value || `{${v}}`
-            );
-        }
-        if (button_data.command.startsWith("!")) {
-            obj.min = button_data.min;
-            obj.max = button_data.max;
-        }
-        folder_data.buttons.push(obj);
-
-        // Llamar a la nueva función para subir los datos
         const result = await uploadFolderData(folder_name, folder_data);
-
         updateGrid(result.folder);
-
     } catch (error) {
         console.error("Error processing inputs:", error);
     }
 }
 
+async function buildActions(button_data, folder_name, folder_data, column, row) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+
+    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (_, v) => inputs[v]?.value || `{${v}}`);
+
+    const obj = {
+        column,
+        row,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+    };
+    
+    // Check if any actions are configured
+    let hasConfiguredAction = false;
+    
+    // Iterate over each action in button_data
+    button_data.actions.forEach(action => {
+        if (inputs[action].value === "None") {
+            return;
+        }
+        
+        hasConfiguredAction = true;
+        
+        let command = replacePlaceholders(inputs[action].value); // Replace placeholders
+        console.log("command:", command);
+
+        let variables = command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+        console.log("variables:", variables);
+
+        let parent = inputs[action].parentElement;
+        let inputs_container = parent.querySelector(".inputs_container");
+        console.log(inputs_container);
+
+        variables.forEach(variable => {
+            let input = inputs_container.querySelector(`[name="${variable}"]`);
+            if (input) {
+                command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
+            }
+        });
+
+        obj[action] = command;
+    });
+    
+    // If no actions are configured, alert and return early
+    if (!hasConfiguredAction) {
+        alert("Cannot save an empty button. Please configure at least one action.");
+        return; // Exit the function early
+    }
+
+    // Handle file inputs if any
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            const fileData = await handleFileUpload(input.files[0]);
+            Object.keys(obj).forEach(key => {
+                if (typeof obj[key] === 'string') {
+                    obj[key] = obj[key].replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
+                }
+            });
+        }
+    }));
+
+    // Add the action object to folder_data
+    folder_data.buttons.push(obj);
+
+    try {
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    } catch (error) {
+        console.error("Error processing inputs:", error);
+    }
+}
+
+
+//* when a nutton have more than one possible command
+function setup_actions(button_data) {
+    const createElement = (type, className = '', text = '') => {
+        const elem = document.createElement(type);
+        if (className) elem.classList.add(className);
+        if (text) elem.textContent = text;
+        return elem;
+    };
+
+    const actions = createElement("div");
+    const global_inputs_container = createElement("div", "global-inputs-container");
+
+    // Crear opciones del select base
+    const select_options = document.createDocumentFragment();
+    const noneOption = createElement("option", "", getTranslation("NONE"));
+    noneOption.value = "None";
+    noneOption.selected = true;
+    select_options.appendChild(noneOption);
+
+    Object.entries(button_data.commands).forEach(([key, value]) => {
+        const option = createElement("option", "", key);
+        option.value = value;
+        select_options.appendChild(option);
+    });
+
+    // Inputs globales
+    button_data.inputs
+        .filter(input => input.shared === true)
+        .forEach(input => {
+            const [input_element, type] = input.TYPE.split(" ");
+            const new_input = createElement(input_element);
+            if (type) new_input.type = type;
+            new_input.name = input.name;
+            new_input.id = "global_" + input.name;
+            global_inputs_container.appendChild(new_input);
+        });
+
+    // Contenedores de acciones
+    const actions_fragment = document.createDocumentFragment();
+
+    button_data.actions.forEach(action => {
+        const action_container = createElement("div", "action-container");
+        const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+        const action_select = createElement("select", "command-select");
+        action_select.name =action;
+        action_select.appendChild(select_options.cloneNode(true));
+        action_select.id = "command-select-" + action;
+        action_select.addEventListener("change", (event) => update_inputs(event.target));
+
+        // Contenedor de inputs de acción
+        const inputs_container = createElement("div", "inputs_container");
+
+        button_data.inputs
+            .filter(input => input.shared !== true)
+            .forEach(input => {
+
+                const [input_element, type] = input.TYPE.split(" ");
+                const new_input = createElement(input_element);
+
+                let input_label = document.createElement("label");
+                input_label.textContent = getTranslation(action+ "_" + input.name);
+                input_label.htmlFor = input.name;
+                input_label.style.display = "none"; 
+                
+
+                if (type) new_input.type = type;
+
+                if (input_element === "select") {
+                    input.options.forEach(option => {
+                        const new_option = createElement("option", "", option);
+                        new_option.value = option;
+                        new_input.appendChild(new_option);
+                    });
+                }
+
+                new_input.name = input.name;
+                new_input.style.display = "none";                
+                new_input.disabled = true;
+                new_input.id = action + "_" + input.name;
+                inputs_container.appendChild(input_label);
+                inputs_container.appendChild(new_input);
+            });
+
+        action_container.append(label, action_select, inputs_container);
+        actions_fragment.appendChild(action_container);
+    });
+
+    actions.appendChild(actions_fragment);
+    actions.appendChild(global_inputs_container);
+
+    return actions;
+}
+function update_inputs(event) {
+    const parent = event.parentElement;
+    const selected_option = event.options[event.selectedIndex];
+    const variables = selected_option.value.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+    
+    parent.querySelectorAll(':scope > .inputs_container > *').forEach(element => {
+        if (element.tagName !== "OPTION") {
+            const isLabel = element.tagName === "LABEL";
+            const inputName = isLabel ? element.htmlFor : element.name;
+            const shouldShow = variables.includes(inputName);
+            
+            element.style.display = shouldShow ? "block" : "none";
+            element.disabled = !shouldShow;
+            if (!shouldShow && element.tagName === "INPUT") element.value = "";
+            if (element.tagName === "SELECT" && element.options.length > 0) {
+                element.selectedIndex = 0;
+            }
+        }
+    });
+}
