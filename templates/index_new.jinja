@@ -208,6 +208,34 @@
             min: button.min,
             max: button.max
           });
+
+          // Calculate grid dimensions
+          const rowSpan = (button.endrow || button.row) - button.row;
+          const colSpan = (button.endcolumn || button.column) - button.column;
+          const isVertical = rowSpan > colSpan;
+
+          // Apply styles based on orientation
+          if (isVertical) {
+            Object.assign(range.style, {
+              writingMode: "sideways-lr",
+              minWidth: "30px",
+              maxWidth: "20%",
+              height: "100%"
+            });
+            range.style.setProperty('--thumb-width', '120%');
+            range.style.setProperty('--thumb-height', '10%');
+          } else {
+            Object.assign(range.style, {
+              writingMode: "horizontal-tb",
+              width: "100%",
+              minHeight: "30px",
+              maxHeight: "20%"
+            });
+            range.style.setProperty('--thumb-width', '10%');
+            range.style.setProperty('--thumb-height', '120%');
+          }
+
+          // Add common styling
           range.classList.add("slider");
           range.style.zIndex = 2;
 
@@ -216,6 +244,7 @@
             range.style.marginBottom = "10px";
           }
 
+          // Add to DOM and set up event listener
           button_div.appendChild(range);
           range.addEventListener("change", () => {
             send_data(button.command + " " + range.value);
