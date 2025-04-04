@@ -69,8 +69,8 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
         else {
             buildButton(button_data, folder_name, folder_data, column, row)
         }
-        
-        
+
+
         modal.close();
     })
     dialog_content.appendChild(submit_button);
@@ -152,7 +152,9 @@ const createSysInputField = (input) => {
             const data = await response.json();
 
             if (data && data.path) {
+                _input.readOnly = false;
                 _input.value = data.path;
+                _input.readOnly = true;
                 _input.dispatchEvent(new Event("change", { bubbles: true }));
             }
         } catch (error) {
@@ -184,7 +186,7 @@ const setupSelectInput = (_input, input) => {
     _input.addEventListener("change", () => toggleDependentFields(_input.value));
     setTimeout(() => _input.dispatchEvent(new Event("change")), 0);
 };
-    
+
 
 const populateSelectOptions = (_input, options) => {
     options.forEach((option, index) => {
@@ -467,9 +469,9 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")]
         .map(input => [input.name, input]))
-    
+
     const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (_, v) => inputs[v]?.value || `{${v}}`);
-    
+
     const obj = {
         command: replacePlaceholders(button_data.command),
         column,
@@ -478,31 +480,31 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
     };
-    
+
     if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
         obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
         obj.image_size = inputs.img_size?.value || "80";
     }
-    
+
     if (button_data.command === "#monitor") {
         obj.track = button_data.track;
         obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
     }
-    
+
     if (button_data.command.startsWith("!")) {
         obj.min = button_data.min;
         obj.max = button_data.max;
     }
-    
+
     await Promise.all(Object.values(inputs).map(async (input) => {
         if (input.type === "file" && input.files.length > 0) {
             const fileData = await handleFileUpload(input.files[0]);
             obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
         }
     }));
-    
+
     folder_data.buttons.push(obj);
-    
+
     try {
         const result = await uploadFolderData(folder_name, folder_data);
         updateGrid(result.folder);
@@ -524,24 +526,24 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
     };
-    
+
     // Add image handling similar to buildButton
     if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
         obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
         obj.image_size = inputs.img_size?.value || "80";
     }
-    
+
     // Check if any actions are configured
     let hasConfiguredAction = false;
-    
+
     // Iterate over each action in button_data
     button_data.actions.forEach(action => {
         if (!inputs[action] || inputs[action].value === "None") {
             return;
         }
-        
+
         hasConfiguredAction = true;
-        
+
         let command = replacePlaceholders(inputs[action].value); // Replace placeholders
         console.log("action:", action, "command:", command);
 
@@ -551,7 +553,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         // Find the parent action container with the inputs_container
         let parent = inputs[action].closest('.action-container');
         let inputs_container = parent.querySelector(".inputs_container");
-        
+
         variables.forEach(variable => {
             // Look for inputs by name, considering our new structure
             let input = inputs_container.querySelector(`[name="${variable}"]`);
@@ -559,12 +561,12 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
                 // Also try with action prefix since we're now using IDs with prefixes
                 input = inputs_container.querySelector(`#${action}_${variable}`);
             }
-            
+
             // If not found in action-specific inputs, check global inputs
             if (!input && inputs[`global_${variable}`]) {
                 input = inputs[`global_${variable}`];
             }
-            
+
             if (input) {
                 command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
             }
@@ -572,7 +574,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
 
         obj[action] = command;
     });
-    
+
     // If no actions are configured, alert and return early
     if (!hasConfiguredAction) {
         alert("Cannot save an empty button. Please configure at least one action.");
@@ -605,7 +607,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
             obj.min = button_data.min;
             obj.max = button_data.max;
         }
-        
+
         if (obj[action] && obj[action] === "#monitor") {
             obj.track = button_data.track;
             if (button_data.collect_data_from) {
@@ -656,7 +658,7 @@ function setup_actions(button_data) {
         .filter(input => input.shared === true)
         .forEach(input => {
             // Add an id prefix to distinguish global inputs
-            const globalInput = {...input, name: "global_" + input.name};
+            const globalInput = { ...input, name: "global_" + input.name };
             const inputContainer = createInputField(globalInput);
             global_inputs_container.appendChild(inputContainer);
         });
@@ -671,7 +673,7 @@ function setup_actions(button_data) {
         action_select.name = action;
         action_select.appendChild(select_options.cloneNode(true));
         action_select.id = "command-select-" + action;
-        action_select.addEventListener("change", function() { update_inputs(this); });
+        action_select.addEventListener("change", function () { update_inputs(this); });
 
         // Container for action inputs
         const inputs_container = createElement("div", "inputs_container");
@@ -684,13 +686,13 @@ function setup_actions(button_data) {
                 const actionInput = {
                     ...input,
                     name: input.name,
-                    label: getTranslation(action + "_" + input.name),
+                    label: getTranslation("ACTION_" + input.name),
                     // Add an ID prefix to make it unique for this action
                     id: action + "_" + input.name
                 };
-                
+
                 const inputContainer = createInputField(actionInput);
-                
+
                 // Apply action-specific styling and behavior
                 inputContainer.style.display = "none";
                 inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
@@ -698,7 +700,7 @@ function setup_actions(button_data) {
                     elem.id = action + "_" + input.name;
                     elem.style.display = "block";
                 });
-                
+
                 inputs_container.appendChild(inputContainer);
             });
 
@@ -716,22 +718,22 @@ function update_inputs(selectElement) {
     const parent = selectElement.parentElement;
     const selected_option = selectElement.options[selectElement.selectedIndex];
     const variables = selected_option.value.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
-    
+
     parent.querySelectorAll(':scope > .inputs_container > div').forEach(container => {
         // Get the input element in this container
         const inputElements = container.querySelectorAll('input, select, textarea');
-        
+
         if (inputElements.length > 0) {
             const inputElement = inputElements[0];
             const inputName = inputElement.name;
             const shouldShow = variables.includes(inputName);
-            
+
             // Show/hide the entire container
             container.style.display = shouldShow ? "block" : "none";
-            
+
             // Enable/disable the input
             inputElement.disabled = !shouldShow;
-            
+
             // Clear values if hiding
             if (!shouldShow) {
                 if (inputElement.tagName === "INPUT" || inputElement.tagName === "TEXTAREA") {

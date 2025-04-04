@@ -168,7 +168,7 @@ def plugins_page():
 GITHUB_RAW_URL = "https://raw.githubusercontent.com"
 @app.route('/gitcontent/<user>/<repo>/<path:file_path>')
 def get_github_image(user, repo, file_path):
-    token = loaded_settings["webdeck"].get("github_token", "")
+    token = loaded_settings["webdeck"].get("token", "")
     branch = "main"  # Puedes hacerlo dinámico si necesitas
     github_url = f"{GITHUB_RAW_URL}/{user}/{repo}/refs/heads/{branch}/{file_path}"
     #headers with the api key
