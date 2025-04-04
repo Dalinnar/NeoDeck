@@ -60,6 +60,7 @@ base_settings = {
         "auto_updates": True,
         "update_channel": "stable",
         "update_repo": "Lenochxd/WebDeck",
+        "plugins_repo" : "Dalinnar/NeoDeck-plugins",
         "dev_mode": False,
         "server": "flask",
         "flask_debug": True,

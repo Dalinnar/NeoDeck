@@ -5,10 +5,9 @@ temp/*
 .vscode/settings.json
 .config/user_uploads
 .config/themes
-.config/plugins
-app/plugins/*
-plugins/*
-# virtual environment directory
+
+/plugins/
+
 venv
 .venv/
 .venv

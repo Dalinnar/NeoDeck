@@ -1,0 +1,98 @@
+*,*::before,*::after{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Noto Sans SC", sans-serif;
+    user-select: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #1e1e1e;
+    color: white;
+    padding-top: 40px;
+    display: flex;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+}
+.plugin-store {
+    
+        width: 90%;
+        max-width: 1280px;
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        max-height: 80vh; /* Limitar la altura máxima */
+        overflow-y: auto; /* Agregar scroll vertical si hay muchos plugins */
+}
+.header, .footer {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.plugin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+}
+.plugin-card {
+    background: #333;
+    padding: 15px;
+    border-radius: 10px;
+}
+.description {
+    width: 100%;
+    height: 75px;    
+    overflow: hidden;
+}
+
+.title-div{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.installed_container{
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+
+}
+
+
+.first-container{
+    display: flex;
+    flex-direction: row;    
+    gap: 10px;
+}
+.plugin-card img {
+    width: 100px;
+    height: 100px;
+    border-radius: 15px;
+}
+button {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+.install-btn {
+    background: #429c51;
+    transition: .3s;
+}
+.remove-btn{
+    background: #9c5142;
+    transition: .3s;
+}
+
+.check-updates-btn{
+    background: #42449c;
+    transition: .3s;
+}
+.install-btn:hover {
+    background: #388044;
+}

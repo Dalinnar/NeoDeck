@@ -8,15 +8,17 @@ import ipaddress
 import ast
 import logging
 import psutil
+from app.utils.plugins.plugin_fetcher import *
 from settings import default_settings,loaded_settings, get_settings, load_settings
 
-
+import tkinter as tk
+from tkinter import filedialog
 
 # Third-party library imports
 from PIL import Image
 from GPUtil import getGPUs
 from werkzeug.serving import make_server
-from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, redirect, url_for
+from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, abort
 from flask.wrappers import Response
 from flask_minify import Minify
 
@@ -45,6 +47,16 @@ from .utils.args import get_arg
 from .functions import *
 from .buttons.commands import get_monitors ,handle_command
 
+class CustomFlask(Flask):
+    def run(self, *args, **kwargs):
+        # Activar el contexto de la aplicación antes de inicializar los blueprints
+        with self.app_context():
+            for name, bp in self.blueprints.items():
+                if hasattr(bp, "init") and callable(bp.init):                    
+                    bp.init()
+
+        super().run(*args, **kwargs)
+    
 
 change_server_state(0)
 
@@ -55,7 +67,7 @@ template_folder = os.path.join(base_dir, 'templates')
 static_folder = os.path.join(base_dir, 'static')
 
 
-app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+app = CustomFlask(__name__, template_folder=template_folder, static_folder=static_folder)
 commands = load_plugins(app)
 # app custon functions
 app.get_settings = get_settings
@@ -134,12 +146,42 @@ def home():
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
     context = {}
-    
     context["text"] = get_new_text()
     context["default_settings"] = default_settings
     context["saved_settings"] = loaded_settings
     return render_template("settings.jinja", context=context)
 
+
+@app.route("/plugins")
+def plugins_page():
+        context = {}
+        #context installed blueprints
+        context["installed_blueprints"] = list(app.blueprints.keys())
+        data=  get_github_file_content("plugins.json")
+        context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
+        data = json.loads(data)
+        context["plugins_data"] = data  
+        
+        return render_template("plugins.jinja", context=context)
+
+
+GITHUB_RAW_URL = "https://raw.githubusercontent.com"
+@app.route('/gitcontent/<user>/<repo>/<path:file_path>')
+def get_github_image(user, repo, file_path):
+    token = loaded_settings["webdeck"].get("github_token", "")
+    branch = "main"  # Puedes hacerlo dinámico si necesitas
+    github_url = f"{GITHUB_RAW_URL}/{user}/{repo}/refs/heads/{branch}/{file_path}"
+    #headers with the api key
+    headers = {
+        "Authorization": f"token {token}",
+        "Accept": "application/vnd.github.v3.raw"
+    }
+    response = requests.get(github_url,headers=headers)
+    
+    if response.status_code == 200:
+        return Response(response.content, content_type=response.headers["Content-Type"])
+    else:
+        return abort(404)
 @app.route("/api/<value>")
 def api(value):
     
@@ -281,6 +323,39 @@ def create_folder():
         json.dump(pages, f, indent=4)
 
     return jsonify({"success": True, "message": "Folder created successfully"})
+
+def select_file():
+    if sys.platform == "win32":
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        file_path = filedialog.askopenfilename()
+        root.destroy()
+        return file_path
+
+def select_folder():
+    if sys.platform == "win32":
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes('-topmost', True)
+        folder_path = filedialog.askdirectory()
+        root.destroy()
+        return folder_path
+    
+@app.route("/get_sysfile", methods=["GET"])
+def get_sysfile():
+    file_path = select_file()
+    if file_path:
+        return jsonify({"path": file_path})
+    return jsonify({"error": "No file selected"}), 400
+
+@app.route("/get_sysfolder", methods=["GET"])
+def get_sysfolder():
+    folder_path = select_folder()
+    if folder_path:
+        return jsonify({"path": folder_path})
+    return jsonify({"error": "No folder selected"}), 400
+    
     
 @app.route("/delete_folder/<folder_name>", methods=["DELETE"])
 def delete_folder(folder_name):

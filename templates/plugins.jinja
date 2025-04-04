@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>plugins Store</title>
+
+    <link rel="stylesheet" href="/static/css/plugins.css">
+    <script src="/static/js/default_functions.js"></script>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
+        rel="stylesheet">
+
+</head>
+
+<body>
+    <div class=""></div>
+    <div class="plugin-store">
+        <div class="plugin-grid" id="plugin-grid"></div>
+    </div>
+    <script>
+        function renderPlugins(plugins) {
+            const pluginGrid = document.getElementById("plugin-grid");
+            pluginGrid.innerHTML = ""; // Clear existing content
+            const repo = "{{ context["repo"] }}";
+            const installedPlugins = {{ context["installed_blueprints"] | tojson }};
+
+        // Create document fragment to minimize DOM operations
+        const fragment = document.createDocumentFragment();
+
+        // Create plugin cards
+        plugins.plugins.forEach(plugin => {
+            const imageUrl = `/gitcontent/${repo}/${plugin.folder}/${plugin.icon}`;
+            const isInstalled = installedPlugins.includes(plugin.name);
+
+            // Create elements
+            const card = document.createElement("div");
+            card.className = "plugin-card";
+
+            // Create content using template literals
+            card.innerHTML = `
+            <div class="first-container">
+                <img src="${imageUrl}" icon="true">
+                <div class="title-div">
+                    <h3>${plugin.name.replace(/_/g, " ")}</h3>
+                    ${isInstalled ?
+                    `<div class="installed_container">
+                            <button class="remove-btn">Remove</button>
+                            <button class="check-updates-btn">Check updates</button>
+                        </div>` :
+                    `<button class="install-btn">Install</button>`
+                }
+                </div>
+            </div>
+            <p class="description">${plugin.description}</p>
+        `;
+
+            // Add event listeners
+            if (isInstalled) {
+                const removeBtn = card.querySelector(".remove-btn");
+                removeBtn.addEventListener("click", () => {
+                    if (confirm("Are you sure you want to remove this plugin?")) {
+                        // Action to remove plugin
+                    }
+                });
+            }
+
+            fragment.appendChild(card);
+        });
+
+        // Append all cards at once
+        pluginGrid.appendChild(fragment);
+}
+        const pluginsData = {{ context["plugins_data"] | tojson | safe }};
+
+        renderPlugins(pluginsData)
+    </script>
+</body>
+
+</html>

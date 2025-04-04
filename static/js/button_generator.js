@@ -32,7 +32,6 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     dialog_content.appendChild(text_generic);
 
 
-    //* esto me genera el input para el nombre del boton
     //check if the button_data has commands, is a object and dont have a command
     if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
         //call a function to build and select the actions
@@ -60,6 +59,7 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     // Botón de enviar
     const submit_button = document.createElement("button");
     submit_button.textContent = "Submit";
+    submit_button.classList.add("submit_button");
     //click event function
     submit_button.addEventListener("click", function () {
         if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
@@ -77,27 +77,95 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
 };
 
 const createInputField = (input) => {
-    const [element, type] = input.TYPE.split(" ");
+    let element, type;
+
+    if (input.TYPE === "sys folder" || input.TYPE === "sys file") {
+        return createSysInputField(input);
+    }
+
+    [element, type] = input.TYPE.split(" ");
+
     if (!input.name) alert("Input name is undefined");
 
     const label = document.createElement("label");
-    label.textContent = input.label;
+    label.textContent = input.label || input.name;
 
     const _input = document.createElement(element);
     _input.name = input.name;
-    if (element === "input" && type) _input.setAttribute("type", type);
+
+    if (element === "input" && type) {
+        _input.setAttribute("type", type);
+    }
+
+    if (input.id) _input.id = input.id;
 
     if (element === "select") setupSelectInput(_input, input);
 
     const container = document.createElement("div");
+    container.classList.add("input-container");
+
     if (input.dependant_on) {
         container.style.display = "none";
-        //add the atribute dependant_on to the input
         _input.setAttribute("data-dependant", input.dependant_on);
-
         container.setAttribute("data-dependant", input.dependant_on);
     }
-    container.append(label, _input);
+
+    container.appendChild(label);
+    container.appendChild(_input);
+    return container;
+};
+
+const createSysInputField = (input) => {
+    const container = document.createElement("div");
+    container.classList.add("input-container");
+
+    const label = document.createElement("label");
+    label.textContent = input.label || input.name;
+
+    const inputWrapper = document.createElement("div");
+    inputWrapper.classList.add("sys-input-wrapper");
+    inputWrapper.style.display = "flex";
+
+    const _input = document.createElement("input");
+    _input.name = input.name;
+    _input.type = "text";
+    _input.readOnly = true;
+    _input.style.flexGrow = "1";
+
+    if (input.id) _input.id = input.id;
+
+    const browseButton = document.createElement("button");
+    browseButton.textContent = "...";
+    browseButton.type = "button";
+    browseButton.classList.add("browse-button");
+    browseButton.style.width = "30px";
+
+    browseButton.addEventListener("click", async () => {
+        try {
+            const endpoint = input.TYPE === "sys folder" ? "/get_sysfolder" : "/get_sysfile";
+            const response = await fetch(endpoint);
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data && data.path) {
+                _input.value = data.path;
+                _input.dispatchEvent(new Event("change", { bubbles: true }));
+            }
+        } catch (error) {
+            console.error("Error fetching system path:", error);
+            alert(`Failed to get ${input.TYPE === "sys folder" ? "folder" : "file"} path. Please try again.`);
+        }
+    });
+
+    inputWrapper.appendChild(_input);
+    inputWrapper.appendChild(browseButton);
+    container.appendChild(label);
+    container.appendChild(inputWrapper);
+
     return container;
 };
 
@@ -116,6 +184,7 @@ const setupSelectInput = (_input, input) => {
     _input.addEventListener("change", () => toggleDependentFields(_input.value));
     setTimeout(() => _input.dispatchEvent(new Event("change")), 0);
 };
+    
 
 const populateSelectOptions = (_input, options) => {
     options.forEach((option, index) => {
@@ -456,29 +525,46 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         btn_text: inputs.button_text?.value,
     };
     
+    // Add image handling similar to buildButton
+    if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
+        obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+    
     // Check if any actions are configured
     let hasConfiguredAction = false;
     
     // Iterate over each action in button_data
     button_data.actions.forEach(action => {
-        if (inputs[action].value === "None") {
+        if (!inputs[action] || inputs[action].value === "None") {
             return;
         }
         
         hasConfiguredAction = true;
         
         let command = replacePlaceholders(inputs[action].value); // Replace placeholders
-        console.log("command:", command);
+        console.log("action:", action, "command:", command);
 
         let variables = command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
         console.log("variables:", variables);
 
-        let parent = inputs[action].parentElement;
+        // Find the parent action container with the inputs_container
+        let parent = inputs[action].closest('.action-container');
         let inputs_container = parent.querySelector(".inputs_container");
-        console.log(inputs_container);
-
+        
         variables.forEach(variable => {
+            // Look for inputs by name, considering our new structure
             let input = inputs_container.querySelector(`[name="${variable}"]`);
+            if (!input) {
+                // Also try with action prefix since we're now using IDs with prefixes
+                input = inputs_container.querySelector(`#${action}_${variable}`);
+            }
+            
+            // If not found in action-specific inputs, check global inputs
+            if (!input && inputs[`global_${variable}`]) {
+                input = inputs[`global_${variable}`];
+            }
+            
             if (input) {
                 command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
             }
@@ -493,17 +579,40 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         return; // Exit the function early
     }
 
-    // Handle file inputs if any
+    // Process all file inputs
     await Promise.all(Object.values(inputs).map(async (input) => {
         if (input.type === "file" && input.files.length > 0) {
-            const fileData = await handleFileUpload(input.files[0]);
-            Object.keys(obj).forEach(key => {
-                if (typeof obj[key] === 'string') {
-                    obj[key] = obj[key].replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
+            try {
+                const fileData = await handleFileUpload(input.files[0]);
+                if (fileData && fileData.file_path) {
+                    // Replace placeholders in all commands
+                    Object.keys(obj).forEach(key => {
+                        if (typeof obj[key] === 'string') {
+                            obj[key] = obj[key].replace(new RegExp(`{${input.name.replace('global_', '')}}`, 'g'), fileData.file_path);
+                        }
+                    });
                 }
-            });
+            } catch (error) {
+                console.error(`Error uploading file for ${input.name}:`, error);
+            }
         }
     }));
+
+    // Add special handling for specific commands if needed
+    // Example: if there are special cases like in buildButton
+    button_data.actions.forEach(action => {
+        if (obj[action] && obj[action].startsWith("!")) {
+            obj.min = button_data.min;
+            obj.max = button_data.max;
+        }
+        
+        if (obj[action] && obj[action] === "#monitor") {
+            obj.track = button_data.track;
+            if (button_data.collect_data_from) {
+                obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+            }
+        }
+    });
 
     // Add the action object to folder_data
     folder_data.buttons.push(obj);
@@ -511,11 +620,11 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
     try {
         const result = await uploadFolderData(folder_name, folder_data);
         updateGrid(result.folder);
+        console.log("Button created successfully with actions:", obj);
     } catch (error) {
         console.error("Error processing inputs:", error);
     }
 }
-
 
 //* when a nutton have more than one possible command
 function setup_actions(button_data) {
@@ -529,7 +638,7 @@ function setup_actions(button_data) {
     const actions = createElement("div");
     const global_inputs_container = createElement("div", "global-inputs-container");
 
-    // Crear opciones del select base
+    // Create base select options
     const select_options = document.createDocumentFragment();
     const noneOption = createElement("option", "", getTranslation("NONE"));
     noneOption.value = "None";
@@ -542,62 +651,55 @@ function setup_actions(button_data) {
         select_options.appendChild(option);
     });
 
-    // Inputs globales
+    // Global inputs - now using createInputField
     button_data.inputs
         .filter(input => input.shared === true)
         .forEach(input => {
-            const [input_element, type] = input.TYPE.split(" ");
-            const new_input = createElement(input_element);
-            if (type) new_input.type = type;
-            new_input.name = input.name;
-            new_input.id = "global_" + input.name;
-            global_inputs_container.appendChild(new_input);
+            // Add an id prefix to distinguish global inputs
+            const globalInput = {...input, name: "global_" + input.name};
+            const inputContainer = createInputField(globalInput);
+            global_inputs_container.appendChild(inputContainer);
         });
 
-    // Contenedores de acciones
+    // Action containers
     const actions_fragment = document.createDocumentFragment();
 
     button_data.actions.forEach(action => {
         const action_container = createElement("div", "action-container");
         const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
         const action_select = createElement("select", "command-select");
-        action_select.name =action;
+        action_select.name = action;
         action_select.appendChild(select_options.cloneNode(true));
         action_select.id = "command-select-" + action;
-        action_select.addEventListener("change", (event) => update_inputs(event.target));
+        action_select.addEventListener("change", function() { update_inputs(this); });
 
-        // Contenedor de inputs de acción
+        // Container for action inputs
         const inputs_container = createElement("div", "inputs_container");
 
+        // Creating action inputs using createInputField
         button_data.inputs
             .filter(input => input.shared !== true)
             .forEach(input => {
-
-                const [input_element, type] = input.TYPE.split(" ");
-                const new_input = createElement(input_element);
-
-                let input_label = document.createElement("label");
-                input_label.textContent = getTranslation(action+ "_" + input.name);
-                input_label.htmlFor = input.name;
-                input_label.style.display = "none"; 
+                // Create a modified input object with action-specific properties
+                const actionInput = {
+                    ...input,
+                    name: input.name,
+                    label: getTranslation(action + "_" + input.name),
+                    // Add an ID prefix to make it unique for this action
+                    id: action + "_" + input.name
+                };
                 
-
-                if (type) new_input.type = type;
-
-                if (input_element === "select") {
-                    input.options.forEach(option => {
-                        const new_option = createElement("option", "", option);
-                        new_option.value = option;
-                        new_input.appendChild(new_option);
-                    });
-                }
-
-                new_input.name = input.name;
-                new_input.style.display = "none";                
-                new_input.disabled = true;
-                new_input.id = action + "_" + input.name;
-                inputs_container.appendChild(input_label);
-                inputs_container.appendChild(new_input);
+                const inputContainer = createInputField(actionInput);
+                
+                // Apply action-specific styling and behavior
+                inputContainer.style.display = "none";
+                inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                    elem.disabled = true;
+                    elem.id = action + "_" + input.name;
+                    elem.style.display = "block";
+                });
+                
+                inputs_container.appendChild(inputContainer);
             });
 
         action_container.append(label, action_select, inputs_container);
@@ -609,22 +711,34 @@ function setup_actions(button_data) {
 
     return actions;
 }
-function update_inputs(event) {
-    const parent = event.parentElement;
-    const selected_option = event.options[event.selectedIndex];
+
+function update_inputs(selectElement) {
+    const parent = selectElement.parentElement;
+    const selected_option = selectElement.options[selectElement.selectedIndex];
     const variables = selected_option.value.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
     
-    parent.querySelectorAll(':scope > .inputs_container > *').forEach(element => {
-        if (element.tagName !== "OPTION") {
-            const isLabel = element.tagName === "LABEL";
-            const inputName = isLabel ? element.htmlFor : element.name;
+    parent.querySelectorAll(':scope > .inputs_container > div').forEach(container => {
+        // Get the input element in this container
+        const inputElements = container.querySelectorAll('input, select, textarea');
+        
+        if (inputElements.length > 0) {
+            const inputElement = inputElements[0];
+            const inputName = inputElement.name;
             const shouldShow = variables.includes(inputName);
             
-            element.style.display = shouldShow ? "block" : "none";
-            element.disabled = !shouldShow;
-            if (!shouldShow && element.tagName === "INPUT") element.value = "";
-            if (element.tagName === "SELECT" && element.options.length > 0) {
-                element.selectedIndex = 0;
+            // Show/hide the entire container
+            container.style.display = shouldShow ? "block" : "none";
+            
+            // Enable/disable the input
+            inputElement.disabled = !shouldShow;
+            
+            // Clear values if hiding
+            if (!shouldShow) {
+                if (inputElement.tagName === "INPUT" || inputElement.tagName === "TEXTAREA") {
+                    inputElement.value = "";
+                } else if (inputElement.tagName === "SELECT" && inputElement.options.length > 0) {
+                    inputElement.selectedIndex = 0;
+                }
             }
         }
     });
