@@ -40,6 +40,11 @@
 
     //append a div h2  for each setting
     for (const categ in default_settings) {
+        //check if categ is empty
+        if (Object.keys(default_settings[categ]).length === 0) {
+            continue;
+        }
+
         const div = document.createElement('div');
         const h2 = document.createElement('h2');
         h2.textContent = categ;
@@ -49,6 +54,7 @@
     }
 
     function load_settings(categ) {
+        let prefixes = ["#", "_"]
         currentCategory = categ;
         const settings_container = document.querySelector('.settings_container');
         settings_container.innerHTML = '';
@@ -60,52 +66,32 @@
         original_values[categ] = { ...saved };
 
         Object.entries(settings).forEach(([setting, value]) => {
-            const saved_value = saved[setting] ?? value;
+
+            let saved_value = saved[setting] ?? value;
+            if (prefixes.some(prefix => setting.startsWith(prefix))) {
+                saved_value = saved[setting.slice(1)] ?? value;
+            }
+
             const div = document.createElement('div');
             div.classList.add('setting-item');
 
-            // Crear etiqueta
-            const label = document.createElement('label');
-            label.textContent = getTranslation(`${categ}_setting_${setting}`);
-            label.setAttribute('for', setting);
 
-            let input;
+
+
+            // Crear input separado
+            const [input, label] = createSettingInput(setting, value, saved_value);
+
+            // Ajustes especiales para booleanos (checkbox)
             if (typeof value === 'boolean') {
                 Object.assign(div.style, { flexDirection: "row-reverse", alignItems: "center" });
-
-                input = document.createElement('input');
-                input.classList.add('custom-checkbox');
-                input.type = 'checkbox';
-                input.checked = saved_value;
-            } else if (Array.isArray(value)) {
-                input = document.createElement('select');
-                input.multiple = true;
-                [...new Set(saved_value)].forEach(val => {
-                    const opt = document.createElement('option');
-                    opt.value = opt.textContent = val;
-                    input.appendChild(opt);
-                });
-            } else if (typeof value === 'object' && value !== null) {
-                input = document.createElement('select');
-                Object.entries(value).forEach(([key, val]) => {
-                    const opt = document.createElement('option');
-                    opt.value = opt.textContent = val;
-                    opt.selected = saved_value === val;
-                    input.appendChild(opt);
-                });
-            } else {
-                input = document.createElement('input');
-                input.type = 'text';
-                input.value = saved_value;
             }
+            //if label is null
+            div.append(...[label, input].filter(Boolean));
 
-            input.id = setting;
-            input.name = setting;
-            input.addEventListener('change', () => markChanged());
 
-            div.append(label, input);
             settings_container.appendChild(div);
 
+            // Inicializar multiselect si es necesario
             if (Array.isArray(value)) {
                 multiselect(input.id);
             }
@@ -116,6 +102,71 @@
         if (reset_button) reset_button.onclick = () => resetSettings(categ);
     }
 
+
+    function createSettingInput(setting, value, saved_value) {
+        let input;
+        let label = null;
+        let secret = false;
+
+        // Si es un "comando", devolver solo el botón/enlace (sin label)
+        if (setting.startsWith('#')) {
+            const text = setting.slice(1);
+            const link = document.createElement('a');
+            link.classList.add('setting-text');
+            link.href = value;
+            link.target = '_blank';
+            link.textContent = getTranslation("label__" + text);
+            return [link, null];
+        }
+        if (setting.startsWith('_')) {
+            secret = true;
+            setting = setting.slice(1);
+        }
+
+
+
+        // Crear input según el tipo
+        if (typeof value === 'boolean') {
+            input = document.createElement('input');
+            input.classList.add('custom-checkbox');
+            input.type = 'checkbox';
+            input.checked = saved_value;
+        } else if (Array.isArray(value)) {
+            input = document.createElement('select');
+            input.multiple = true;
+            [...new Set(saved_value)].forEach(val => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = val;
+                input.appendChild(opt);
+            });
+        } else if (typeof value === 'object' && value !== null) {
+            input = document.createElement('select');
+            Object.entries(value).forEach(([key, val]) => {
+                const opt = document.createElement('option');
+                opt.value = opt.textContent = val;
+                opt.selected = saved_value === val;
+                input.appendChild(opt);
+            });
+        } else {
+            input = document.createElement('input');
+            if (secret) {
+                input.classList.add('secret');
+            }
+            input.type = 'text';
+            input.value = saved_value;
+        }
+
+        // Crear label solo si no es un "comando"
+        label = document.createElement('label');
+        label.htmlFor = setting;
+        label.textContent = getTranslation("label__" + setting);
+
+        input.id = setting;
+        input.name = setting;
+        input.addEventListener('change', () => markChanged());
+
+        return [input, label];
+    }
 
     function markChanged() {
         const save_button = document.querySelector('#save_button');
@@ -257,7 +308,6 @@
     function getTranslation(key) {
         return translations[key] || key;
     }
-
 </script>
 
 </html>

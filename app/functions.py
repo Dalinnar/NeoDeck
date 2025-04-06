@@ -12,7 +12,7 @@ def load_deck_folders():
     return folder_list
 
 def get_image_list():
-    folders = [".config/user_uploads", "temp", "static/img"]
+    folders = [".config/user_uploads", ".temp", "static/img"]
     image_list = []
     for folder in folders:
         for root, dirs, files in os.walk(folder):
@@ -32,10 +32,32 @@ def objetify(json_data):
 def to_json(obj):
     return json.dumps(obj, default=lambda o: o.__dict__)
 
+def clean_key(key, prefixes):
+    for prefix in prefixes:        
+        if key.startswith(prefix):    
+            if prefix == "#":
+                return None
+            return key[len(prefix):]
+    return key
+
+
 def deep_merge(original, updates):
+    prefixes = ["#", "_"]
     """Devuelve un nuevo diccionario con la combinación de original y updates sin modificar los originales, sin duplicados de clave y valor y evitando duplicados en listas."""
 
-    merged = json.loads(json.dumps(original))  # Copia profunda con JSON
+    merged = json.loads(json.dumps(original))
+    
+    for key in list(merged.keys()):        
+        if key.startswith(tuple(prefixes)):
+            cleaned_clay =  clean_key(key, prefixes)
+            if cleaned_clay is None:                
+                del merged[key]
+            else: 
+                print(f"cleaning {key}")
+                merged[cleaned_clay] =  merged[key]
+                merged.pop(key)
+
+
 
     for key, value in updates.items():
         if isinstance(value, dict) and key in merged and isinstance(merged[key], dict):

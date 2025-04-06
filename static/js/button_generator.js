@@ -85,6 +85,8 @@ const createInputField = (input) => {
 
     [element, type] = input.TYPE.split(" ");
 
+    
+
     if (!input.name) alert("Input name is undefined");
 
     const label = document.createElement("label");
@@ -93,6 +95,10 @@ const createInputField = (input) => {
     const _input = document.createElement(element);
     _input.name = input.name;
 
+    if (input.required) {
+        _input.required = true;
+    }
+
     if (element === "input" && type) {
         _input.setAttribute("type", type);
     }
@@ -100,6 +106,8 @@ const createInputField = (input) => {
     if (input.id) _input.id = input.id;
 
     if (element === "select") setupSelectInput(_input, input);
+
+    if (element === "input" && type === "checkbox") { setupCheckboxInput(_input, input); }
 
     const container = document.createElement("div");
     container.classList.add("input-container");
@@ -112,9 +120,17 @@ const createInputField = (input) => {
 
     container.appendChild(label);
     container.appendChild(_input);
+    setup_input(_input)
     return container;
 };
 
+//function to make small changes to the inputs after they are created
+function setup_input(input){
+    if (input.type === "checkbox") {
+        input.parentElement.style.flexDirection = "row-reverse";
+        input.parentElement.style.justifyContent = "start";
+    }
+}
 const createSysInputField = (input) => {
     const container = document.createElement("div");
     container.classList.add("input-container");
@@ -185,6 +201,19 @@ const setupSelectInput = (_input, input) => {
 
     _input.addEventListener("change", () => toggleDependentFields(_input.value));
     setTimeout(() => _input.dispatchEvent(new Event("change")), 0);
+};
+
+const setupCheckboxInput = (_input, input) => {
+    _input.addEventListener("change", () => {
+        const dependantFields = document.querySelectorAll(`[data-dependant="${input.name}"]`);
+        dependantFields.forEach(field => {
+            if (_input.checked) {
+                field.style.display = "block";
+            } else {
+                field.style.display = "none";
+            }
+        });
+    });
 };
 
 
@@ -467,10 +496,18 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 }
 async function buildButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
-    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")]
-        .map(input => [input.name, input]))
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]))
 
-    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (_, v) => inputs[v]?.value || `{${v}}`);
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return
+    }
+
+    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
+
+    console.log(replacePlaceholders(button_data.command))
 
     const obj = {
         command: replacePlaceholders(button_data.command),
@@ -516,9 +553,16 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
 async function buildActions(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+    //check if on inputs are required buttons without vallues
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return
+    }
 
-    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (_, v) => inputs[v]?.value || `{${v}}`);
-
+    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
+    
     const obj = {
         column,
         row,

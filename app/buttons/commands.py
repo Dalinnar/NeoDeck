@@ -39,10 +39,10 @@ def handle_command(message: str = None):
 
 
 monitors_map = {
-    "cpu": actions.get_cpu_usage,
-    "memory": actions.get_memory_usage,
-    "disks": actions.get_disks_usage,
-    "network": actions.get_network_usage,
+    "cpu":      lambda: actions.get_cpu_usage(),
+    "memory":   lambda: actions.get_memory_usage(),
+    "disks":    lambda: actions.get_disks_usage(),
+    "network":  lambda: actions.get_network_usage(),
 }
 
 command_map ={

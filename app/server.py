@@ -154,20 +154,30 @@ def settings_page():
 
 @app.route("/plugins")
 def plugins_page():
-        context = {}
-        #context installed blueprints
-        context["installed_blueprints"] = list(app.blueprints.keys())
-        data=  get_github_file_content("plugins.json")
-        context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
-        data = json.loads(data)
-        context["plugins_data"] = data  
-        
-        return render_template("plugins.jinja", context=context)
+    context = {}
+    # Get installed plugins
+    context["installed_plugins"] = app.blueprints
+    context["plugins_namelist"] = list(app.blueprints.keys())
+    
+    # Fetch metadata for installed plugins
+    installed_metadata = {}
+    for plugin_name in context["plugins_namelist"]:
+        if hasattr(app.blueprints[plugin_name], "metadata"):
+            installed_metadata[plugin_name] = app.blueprints[plugin_name].metadata
+    
+    context["installed_metadata"] = installed_metadata
+    # Get plugin data from repository
+    data = get_github_file_content("plugins.json")
+    context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
+    data = json.loads(data)
+    context["plugins_data"] = data
+    
+    return render_template("plugins.jinja", context=context)
 
 
-GITHUB_RAW_URL = "https://raw.githubusercontent.com"
 @app.route('/gitcontent/<user>/<repo>/<path:file_path>')
 def get_github_image(user, repo, file_path):
+    GITHUB_RAW_URL = "https://raw.githubusercontent.com"
     token = loaded_settings["webdeck"].get("token", "")
     branch = "main"  # Puedes hacerlo dinámico si necesitas
     github_url = f"{GITHUB_RAW_URL}/{user}/{repo}/refs/heads/{branch}/{file_path}"
@@ -228,6 +238,7 @@ def upload_file():
 
 
 @app.route('/temp/<filename>')
+@app.route('/.temp/<filename>')
 def serve_temp_file(filename):
     temp_folder = os.path.join(base_dir, '.temp')
     return send_from_directory(temp_folder, filename)

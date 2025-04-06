@@ -23,61 +23,216 @@
         <div class="plugin-grid" id="plugin-grid"></div>
     </div>
     <script>
+        // Include the JavaScript code here
+        const installedPlugins = {{ context["plugins_namelist"] | tojson }};
+        const installedMetadata = {{ context["installed_metadata"] | tojson }};
         function renderPlugins(plugins) {
             const pluginGrid = document.getElementById("plugin-grid");
             pluginGrid.innerHTML = ""; // Clear existing content
-            const repo = "{{ context["repo"] }}";
-            const installedPlugins = {{ context["installed_blueprints"] | tojson }};
+            const repo = "{{ context['repo'] }}";
 
-        // Create document fragment to minimize DOM operations
-        const fragment = document.createDocumentFragment();
+            // Create document fragment to minimize DOM operations
+            const fragment = document.createDocumentFragment();
 
-        // Create plugin cards
-        plugins.plugins.forEach(plugin => {
-            const imageUrl = `/gitcontent/${repo}/${plugin.folder}/${plugin.icon}`;
-            const isInstalled = installedPlugins.includes(plugin.name);
+            // Track which plugins from the repository we've processed
+            const repoPluginNames = [];
 
-            // Create elements
-            const card = document.createElement("div");
-            card.className = "plugin-card";
+            // Create plugin cards for repository plugins
+            plugins.plugins.forEach(plugin => {
+                repoPluginNames.push(plugin.name);
 
-            // Create content using template literals
-            card.innerHTML = `
-            <div class="first-container">
-                <img src="${imageUrl}" icon="true">
-                <div class="title-div">
-                    <h3>${plugin.name.replace(/_/g, " ")}</h3>
-                    ${isInstalled ?
-                    `<div class="installed_container">
-                            <button class="remove-btn">Remove</button>
-                            <button class="check-updates-btn">Check updates</button>
-                        </div>` :
-                    `<button class="install-btn">Install</button>`
-                }
-                </div>
-            </div>
-            <p class="description">${plugin.description}</p>
-        `;
+                const imageUrl = `/gitcontent/${repo}/${plugin.folder}/${plugin.icon}`;
+                const isInstalled = installedPlugins.includes(plugin.name);
+                const installedVersion = isInstalled && installedMetadata[plugin.name] ?
+                    installedMetadata[plugin.name].version : null;
+                const needsUpdate = isInstalled && installedVersion &&
+                    installedVersion !== plugin.version;
 
-            // Add event listeners
-            if (isInstalled) {
-                const removeBtn = card.querySelector(".remove-btn");
-                removeBtn.addEventListener("click", () => {
-                    if (confirm("Are you sure you want to remove this plugin?")) {
-                        // Action to remove plugin
+                // Create card
+                const card = document.createElement("div");
+                card.className = "plugin-card";
+
+                // Create content using template literals
+                card.innerHTML = `
+                    <div class="first-container">
+                        <img src="${imageUrl}" alt="${plugin.name}" class="plugin-icon">
+                        <div class="title-div">
+                            <h3>${plugin.name.replace(/_/g, " ")}</h3>
+                            <div class="plugin-version">v${plugin.version}</div>
+                            ${isInstalled ?
+                        `<div class="installed_container">
+                                <button class="remove-btn" data-plugin="${plugin.name}">Remove</button>
+                                ${needsUpdate ?
+                            `<button class="update-btn" data-plugin="${plugin.name}" 
+                                 data-version="${plugin.version}">Update to v${plugin.version}</button>` :
+                            `<span class="up-to-date">Up to date</span>`
+                        }
+                            </div>` :
+                        `<button class="install-btn" data-plugin="${plugin.name}">Install</button>`
                     }
-                });
+                        </div>
+                    </div>
+                    <p class="description">${plugin.description}</p>
+                    <div class="plugin-meta">
+                        <span class="authors">By: ${plugin.authors.join(", ")}</span>
+                        <span class="license">${plugin.license}</span>
+                    </div>
+                `;
+
+                // Add event listeners
+                if (isInstalled) {
+                    const removeBtn = card.querySelector(".remove-btn");
+                    removeBtn.addEventListener("click", () => removePlugin(plugin.name));
+
+                    if (needsUpdate) {
+                        const updateBtn = card.querySelector(".update-btn");
+                        updateBtn.addEventListener("click", () => updatePlugin(plugin.name, plugin.version));
+                    }
+                } else {
+                    const installBtn = card.querySelector(".install-btn");
+                    installBtn.addEventListener("click", () => installPlugin(plugin.name));
+                }
+
+                fragment.appendChild(card);
+            });
+
+            // Now handle external plugins (plugins installed but not in the repository)
+            installedPlugins.forEach(pluginName => {
+                if (!repoPluginNames.includes(pluginName)) {
+                    console.log(installedMetadata[pluginName]);
+                    const pluginMetadata = installedMetadata[pluginName] || {
+
+                        name: pluginName,
+                        version: "Unknown",
+                        description: "External plugin",
+                        icon: "assets/default-icon.jpg"
+                    };
+
+                    // Create card for external plugin
+                    const card = document.createElement("div");
+                    card.className = "plugin-card external-plugin";
+
+                    let iconPath = "/static/assets/default-icon.jpg";
+                    if (pluginMetadata.icon) {
+                        // Use the plugin's icon if available
+                        iconPath = `/plugins/${pluginName}/${pluginMetadata.icon}`;
+                    }
+
+                    card.innerHTML = `
+                        <div class="first-container">
+                            <img src="${iconPath}" alt="${pluginName}" class="plugin-icon">
+                            <div class="title-div">
+                                <h3>${pluginName.replace(/_/g, " ")}</h3>
+                                <div class="plugin-version">v${pluginMetadata.version || "Unknown"}</div>
+                                <div class="installed_container">
+                                    <button class="remove-btn" data-plugin="${pluginName}">Remove</button>
+                                    <span class="external-badge">External Plugin</span>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="description">${pluginMetadata.description || "No description available"}</p>
+                        <div class="plugin-meta">
+                            <span class="authors">By: ${pluginMetadata.creators ? pluginMetadata.creators.join(", ") : "Unknown"}</span>
+                        </div>
+                    `;
+
+                    // Add event listener for remove button
+                    const removeBtn = card.querySelector(".remove-btn");
+                    removeBtn.addEventListener("click", () => removePlugin(pluginName));
+
+                    fragment.appendChild(card);
+                }
+            });
+
+            // Append all cards at once
+            pluginGrid.appendChild(fragment);
+        }
+
+        // Plugin management functions
+        function installPlugin(pluginName) {
+            if (confirm(`Are you sure you want to install the "${pluginName}" plugin?`)) {
+                fetch(`/api/plugins/install/${pluginName}`, {
+                    method: 'POST',
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Plugin ${pluginName} installed successfully!`, 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showNotification(`Failed to install plugin: ${data.error}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showNotification(`Error installing plugin: ${error}`, 'error');
+                    });
             }
+        }
 
-            fragment.appendChild(card);
+        function removePlugin(pluginName) {
+            if (confirm(`Are you sure you want to remove the "${pluginName}" plugin?`)) {
+                fetch(`/api/plugins/remove/${pluginName}`, {
+                    method: 'POST',
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Plugin ${pluginName} removed successfully!`, 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showNotification(`Failed to remove plugin: ${data.error}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showNotification(`Error removing plugin: ${error}`, 'error');
+                    });
+            }
+        }
+
+        function updatePlugin(pluginName, newVersion) {
+            if (confirm(`Are you sure you want to update "${pluginName}" to version ${newVersion}?`)) {
+                fetch(`/api/plugins/update/${pluginName}`, {
+                    method: 'POST',
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Plugin ${pluginName} updated successfully!`, 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showNotification(`Failed to update plugin: ${data.error}`, 'error');
+                        }
+                    })
+                    .catch(error => {
+                        showNotification(`Error updating plugin: ${error}`, 'error');
+                    });
+            }
+        }
+
+        function showNotification(message, type) {
+            // Simple notification display
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.classList.add('show');
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 300);
+                }, 3000);
+            }, 10);
+        }
+
+        // Initialize the plugin page
+        document.addEventListener('DOMContentLoaded', () => {
+            const pluginsData = {{ context["plugins_data"] | tojson | safe
+        }};
+        renderPlugins(pluginsData);
         });
-
-        // Append all cards at once
-        pluginGrid.appendChild(fragment);
-}
-        const pluginsData = {{ context["plugins_data"] | tojson | safe }};
-
-        renderPlugins(pluginsData)
     </script>
 </body>
 
