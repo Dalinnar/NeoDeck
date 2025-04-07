@@ -470,65 +470,72 @@
     </script>
 
     <script>
-      function search_commands(search) {
-        const containers = document.querySelectorAll("#menuContainer .container");
-        const categories = document.querySelectorAll("#menuContainer [id^='category_']");
-        const query = search.trim().toLowerCase();
+     function search_commands(search) {
+  const containers = document.querySelectorAll("#menuContainer .container");
+  const categories = document.querySelectorAll("#menuContainer [id^='category_']");
+  const query = search.trim().toLowerCase();
 
-        if (!query) {
-          // When query is empty, hide all containers
-          containers.forEach(container => {
-            container.classList.add("hidden");
-            container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
-          });
-          categories.forEach(category => category.classList.remove("hidden"));
-          return;
-        }
+  // Reset everything when query is empty
+  if (!query) {
+    categories.forEach(category => category.classList.remove("hidden"));
+    containers.forEach(container => {
+      container.classList.add("hidden");
+      container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
+    });
+    return;
+  }
 
-        // First pass: check which categories match the search term
-        const matchingCategoryIds = new Set();
-        categories.forEach(category => {
-          const categoryName = category.textContent.toLowerCase();
-          if (categoryName.includes(query)) {
-            // If category name matches, show all its buttons
-            const containerId = category.id.replace("category_", "container_");
-            matchingCategoryIds.add(containerId);
-            category.classList.remove("hidden");
-          } else {
-            category.classList.add("hidden");
-          }
-        });
+  // Track categories and containers with matching buttons
+  const matchingCategories = new Set();
+  const matchingContainers = new Set();
 
-        // Second pass: process containers and buttons
-        containers.forEach(container => {
-          const buttons = [...container.querySelectorAll(".button_opt")];
+  // First pass: Check category names and mark matching ones
+  categories.forEach(category => {
+    const categoryName = category.textContent.toLowerCase();
+    const categoryId = category.id;
+    const containerId = categoryId.replace("category_", "container_");
+    
+    if (categoryName.includes(query)) {
+      matchingCategories.add(categoryId);
+      matchingContainers.add(containerId);
+    }
+  });
 
-          // If this container's category matched the search, show all buttons
-          if (matchingCategoryIds.has(container.id)) {
-            container.classList.remove("hidden");
-            buttons.forEach(button => button.classList.remove("hidden"));
-            return;
-          }
-
-          // Otherwise, check individual buttons
-          const hasButtonMatch = buttons.some(button => button.textContent.toLowerCase().includes(query));
-
-          container.classList.toggle("hidden", !hasButtonMatch);
-          buttons.forEach(button => {
-            button.classList.toggle("hidden", !button.textContent.toLowerCase().includes(query));
-          });
-
-          // If any buttons match, show the category
-          if (hasButtonMatch) {
-            const categoryId = container.id.replace("container_", "category_");
-            const category = document.getElementById(categoryId);
-            if (category) {
-              category.classList.remove("hidden");
-            }
-          }
-        });
+  // Second pass: Process containers and buttons
+  containers.forEach(container => {
+    const containerId = container.id;
+    const categoryId = containerId.replace("container_", "category_");
+    const buttons = container.querySelectorAll(".button_opt");
+    
+    // Check if any buttons match the query
+    let hasButtonMatch = false;
+    
+    buttons.forEach(button => {
+      const buttonMatches = button.textContent.toLowerCase().includes(query);
+      button.classList.toggle("hidden", !buttonMatches);
+      
+      if (buttonMatches) {
+        hasButtonMatch = true;
+        matchingCategories.add(categoryId);
+        matchingContainers.add(containerId);
       }
-    </script>
+    });
+    
+    // If container's category matched, show all buttons
+    if (matchingCategories.has(categoryId) && !hasButtonMatch) {
+      buttons.forEach(button => button.classList.remove("hidden"));
+    }
+  });
+
+  // Update visibility of categories and containers
+  categories.forEach(category => {
+    category.classList.toggle("hidden", !matchingCategories.has(category.id));
+  });
+  
+  containers.forEach(container => {
+    container.classList.toggle("hidden", !matchingContainers.has(container.id));
+  });
+} </script>
 
 
     <script>

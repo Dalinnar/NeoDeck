@@ -170,7 +170,7 @@ function get_folder_data(page) {
             rowLabel.appendChild(rowInput);
 
             const saveButton = document.createElement("button");
-            saveButton.textContent = "Guardar";
+            saveButton.textContent = "Save";
             saveButton.onclick = () => update_folder_data(page);
 
             configDiv.appendChild(remove_cont);
@@ -395,7 +395,7 @@ function add_folder() {
 
     // Crear y agregar el botón de guardar
     const saveButton = document.createElement("button");
-    saveButton.textContent = "Guardar";
+    saveButton.textContent = "Save";
     saveButton.onclick = () => save_new_folder();
 
     // Agregar elementos al div de configuración
@@ -422,89 +422,104 @@ function add_folder() {
         }
     });
 }
-
 function save_new_folder() {
-    const input = document.getElementById("folder-bg-image").files[0];
-    const title = document.getElementById("folder-title").value;
-    console.log(title);
-    const background = document.getElementById("folder-background").value; // Ahora será un color
+    // Get form elements
+    const inputFile = document.getElementById("folder-bg-image").files[0];
+    const title = document.getElementById("folder-title").value.trim();
+    const background = document.getElementById("folder-background").value;
     const columns = document.getElementById("folder-columns").value;
     const rows = document.getElementById("folder-rows").value;
-
-    let formData = new FormData();
-    let obj = {
-        [title]: {
-            "background": background,
-            "columns": columns,
-            "rows": rows,
-            "buttons": []
-        }
+    
+    // Validate input
+    if (!validateInput(title)) return;
+    
+    // Prepare folder data
+    const folderData = {
+      [title]: {
+        background,
+        columns,
+        rows,
+        buttons: []
+      }
     };
-
-    // Agregar el archivo al FormData si existe
-    if (input) {
-        formData.append("file", input);
-        formData.append("info", "background_image");
-    }
-
-    // Función para enviar el archivo si existe
-    const uploadFile = () => {
-        if (input) {
-            return fetch("/upload_file", {
-                method: 'POST',
-                body: formData,  // Enviar el FormData con el archivo
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        console.log('File uploaded successfully:', data.file_path);
-                        //normalize the file path
-                        data.file_path = data.file_path.replace(/\\/g, "/");
-                        return data.file_path;
-                    } else {
-                        console.error('Error uploading file:', data.message);
-
-                        return null;
-                    }
-                });
+    
+    // Handle file upload and folder creation
+    handleFileUpload(inputFile)
+      .then(filePath => {
+        if (filePath) {
+          folderData[title].background_img = filePath;
+        }
+        return createFolder(folderData);
+      })
+      .then(result => {
+        if (result.success) {
+          console.log('Folder created successfully:', result.folder_id);
+          location.reload();
         } else {
-            return Promise.resolve(null);
+          handleError('Error creating folder:', result.message);
         }
-    };
-
-    // Llamada a la API para crear la carpeta
-    uploadFile()
-        .then(file_path => {
-            if (file_path) {
-                obj["background_img"] = file_path; // Agregar la ruta de la imagen si se subió
-            }
-
-            console.log(obj);
-
-            return fetch("/create_folder", {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(obj)
-            });
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log('Folder created successfully:', data.folder_id);
-            } else {
-                console.error('Error creating folder:', data.message);
-                alert(data.message)
-            }
-        })
-        .catch(error => {
-            console.error('Error during fetch:', error);
-
-        });
-    //reload the page
-    location.reload();
-}
+      })
+      .catch(error => handleError('Error during operation:', error));
+  }
+  
+  // Validation function
+  function validateInput(title) {
+    if (!title) {
+      alert("Title cannot be empty");
+      return false;
+    }
+    
+    if (window.pages.includes(title)) {
+      alert("Title already exists");
+      return false;
+    }
+    
+    return true;
+  }
+  
+  // Handle file upload
+  function handleFileUpload(file) {
+    if (!file) return Promise.resolve(null);
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("info", "background_image");
+    
+    return fetch("/upload_file", {
+      method: 'POST',
+      body: formData
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('File uploaded successfully:', data.file_path);
+          return data.file_path.replace(/\\/g, "/"); // Normalize path
+        } 
+        throw new Error(data.message || 'Unknown error during file upload');
+      });
+  }
+  
+  // Create folder via API
+  function createFolder(folderData) {
+    return fetch("/create_folder", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(folderData)
+    })
+      .then(response => response.json());
+  }
+  
+  // Error handler
+  function handleError(message, error) {
+    console.error(message, error);
+    if (typeof error === 'string') {
+      alert(error);
+    } else if (error?.message) {
+      alert(error.message);
+    }
+  }
 
 function deletefolder(page) {
     // Fetch delete folder
