@@ -478,12 +478,66 @@ async function handleFileUpload(file) {
 // Crear una imagen en la galería
 function createGalleryImage(imageSrc, imgOrSvg, dialog) {
     let element;
+    let div = document.createElement("div");
+    div.style.position = "relative"
+    div.classList.add("gallery-image-container");
 
     element = document.createElement("img");
     element.src = imageSrc;
 
+    if (imageSrc.includes("user_uploads")) {
+        let deleteteButton = document.createElement("div");
+        deleteteButton.classList.add("delete-button");
+    
+        // Add SVG 'X' icon
+        deleteteButton.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" 
+                 viewBox="0 0 24 24" 
+                 width="24" height="24" 
+                 fill="red">
+                <path d="M18.3 5.71a1 1 0 00-1.41 0L12 10.59 7.11 5.7A1 1 0 105.7 7.11L10.59 12l-4.89 4.89a1 1 0 101.41 1.41L12 13.41l4.89 4.89a1 1 0 001.41-1.41L13.41 12l4.89-4.89a1 1 0 000-1.4z"/>
+            </svg>
+        `;
+    
+        deleteteButton.style.position = "absolute";
+        deleteteButton.style.top = "5%";
+        deleteteButton.style.right = "5%";
+        deleteteButton.style.cursor = "pointer"; // Optional for better UX
+
+        deleteteButton.addEventListener("click",(event) => {
+            event.stopPropagation();
+            if (confirm(getTranslation("confirm_delete_image"))) {
+                
+                window.image_list = window.image_list.filter(image => image !== imageSrc);
+                div.remove();
+                fetch("/delete_file", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ file_path: imageSrc })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        console.log("Archivo eliminado exitosamente");
+                    } else {
+                        console.error("Error al eliminar el archivo");
+                    }
+                })
+                .catch(error => {
+                    console.error("Error al eliminar el archivo:", error);
+                });
+            }
+
+        })
+            
+        
+    
+        div.appendChild(deleteteButton);
+    }
+
     element.classList.add("gallery-image");
-    element.addEventListener("click", () => {
+    div.addEventListener("click", () => {
         if (element.tagName === "IMG") {
             imgOrSvg.src = imageSrc;
         } else {
@@ -491,8 +545,9 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
         }
         dialog.close();
     });
+    div.appendChild(element);
 
-    return element;
+    return div;
 }
 async function buildButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");

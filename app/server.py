@@ -236,6 +236,20 @@ def upload_file():
     return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path})
 
 
+@app.route("/delete_file", methods=["POST"])
+def delete_file():
+    data = request.get_json()
+    file_path = data.get("file_path")
+
+    full_path = os.path.join(base_dir, file_path)
+    
+    if not os.path.exists(full_path) or not os.path.isfile(full_path) or \
+       not os.path.splitext(full_path)[1].lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
+        return jsonify({"success": False, "message": text("file_not_found_error")})
+
+    os.remove(full_path)
+    return jsonify({"success": True, "message": text("file_deleted_successfully")})
+
 
 @app.route('/temp/<filename>')
 @app.route('/.temp/<filename>')
