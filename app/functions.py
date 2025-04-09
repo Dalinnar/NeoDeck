@@ -33,48 +33,37 @@ def to_json(obj):
     return json.dumps(obj, default=lambda o: o.__dict__)
 
 def clean_key(key, prefixes):
-    for prefix in prefixes:        
-        if key.startswith(prefix):    
-            if prefix == "#":
-                return None
-            return key[len(prefix):]
+    if isinstance(key, str):
+        for prefix in prefixes:
+            if key.startswith(prefix):
+                return None if prefix == "#" else key[len(prefix):]
     return key
 
+def clean_dict(d, prefixes):
+    result = {}
+    for key, value in d.items():
+        new_key = clean_key(key, prefixes)
+        if new_key is None:
+            continue
+        if isinstance(value, dict):
+            value = clean_dict(value, prefixes)
+            if not value:
+                continue
+        result[new_key] = value
+    return result
 
-def deep_merge(original, updates):
-    prefixes = ["#", "_"]
-    """Devuelve un nuevo diccionario con la combinación de original y updates sin modificar los originales, sin duplicados de clave y valor y evitando duplicados en listas."""
+def deep_merge(defaults, saved, prefixes=["#", "_"]):
+    defaults = clean_dict(defaults, prefixes)
+    saved = clean_dict(saved, prefixes)
 
-    merged = json.loads(json.dumps(original))
-    
-    for key in list(merged.keys()):        
-        if key.startswith(tuple(prefixes)):
-            cleaned_clay =  clean_key(key, prefixes)
-            if cleaned_clay is None:                
-                del merged[key]
-            else: 
-                print(f"cleaning {key}")
-                merged[cleaned_clay] =  merged[key]
-                merged.pop(key)
-
-
-
-    for key, value in updates.items():
-        if isinstance(value, dict) and key in merged and isinstance(merged[key], dict):
-            merged[key] = deep_merge(merged[key], value)  # Recursión para diccionarios anidados
-        elif isinstance(value, list) and key in merged and isinstance(merged[key], list):
-            # Actualizar las listas con los elementos de updates, eliminando duplicados
-            merged[key] = list(dict.fromkeys(value))  # Concatenar y eliminar duplicados en updates
-            # Eliminar elementos que estén en el original pero no en updates
-            merged[key] = [item for item in merged[key] if item in value]
-            # Eliminar elementos vacíos en la lista
-            merged[key] = [item for item in merged[key] if item]
+    merged = {}
+    for key in set(defaults) | set(saved):
+        if isinstance(defaults.get(key), dict) and isinstance(saved.get(key), dict):
+            merged[key] = deep_merge(defaults[key], saved[key], prefixes)
         else:
-            # No agregar la clave si el valor está vacío o es nulo
-            if value not in [None, "", {}]:  # Evitar agregar claves vacías o nulas
-                merged[key] = value
-
+            merged[key] = saved.get(key, defaults.get(key))
     return merged
+
 def get_temp_scripts():
     scripts = []
     for root, dirs, files in os.walk(os.path.join(get_base_dir(), ".temp")):

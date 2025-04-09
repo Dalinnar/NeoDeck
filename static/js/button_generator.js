@@ -85,7 +85,7 @@ const createInputField = (input) => {
 
     [element, type] = input.TYPE.split(" ");
 
-    
+
 
     if (!input.name) alert("Input name is undefined");
 
@@ -125,7 +125,7 @@ const createInputField = (input) => {
 };
 
 //function to make small changes to the inputs after they are created
-function setup_input(input){
+function setup_input(input) {
     if (input.type === "checkbox") {
         input.parentElement.style.flexDirection = "row-reverse";
         input.parentElement.style.justifyContent = "start";
@@ -192,7 +192,14 @@ const setupSelectInput = (_input, input) => {
     let options = input.options ?? [];
     if (input.options_url) {
         get_data_from_url(input.options_url).then(data => {
-            options = [...options, ...data];
+            if (Array.isArray(data)) {
+                options = [...options, ...data];
+            } else if (typeof data === 'object' && data !== null) {
+                options = { ...(options || {}), ...data };
+            } else {
+                console.warn("Formato inesperado en data:", data);
+                options = data; // fallback
+            }
             populateSelectOptions(_input, options);
         });
     } else {
@@ -218,15 +225,29 @@ const setupCheckboxInput = (_input, input) => {
 
 
 const populateSelectOptions = (_input, options) => {
-    options.forEach((option, index) => {
-        const _option = document.createElement("option");
-        _option.value = option;
-        _option.textContent = option;
-        if (index === 0) _option.selected = true;
-        _input.appendChild(_option);
-        //click the option to trigger the change event
+    _input.innerHTML = ""; // Limpia las opciones previas
+
+    if (Array.isArray(options)) {
+        options.forEach((option, index) => {
+            const _option = document.createElement("option");
+            _option.value = option;
+            _option.textContent = option;
+            if (index === 0) _option.selected = true;
+            _input.appendChild(_option);
+        });
+    } else if (typeof options === 'object') {
+        Object.entries(options).forEach(([key, value], index) => {
+            const _option = document.createElement("option");
+            _option.value = key;
+            _option.textContent = value;
+            if (index === 0) _option.selected = true;
+            _input.appendChild(_option);
+        });
+    }
+    // click para activar el evento change (solo si hay al menos una opción)
+    if (_input.options.length > 0) {
         _input.click();
-    });
+    }
 };
 
 //function toggle fields based on selected value and remove the content
@@ -488,7 +509,7 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
     if (imageSrc.includes("user_uploads")) {
         let deleteteButton = document.createElement("div");
         deleteteButton.classList.add("delete-button");
-    
+
         // Add SVG 'X' icon
         deleteteButton.innerHTML = `
             <svg xmlns="http://www.w3.org/2000/svg" 
@@ -498,16 +519,16 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
                 <path d="M18.3 5.71a1 1 0 00-1.41 0L12 10.59 7.11 5.7A1 1 0 105.7 7.11L10.59 12l-4.89 4.89a1 1 0 101.41 1.41L12 13.41l4.89 4.89a1 1 0 001.41-1.41L13.41 12l4.89-4.89a1 1 0 000-1.4z"/>
             </svg>
         `;
-    
+
         deleteteButton.style.position = "absolute";
         deleteteButton.style.top = "5%";
         deleteteButton.style.right = "5%";
         deleteteButton.style.cursor = "pointer"; // Optional for better UX
 
-        deleteteButton.addEventListener("click",(event) => {
+        deleteteButton.addEventListener("click", (event) => {
             event.stopPropagation();
             if (confirm(getTranslation("confirm_delete_image"))) {
-                
+
                 window.image_list = window.image_list.filter(image => image !== imageSrc);
                 div.remove();
                 fetch("/delete_file", {
@@ -517,22 +538,22 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
                     },
                     body: JSON.stringify({ file_path: imageSrc })
                 })
-                .then(response => {
-                    if (response.ok) {
-                        console.log("Archivo eliminado exitosamente");
-                    } else {
-                        console.error("Error al eliminar el archivo");
-                    }
-                })
-                .catch(error => {
-                    console.error("Error al eliminar el archivo:", error);
-                });
+                    .then(response => {
+                        if (response.ok) {
+                            console.log("Archivo eliminado exitosamente");
+                        } else {
+                            console.error("Error al eliminar el archivo");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Error al eliminar el archivo:", error);
+                    });
             }
 
         })
-            
-        
-    
+
+
+
         div.appendChild(deleteteButton);
     }
 
@@ -617,7 +638,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
     }
 
     const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
-    
+
     const obj = {
         column,
         row,

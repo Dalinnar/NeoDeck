@@ -258,6 +258,12 @@ body {
     img {
         aspect-ratio: inherit;
         border-radius: inherit;
+        -webkit-touch-callout: none; /* Safari */
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        pointer-events: none; /* Opcional: desactiva completamente la interacción */
     }
 }
 
@@ -425,6 +431,12 @@ input[type="color"] {
     border-radius: inherit;
     height: auto;
     object-fit: cover;
+    -webkit-touch-callout: none; /* Safari */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    pointer-events: none; /* Opcional: desactiva completamente la interacción */
 }
 
 #pages-container {
