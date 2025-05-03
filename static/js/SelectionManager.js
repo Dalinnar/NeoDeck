@@ -123,7 +123,6 @@ class Selection {
     }
 
     _handleDrop(event) {
-        console.log('Drop event triggered');
         event.preventDefault();
 
         const draggedElementId = event.dataTransfer.getData('text/plain');

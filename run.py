@@ -71,28 +71,32 @@ def initialize_tray_icon():
 
 if not is_opened() or get_arg('force_start'):
     log.info("Starting WebDeck")
-    
+
     log.info("Loading translations")
     languages.init(
         lang_files_directory="webdeck/translations",
         misc_lang_files_directory="webdeck/translations/misc",
         default_language=settings.language,
     )
-    
-    log.info("Starting server thread")
-    server_thread = threading.Thread(target=run_server_thread, daemon=True)
-    server_thread.start()
-    
-    popup_thread = threading.Thread(target=show_popup, daemon=True)
-    popup_thread.start()
-    
-    if not get_arg('no_tray'):
-        log.info("Initializing tray icon")
-        initialize_tray_icon()
+
+    # ✅ Si no está congelado y se quiere usar el reloader, correr directamente el server en main thread
+    if not getattr(sys, "frozen", False) and loaded_settings["webdeck"].get("flask_reloader", False):
+        from app.server import run_server
+        run_server()  # esto evitará el error con signal
     else:
-        log.info("Running without tray icon")
-        try:
-            while True:
-                pass
-        except KeyboardInterrupt:
-            log.info("Exiting WebDeck... (Ctrl+C)")
+        server_thread = threading.Thread(target=run_server_thread, daemon=True)
+        server_thread.start()
+
+        popup_thread = threading.Thread(target=show_popup, daemon=True)
+        popup_thread.start()
+
+        if not get_arg('no_tray'):
+            log.info("Initializing tray icon")
+            initialize_tray_icon()
+        else:
+            log.info("Running without tray icon")
+            try:
+                while True:
+                    pass
+            except KeyboardInterrupt:
+                log.info("Exiting WebDeck... (Ctrl+C)")

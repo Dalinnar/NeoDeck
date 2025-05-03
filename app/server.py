@@ -57,9 +57,7 @@ class CustomFlask(Flask):
 
         super().run(*args, **kwargs)
     
-
 change_server_state(0)
-
 
 local_ip = on_start()
 base_dir = get_base_dir()
@@ -71,9 +69,10 @@ app = CustomFlask(__name__, template_folder=template_folder, static_folder=stati
 commands = load_plugins(app)
 # app custon functions
 app.get_settings = get_settings
+app.load_settings = load_settings
 app.BASE_DIR = base_dir
 app.local_ip = local_ip
-
+app.url_path = f"{get_arg('host') or local_ip}:{get_port()}"
 
 
 logging.getLogger("werkzeug").disabled = True
@@ -102,18 +101,28 @@ def get_folder_data(folder):
 
 @app.before_request
 def check_local_network():
-    
-    netmask =  loaded_settings["webdeck"].get("netmask", 16)
     remote_ip = ipaddress.ip_address(request.remote_addr)
-    local_ip_network = ipaddress.ip_network(f"{local_ip}/{netmask}", strict=False)
-    
-    if remote_ip not in local_ip_network:
-        for network in loaded_settings["webdeck"].get("allowed_networks", []):
-            if remote_ip in ipaddress.ip_address(network):
-                print("Access granted: IP in allowed network")
-                return None
-        
-        return jsonify({"success": False, "message": "Access denied: IP not in local network"}), 403
+
+    # Permitir localhost explícitamente
+    if remote_ip.is_loopback:
+        return None  # OK
+
+    # Verificar si está dentro de la red local
+    netmask = loaded_settings["webdeck"].get("netmask", 16)
+    local_net = ipaddress.ip_network(f"{local_ip}/{netmask}", strict=False)
+    if remote_ip in local_net:
+        return None  # OK
+
+    # Verificar redes permitidas manualmente
+    for network_str in loaded_settings["webdeck"].get("allowed_networks", []):
+        try:
+            network = ipaddress.ip_network(network_str, strict=False)
+            if remote_ip in network:
+                return None  # OK
+        except ValueError:
+            pass  # Ignorar errores de formato
+
+    return jsonify({"success": False, "message": "Access denied: IP not in local network"}), 403
 
 
 @app.after_request
@@ -232,8 +241,9 @@ def upload_file():
     save_path = os.path.join(save_dir, f"{file_name}{os.path.splitext(uploaded_file.filename)[1]}")
     uploaded_file.save(save_path)
 
+
     log.success(f"File '{uploaded_file.filename}' uploaded successfully as '{file_name}'")
-    return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path})
+    return jsonify({"success": True, "message": text("downloaded_successfully"), "file_path": save_path, "file_name": file_name})
 
 
 @app.route("/delete_file", methods=["POST"])
@@ -244,9 +254,10 @@ def delete_file():
     full_path = os.path.join(base_dir, file_path)
     
     if not os.path.exists(full_path) or not os.path.isfile(full_path) or \
-       not os.path.splitext(full_path)[1].lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp']:
+       not os.path.splitext(full_path)[1].lower() in ['.png', ".webp",'.jpg', '.jpeg', '.gif', '.bmp']:
         return jsonify({"success": False, "message": text("file_not_found_error")})
 
+    print(f"File '{full_path}' deleted successfully.")
     os.remove(full_path)
     return jsonify({"success": True, "message": text("file_deleted_successfully")})
 
@@ -384,6 +395,7 @@ def get_sysfolder():
     
 @app.route("/delete_folder/<folder_name>", methods=["DELETE"])
 def delete_folder(folder_name):
+    print("holas")
     with open(os.path.join(base_dir, ".config/pages.json"), "r+") as f:
         pages = json.load(f)
         #check if its only one folder left
@@ -427,10 +439,11 @@ def run_server():
     if default_settings["webdeck"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
         server = make_server(local_ip, get_port(), app)
         server.serve_forever()
-    else:        
+    else:
+        print(f"Server running on http://{local_ip}:{get_port()}")
         app.run(
-            host=get_arg("host") or local_ip,
-            port=get_port(),
-            debug=loaded_settings["webdeck"].get("flask_debug"),
-            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False),
-        )
+    host="0.0.0.0",
+    port=get_port(),
+    debug=loaded_settings["webdeck"].get("flask_debug"),
+    use_reloader=loaded_settings["webdeck"].get("flask_reloader", False),
+)

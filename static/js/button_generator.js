@@ -38,7 +38,7 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
         dialog_content.appendChild(setup_actions(button_data));
     }
     else {
-        button_data.inputs.forEach(input => dialog_content.appendChild(createInputField(input)));
+        button_data.inputs?.forEach(input => dialog_content.appendChild(createInputField(input)));
     }
 
     // Crear contenedor del botón
@@ -190,6 +190,7 @@ const createSysInputField = (input) => {
 //! first option is the html input, second is the json input data
 const setupSelectInput = (_input, input) => {
     let options = input.options ?? [];
+    // 1) Si hay URL para cargar opciones, cargarlas y poblar
     if (input.options_url) {
         get_data_from_url(input.options_url).then(data => {
             if (Array.isArray(data)) {
@@ -198,16 +199,21 @@ const setupSelectInput = (_input, input) => {
                 options = { ...(options || {}), ...data };
             } else {
                 console.warn("Formato inesperado en data:", data);
-                options = data; // fallback
+                options = data;
             }
             populateSelectOptions(_input, options);
+            // ¡NO disparar aquí el evento change! Solo recargamos las opciones.
         });
     } else {
         populateSelectOptions(_input, options);
     }
 
-    _input.addEventListener("change", () => toggleDependentFields(_input.value));
-    setTimeout(() => _input.dispatchEvent(new Event("change")), 0);
+    // 2) Solo si es el select “padre” (no tiene `dependant_on`), le ponemos el listener:
+    if (!input.dependant_on) {
+        _input.addEventListener("change", () => toggleDependentFields(_input.value));
+        // y forzamos la primera ejecución tras poblar:
+        setTimeout(() => _input.dispatchEvent(new Event("change")), 0);
+    }
 };
 
 const setupCheckboxInput = (_input, input) => {
@@ -223,31 +229,27 @@ const setupCheckboxInput = (_input, input) => {
     });
 };
 
-
 const populateSelectOptions = (_input, options) => {
-    _input.innerHTML = ""; // Limpia las opciones previas
+    _input.innerHTML = "";
 
     if (Array.isArray(options)) {
-        options.forEach((option, index) => {
-            const _option = document.createElement("option");
-            _option.value = option;
-            _option.textContent = option;
-            if (index === 0) _option.selected = true;
-            _input.appendChild(_option);
+        options.forEach((opt, i) => {
+            const o = document.createElement("option");
+            o.value = opt;
+            o.textContent = opt;
+            if (i === 0) o.selected = true;
+            _input.appendChild(o);
         });
     } else if (typeof options === 'object') {
-        Object.entries(options).forEach(([key, value], index) => {
-            const _option = document.createElement("option");
-            _option.value = key;
-            _option.textContent = value;
-            if (index === 0) _option.selected = true;
-            _input.appendChild(_option);
+        Object.entries(options).forEach(([k,v], i) => {
+            const o = document.createElement("option");
+            o.value = k;
+            o.textContent = v;
+            if (i === 0) o.selected = true;
+            _input.appendChild(o);
         });
     }
-    // click para activar el evento change (solo si hay al menos una opción)
-    if (_input.options.length > 0) {
-        _input.click();
-    }
+    // NO más dispatch de change ni clicks aquí
 };
 
 //function toggle fields based on selected value and remove the content
@@ -451,7 +453,7 @@ function createImageDialog() {
     return dialog;
 }
 
-// Crear el input para subir imágenes
+// Fixed createUploadInput function
 function createUploadInput(imgOrSvg, dialog, gallery) {
     const input = document.createElement("input");
     input.type = "file";
@@ -463,9 +465,22 @@ function createUploadInput(imgOrSvg, dialog, gallery) {
         if (!file) return;
 
         let data = await handleFileUpload(file);
-        const previewImg = createGalleryImage(data.file_path, imgOrSvg, dialog);
-
-        window.image_list.push(data.file_path);
+        
+        // Check if data is valid before proceeding
+        if (!data) {
+            console.error("Invalid data received from file upload");
+            console.log("Data:", data);
+            return;
+        }
+        
+        const previewImg = createGalleryImage(data, imgOrSvg, dialog);
+        
+        // Make sure window.image_list exists before pushing to it
+        if (!window.image_list) {
+            window.image_list = [];
+        }
+        
+        window.image_list.push(data);
         gallery.insertBefore(previewImg, gallery.children[3]);
     });
 
@@ -482,6 +497,7 @@ function createUploadButton(input) {
     return upload_div;
 }
 
+// Fixed handleFileUpload function
 async function handleFileUpload(file) {
     const formData = new FormData();
     formData.append("file", file);
@@ -489,15 +505,23 @@ async function handleFileUpload(file) {
     try {
         const response = await fetch("/upload_file", { method: "POST", body: formData });
         let data = await response.json();
-        if (!data.success) throw new Error(data.message);
+        if (!data.success) throw new Error(data.message || "Upload failed");
         return data;
     } catch (error) {
         console.error("Error en la subida:", error);
+        return null; // Return null so we can check for it
     }
 }
 
 // Crear una imagen en la galería
+// Fixed createGalleryImage function
 function createGalleryImage(imageSrc, imgOrSvg, dialog) {
+    // Guard clause to prevent errors with undefined/null imageSrc
+    if (!imageSrc) {
+        console.error("Invalid image source provided to createGalleryImage");
+        return document.createElement("div"); // Return empty div to avoid breaking the flow
+    }
+    
     let element;
     let div = document.createElement("div");
     div.style.position = "relative"
@@ -506,7 +530,8 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
     element = document.createElement("img");
     element.src = imageSrc;
 
-    if (imageSrc.includes("user_uploads")) {
+    // Check if imageSrc is a string before calling includes
+    if (typeof imageSrc === 'string' && imageSrc.includes("user_uploads")) {
         let deleteteButton = document.createElement("div");
         deleteteButton.classList.add("delete-button");
 
@@ -528,8 +553,11 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
         deleteteButton.addEventListener("click", (event) => {
             event.stopPropagation();
             if (confirm(getTranslation("confirm_delete_image"))) {
-
-                window.image_list = window.image_list.filter(image => image !== imageSrc);
+                // Make sure window.image_list exists
+                if (window.image_list) {
+                    window.image_list = window.image_list.filter(image => image !== imageSrc);
+                }
+                
                 div.remove();
                 fetch("/delete_file", {
                     method: "POST",
@@ -549,10 +577,7 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
                         console.error("Error al eliminar el archivo:", error);
                     });
             }
-
-        })
-
-
+        });
 
         div.appendChild(deleteteButton);
     }
@@ -570,6 +595,8 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 
     return div;
 }
+
+
 async function buildButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]))
@@ -583,7 +610,7 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
 
     const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
 
-    console.log(replacePlaceholders(button_data.command))
+
 
     const obj = {
         command: replacePlaceholders(button_data.command),
@@ -629,6 +656,11 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
 async function buildActions(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+
+    //PRINT ALL INPUTS NAMES
+    Object.values(inputs).forEach(input => console.log(input.name , input.value));
+
+
     //check if on inputs are required buttons without vallues
     const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
     if (requiredInputs.length > 0) {
@@ -637,7 +669,13 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         return
     }
 
-    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
+    const replacePlaceholders = (str) =>
+        str.replace(/\{(.*?)\}/g, (match, v) => {
+          // si existe inputs[v], lo usamos; si no, probamos con inputs['global_'+v]
+          const key = inputs[v] ? v : `global_${v}`;
+          const val = inputs[key]?.value;
+          return (val && val !== match) ? val : "";
+        });
 
     const obj = {
         column,
@@ -767,66 +805,76 @@ function setup_actions(button_data) {
     noneOption.selected = true;
     select_options.appendChild(noneOption);
 
-    Object.entries(button_data.commands).forEach(([key, value]) => {
-        const option = createElement("option", "", key);
-        option.value = value;
-        select_options.appendChild(option);
-    });
-
-    // Global inputs - now using createInputField
-    button_data.inputs
-        .filter(input => input.shared === true)
-        .forEach(input => {
-            // Add an id prefix to distinguish global inputs
-            const globalInput = { ...input, name: "global_" + input.name };
-            const inputContainer = createInputField(globalInput);
-            global_inputs_container.appendChild(inputContainer);
+    // Ensure commands exist before iterating
+    if (button_data.commands) {
+        Object.entries(button_data.commands).forEach(([key, value]) => {
+            const option = createElement("option", "", key);
+            option.value = value;
+            select_options.appendChild(option);
         });
+    }
+
+    // Global inputs - handle the case where inputs may not exist
+    if (button_data.inputs && button_data.inputs.length > 0) {
+        button_data.inputs
+            .filter(input => input.shared === true)
+            .forEach(input => {
+                // Add an id prefix to distinguish global inputs
+                const globalInput = { ...input, name: "global_" + input.name };
+                const inputContainer = createInputField(globalInput);
+                global_inputs_container.appendChild(inputContainer);
+            });
+    }
 
     // Action containers
     const actions_fragment = document.createDocumentFragment();
 
-    button_data.actions.forEach(action => {
-        const action_container = createElement("div", "action-container");
-        const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
-        const action_select = createElement("select", "command-select");
-        action_select.name = action;
-        action_select.appendChild(select_options.cloneNode(true));
-        action_select.id = "command-select-" + action;
-        action_select.addEventListener("change", function () { update_inputs(this); });
+    // Ensure actions exist before iterating
+    if (button_data.actions && button_data.actions.length > 0) {
+        button_data.actions.forEach(action => {
+            const action_container = createElement("div", "action-container");
+            const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+            const action_select = createElement("select", "command-select");
+            action_select.name = action;
+            action_select.appendChild(select_options.cloneNode(true));
+            action_select.id = "command-select-" + action;
+            action_select.addEventListener("change", function () { update_inputs(this); });
 
-        // Container for action inputs
-        const inputs_container = createElement("div", "inputs_container");
+            // Container for action inputs
+            const inputs_container = createElement("div", "inputs_container");
 
-        // Creating action inputs using createInputField
-        button_data.inputs
-            .filter(input => input.shared !== true)
-            .forEach(input => {
-                // Create a modified input object with action-specific properties
-                const actionInput = {
-                    ...input,
-                    name: input.name,
-                    label: getTranslation("ACTION_" + input.name),
-                    // Add an ID prefix to make it unique for this action
-                    id: action + "_" + input.name
-                };
+            // Creating action inputs only if inputs exist
+            if (button_data.inputs && button_data.inputs.length > 0) {
+                button_data.inputs
+                    .filter(input => input.shared !== true)
+                    .forEach(input => {
+                        // Create a modified input object with action-specific properties
+                        const actionInput = {
+                            ...input,
+                            name: input.name,
+                            label: getTranslation("ACTION_" + input.name),
+                            // Add an ID prefix to make it unique for this action
+                            id: action + "_" + input.name
+                        };
 
-                const inputContainer = createInputField(actionInput);
+                        const inputContainer = createInputField(actionInput);
 
-                // Apply action-specific styling and behavior
-                inputContainer.style.display = "none";
-                inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
-                    elem.disabled = true;
-                    elem.id = action + "_" + input.name;
-                    elem.style.display = "block";
-                });
+                        // Apply action-specific styling and behavior
+                        inputContainer.style.display = "none";
+                        inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                            elem.disabled = true;
+                            elem.id = action + "_" + input.name;
+                            elem.style.display = "block";
+                        });
 
-                inputs_container.appendChild(inputContainer);
-            });
+                        inputs_container.appendChild(inputContainer);
+                    });
+            }
 
-        action_container.append(label, action_select, inputs_container);
-        actions_fragment.appendChild(action_container);
-    });
+            action_container.append(label, action_select, inputs_container);
+            actions_fragment.appendChild(action_container);
+        });
+    }
 
     actions.appendChild(actions_fragment);
     actions.appendChild(global_inputs_container);

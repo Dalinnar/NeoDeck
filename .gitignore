@@ -32,4 +32,4 @@ __pycache__/
 tests/*
 data.json
 .temp/*
-
+.cache

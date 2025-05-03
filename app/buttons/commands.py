@@ -12,7 +12,7 @@ from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
 
-from . import (actions, audio, color_picker, exec, soundboard, spotify,
+from . import (actions, audio, color_picker, exec, soundboard,
                system, window)
 
 def get_monitors(requested_monitors):
@@ -25,16 +25,20 @@ def get_monitors(requested_monitors):
 
 
 def handle_command(message: str = None):
-    """Executes a command from `command_map` based on the received message, cleaning it and returning its result or a success JSON."""
+    """Executes a command from `command_map` based on the received message."""
     global command_map
-    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "")
-   
-    for command, func in command_map.items():
-        if isinstance(command, (str, tuple)):            
-            if isinstance(command, str) and message.startswith(command) or isinstance(command, tuple) and any(cmd in message for cmd in command):
-                # Ejecutar la función asociada al comando
-                result = func(message) if 'message' in func.__code__.co_varnames else func()
-                return result if result is not None else ""
+    if not message:
+        return jsonify({"success": False, "error": "No message provided"})
+
+    message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "").strip()
+    log.info(f"Received command: {message}")
+    cmd, _, rest = message.partition(" ")
+
+    func = command_map.get(cmd)
+    if func:
+        result = func(message) if 'message' in func.__code__.co_varnames else func()
+        return result if result is not None else ""
+
     return jsonify({"success": True})
 
 
@@ -72,10 +76,9 @@ command_map ={
         "/write":                   lambda message: keyboard.write(message.replace("/write ", "")),
         "/setmicrophone":           lambda message: audio.set_microphone_by_name(message.replace("/setmicrophone", "").strip()),
         "/setoutputdevice":         lambda message: audio.set_speakers_by_name(message.replace("/setoutputdevice", "").strip()),
-        "/usage" :                  lambda message: actions.handle_device_usage(message),
         "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
-        "/spotify":                 lambda message: spotify.handle_command(message),
+
         "/colorpicker":             lambda message: color_picker.handle_command(message),
         "/exec":                    lambda message: exec.python(message),
         "/batch":                   lambda message: exec.batch(message),

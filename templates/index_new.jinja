@@ -648,7 +648,7 @@
 
             } else {
               //this are buttons of a category
-              subdata.inputs.forEach((input, inp_index) => input.label = getTranslation(`${_category}_${name.replace(/ /g, "_").replace("'", "").toLowerCase()}_input${inp_index}`));
+              subdata.inputs?.forEach((input, inp_index) => {input.label = getTranslation(`${_category}_${name.replace(/ /g, "_").replace("'", "").toLowerCase()}_input${inp_index}`);});
               addButton(categ_container, name, subdata, _category);
             }
           });
