@@ -779,3 +779,6 @@ webdeck_setting_update_channel=Update channel
 webdeck_setting_update_repo=Update repo
 webdeck_setting_windows_start_menu_shortcut=Windows start menu shortcut
 webdeck_setting_windows_startup=Windows startup
+
+
+WEBDECK_CATEGORY_NAME=Webdeck

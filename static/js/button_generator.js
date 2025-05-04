@@ -201,11 +201,10 @@ const setupSelectInput = (_input, input) => {
                 console.warn("Formato inesperado en data:", data);
                 options = data;
             }
-            populateSelectOptions(_input, options);
-            // ¡NO disparar aquí el evento change! Solo recargamos las opciones.
+            populateSelectOptions(_input, options, false); // <-- usar sin verbose
         });
     } else {
-        populateSelectOptions(_input, options);
+        populateSelectOptions(_input, options, true); // <-- usar verbose
     }
 
     // 2) Solo si es el select “padre” (no tiene `dependant_on`), le ponemos el listener:
@@ -229,27 +228,26 @@ const setupCheckboxInput = (_input, input) => {
     });
 };
 
-const populateSelectOptions = (_input, options) => {
+const populateSelectOptions = (_input, options, useVerbose = true) => {
     _input.innerHTML = "";
 
     if (Array.isArray(options)) {
         options.forEach((opt, i) => {
             const o = document.createElement("option");
             o.value = opt;
-            o.textContent = opt;
+            o.textContent = useVerbose ? getTranslation("select_verbose_" + opt) : opt;
             if (i === 0) o.selected = true;
             _input.appendChild(o);
         });
     } else if (typeof options === 'object') {
-        Object.entries(options).forEach(([k,v], i) => {
+        Object.entries(options).forEach(([k, v], i) => {
             const o = document.createElement("option");
             o.value = k;
-            o.textContent = v;
+            o.textContent = useVerbose ? getTranslation("select_verbose_" + v) : v;
             if (i === 0) o.selected = true;
             _input.appendChild(o);
         });
     }
-    // NO más dispatch de change ni clicks aquí
 };
 
 //function toggle fields based on selected value and remove the content
@@ -465,21 +463,21 @@ function createUploadInput(imgOrSvg, dialog, gallery) {
         if (!file) return;
 
         let data = await handleFileUpload(file);
-        
+
         // Check if data is valid before proceeding
         if (!data) {
             console.error("Invalid data received from file upload");
             console.log("Data:", data);
             return;
         }
-        
+
         const previewImg = createGalleryImage(data, imgOrSvg, dialog);
-        
+
         // Make sure window.image_list exists before pushing to it
         if (!window.image_list) {
             window.image_list = [];
         }
-        
+
         window.image_list.push(data);
         gallery.insertBefore(previewImg, gallery.children[3]);
     });
@@ -521,7 +519,7 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
         console.error("Invalid image source provided to createGalleryImage");
         return document.createElement("div"); // Return empty div to avoid breaking the flow
     }
-    
+
     let element;
     let div = document.createElement("div");
     div.style.position = "relative"
@@ -557,7 +555,7 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
                 if (window.image_list) {
                     window.image_list = window.image_list.filter(image => image !== imageSrc);
                 }
-                
+
                 div.remove();
                 fetch("/delete_file", {
                     method: "POST",
@@ -658,7 +656,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
 
     //PRINT ALL INPUTS NAMES
-    Object.values(inputs).forEach(input => console.log(input.name , input.value));
+    Object.values(inputs).forEach(input => console.log(input.name, input.value));
 
 
     //check if on inputs are required buttons without vallues
@@ -671,10 +669,10 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
 
     const replacePlaceholders = (str) =>
         str.replace(/\{(.*?)\}/g, (match, v) => {
-          // si existe inputs[v], lo usamos; si no, probamos con inputs['global_'+v]
-          const key = inputs[v] ? v : `global_${v}`;
-          const val = inputs[key]?.value;
-          return (val && val !== match) ? val : "";
+            // si existe inputs[v], lo usamos; si no, probamos con inputs['global_'+v]
+            const key = inputs[v] ? v : `global_${v}`;
+            const val = inputs[key]?.value;
+            return (val && val !== match) ? val : "";
         });
 
     const obj = {
@@ -810,6 +808,7 @@ function setup_actions(button_data) {
         Object.entries(button_data.commands).forEach(([key, value]) => {
             const option = createElement("option", "", key);
             option.value = value;
+            option.textContent = getTranslation("option_verbose_" + key);
             select_options.appendChild(option);
         });
     }

@@ -28,6 +28,13 @@
 </body>
 
 <script>
+    const translations = {{ context["text"] | tojson | safe }};
+    function getTranslation(key) {
+        return translations[key] || key;
+    }
+</script>
+
+<script>
     const default_settings = {{ context['default_settings'] | tojson | safe }};
     const saved_settings = {{ context['saved_settings'] | tojson }};
 
@@ -47,7 +54,8 @@
 
         const div = document.createElement('div');
         const h2 = document.createElement('h2');
-        h2.textContent = categ;
+        const key = categ.replace(/[\s\-]+/g, "_").toUpperCase() + "_CATEGORY_NAME";
+        h2.textContent = getTranslation(key);
         h2.onclick = () => load_settings(categ);
         div.appendChild(h2);
         section_container.appendChild(div);
@@ -303,11 +311,6 @@
 
 
 
-<script>
-    const translations = {{ context["text"] | tojson | safe }};
-    function getTranslation(key) {
-        return translations[key] || key;
-    }
-</script>
+
 
 </html>
