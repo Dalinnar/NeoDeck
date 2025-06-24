@@ -72,7 +72,6 @@
 
         set_menu_commands(commands);
       });
-
       function updateGrid(pageData) {
         // Background handling
         const main_container = document.querySelector(".main-container");
@@ -141,11 +140,7 @@
             });
             button_div.appendChild(img);
 
-            if (button.image_size == 100) {
-              button_div.style.backgroundColor = "transparent";
-            }
           }
-
           // Add button text if specified
           if (button.btn_text) {
             const btn_text = document.createElement("h3");
@@ -203,6 +198,13 @@
         // Handle slider commands
         if (button.command.startsWith("!")) {
           const range = document.createElement("input");
+          send_data(button.command + " get").then((data) => {
+            if (data){
+              range.value = data;
+            }
+          });
+
+          
           Object.assign(range, {
             type: "range",
             min: button.min,
@@ -470,72 +472,72 @@
     </script>
 
     <script>
-     function search_commands(search) {
-  const containers = document.querySelectorAll("#menuContainer .container");
-  const categories = document.querySelectorAll("#menuContainer [id^='category_']");
-  const query = search.trim().toLowerCase();
+      function search_commands(search) {
+        const containers = document.querySelectorAll("#menuContainer .container");
+        const categories = document.querySelectorAll("#menuContainer [id^='category_']");
+        const query = search.trim().toLowerCase();
 
-  // Reset everything when query is empty
-  if (!query) {
-    categories.forEach(category => category.classList.remove("hidden"));
-    containers.forEach(container => {
-      container.classList.add("hidden");
-      container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
-    });
-    return;
-  }
+        // Reset everything when query is empty
+        if (!query) {
+          categories.forEach(category => category.classList.remove("hidden"));
+          containers.forEach(container => {
+            container.classList.add("hidden");
+            container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
+          });
+          return;
+        }
 
-  // Track categories and containers with matching buttons
-  const matchingCategories = new Set();
-  const matchingContainers = new Set();
+        // Track categories and containers with matching buttons
+        const matchingCategories = new Set();
+        const matchingContainers = new Set();
 
-  // First pass: Check category names and mark matching ones
-  categories.forEach(category => {
-    const categoryName = category.textContent.toLowerCase();
-    const categoryId = category.id;
-    const containerId = categoryId.replace("category_", "container_");
-    
-    if (categoryName.includes(query)) {
-      matchingCategories.add(categoryId);
-      matchingContainers.add(containerId);
-    }
-  });
+        // First pass: Check category names and mark matching ones
+        categories.forEach(category => {
+          const categoryName = category.textContent.toLowerCase();
+          const categoryId = category.id;
+          const containerId = categoryId.replace("category_", "container_");
 
-  // Second pass: Process containers and buttons
-  containers.forEach(container => {
-    const containerId = container.id;
-    const categoryId = containerId.replace("container_", "category_");
-    const buttons = container.querySelectorAll(".button_opt");
-    
-    // Check if any buttons match the query
-    let hasButtonMatch = false;
-    
-    buttons.forEach(button => {
-      const buttonMatches = button.textContent.toLowerCase().includes(query);
-      button.classList.toggle("hidden", !buttonMatches);
-      
-      if (buttonMatches) {
-        hasButtonMatch = true;
-        matchingCategories.add(categoryId);
-        matchingContainers.add(containerId);
-      }
-    });
-    
-    // If container's category matched, show all buttons
-    if (matchingCategories.has(categoryId) && !hasButtonMatch) {
-      buttons.forEach(button => button.classList.remove("hidden"));
-    }
-  });
+          if (categoryName.includes(query)) {
+            matchingCategories.add(categoryId);
+            matchingContainers.add(containerId);
+          }
+        });
 
-  // Update visibility of categories and containers
-  categories.forEach(category => {
-    category.classList.toggle("hidden", !matchingCategories.has(category.id));
-  });
-  
-  containers.forEach(container => {
-    container.classList.toggle("hidden", !matchingContainers.has(container.id));
-  });
-} </script>
+        // Second pass: Process containers and buttons
+        containers.forEach(container => {
+          const containerId = container.id;
+          const categoryId = containerId.replace("container_", "category_");
+          const buttons = container.querySelectorAll(".button_opt");
+
+          // Check if any buttons match the query
+          let hasButtonMatch = false;
+
+          buttons.forEach(button => {
+            const buttonMatches = button.textContent.toLowerCase().includes(query);
+            button.classList.toggle("hidden", !buttonMatches);
+
+            if (buttonMatches) {
+              hasButtonMatch = true;
+              matchingCategories.add(categoryId);
+              matchingContainers.add(containerId);
+            }
+          });
+
+          // If container's category matched, show all buttons
+          if (matchingCategories.has(categoryId) && !hasButtonMatch) {
+            buttons.forEach(button => button.classList.remove("hidden"));
+          }
+        });
+
+        // Update visibility of categories and containers
+        categories.forEach(category => {
+          category.classList.toggle("hidden", !matchingCategories.has(category.id));
+        });
+
+        containers.forEach(container => {
+          container.classList.toggle("hidden", !matchingContainers.has(container.id));
+        });
+      } </script>
 
 
     <script>
@@ -648,7 +650,7 @@
 
             } else {
               //this are buttons of a category
-              subdata.inputs?.forEach((input, inp_index) => {input.label = getTranslation(`${_category}_${name.replace(/ /g, "_").replace("'", "").toLowerCase()}_input${inp_index}`);});
+              subdata.inputs?.forEach((input, inp_index) => { input.label = getTranslation(`${_category}_${name.replace(/ /g, "_").replace("'", "").toLowerCase()}_input${inp_index}`); });
               addButton(categ_container, name, subdata, _category);
             }
           });

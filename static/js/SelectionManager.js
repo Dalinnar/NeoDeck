@@ -1,3 +1,4 @@
+// Optimized Selection Class with Drag and Resize Support
 class Selection {
     constructor({
         selectionBorder = "1px solid rgba(255,255,255,.7)",
@@ -7,192 +8,154 @@ class Selection {
         this._initDivStyles(selectionBackground, selectionBorder);
         document.body.appendChild(this.$element);
 
+        this.isActive = false;
         this.topLeftPoint = { x: 0, y: 0 };
         this.bottomRightPoint = { x: 0, y: 0 };
-        this.isActive = false;
 
-        this._handleMouseDown = this._handleMouseDown.bind(this);
-        this._handleMouseMove = this._handleMouseMove.bind(this);
-        this._handleMouseUp = this._handleMouseUp.bind(this);
+        document.addEventListener("mousedown", this._handleMouseDown.bind(this));
+        document.addEventListener("mousemove", this._handleMouseMove.bind(this));
+        document.addEventListener("mouseup", this._handleMouseUp.bind(this));
 
-        this._initEventListeners();
+        document.body.addEventListener("dragstart", this._handleDragStart.bind(this), true);
+        document.body.addEventListener("dragover", this._handleDragOver.bind(this), true);
+        document.body.addEventListener("drop", this._handleDrop.bind(this), true);
     }
 
-    _initEventListeners() {
-        document.addEventListener("mousedown", this._handleMouseDown);
-        document.addEventListener("mousemove", this._handleMouseMove);
-        document.addEventListener("mouseup", this._handleMouseUp);
-
-        // Usar delegación de eventos para escuchar los eventos drag en cualquier button_div
-        document.body.addEventListener("dragstart", this._handleDragStart, true);
-        document.body.addEventListener("dragover", this._handleDragOver, true);
-        document.body.addEventListener("drop", this._handleDrop, true);
-
-
+    _initDivStyles(background, border) {
+        const style = this.$element.style;
+        this.$element.hidden = true;
+        style.pointerEvents = "none";
+        style.position = "absolute";
+        style.background = background;
+        style.border = border;
+        style.zIndex = 9999;
     }
 
     _handleMouseDown(event) {
-        //!if we are not on edition mode , cannot select
-        if (document.querySelector("#pages-container").classList.contains("hidden")) return;
+        if (document.querySelector("#pages-container.hidden") || event.target.closest("button, input, textarea, .button_div, .menuContainer, #pages-container")) return;
 
-        //! exception zones where the selection is not allowed        
-        if (event.target.closest("button, input, textarea, .button_div, .menuContainer, #pages-container")) return;
+        const gridItem = event.target.closest(".grid-item"),
+              inButtons = document.querySelector("#buttons-container")?.contains(event.target);
 
-        const buttonsContainer = document.querySelector("#buttons-container");
-        const isInsideGridItem = event.target.closest(".grid-item");
-        const isInsideButtonsContainer = buttonsContainer && buttonsContainer.contains(event.target);
-
-        if (!isInsideGridItem && !isInsideButtonsContainer) {
-            document.querySelectorAll('.grid-item.selected').forEach(item => {
-                item.classList.remove('selected');
-            });
-        }
-
-        if (!isInsideButtonsContainer) {
+        if (!gridItem && !inButtons) document.querySelectorAll(".grid-item.selected").forEach(i => i.classList.remove("selected"));
+        if (!inButtons) {
             this.isActive = true;
             this.topLeftPoint = { x: event.clientX, y: event.clientY };
+            this.bottomRightPoint = { x: event.clientX, y: event.clientY };
             this._draw();
         }
     }
 
     _handleMouseMove(event) {
         if (!this.isActive) return;
-
-        this.$element.hidden = false;
-        document.body.style.userSelect = "none";
-
         this.bottomRightPoint = { x: event.clientX, y: event.clientY };
         this._draw();
+        this.$element.hidden = false;
+        document.body.style.userSelect = "none";
         this._applySelection();
     }
 
-    _handleMouseUp(event) {
+    _handleMouseUp() {
         this.isActive = false;
         this.$element.hidden = true;
         document.body.style.userSelect = "initial";
     }
 
-    _initDivStyles(selectionBackground, selectionBorder) {
-        this.$element.hidden = true;
-        this.$element.style.pointerEvents = "none";
-        this.$element.style.position = "absolute";
-        this.$element.style.background = selectionBackground;
-        this.$element.style.border = selectionBorder;
-        this.$element.style.zIndex = "9999";
-    }
-
     _draw() {
         const x1 = Math.min(this.topLeftPoint.x, this.bottomRightPoint.x);
-        const x2 = Math.max(this.topLeftPoint.x, this.bottomRightPoint.x);
         const y1 = Math.min(this.topLeftPoint.y, this.bottomRightPoint.y);
+        const x2 = Math.max(this.topLeftPoint.x, this.bottomRightPoint.x);
         const y2 = Math.max(this.topLeftPoint.y, this.bottomRightPoint.y);
 
-        this.$element.style.left = `${x1}px`;
-        this.$element.style.top = `${y1}px`;
-        this.$element.style.width = `${x2 - x1}px`;
-        this.$element.style.height = `${y2 - y1}px`;
+        const style = this.$element.style;
+        style.left = `${x1}px`;
+        style.top = `${y1}px`;
+        style.width = `${x2 - x1}px`;
+        style.height = `${y2 - y1}px`;
     }
 
     _applySelection() {
-        const gridItems = document.querySelectorAll('.grid-item');
-
-        const x1 = Math.min(this.topLeftPoint.x, this.bottomRightPoint.x);
-        const x2 = Math.max(this.topLeftPoint.x, this.bottomRightPoint.x);
-        const y1 = Math.min(this.topLeftPoint.y, this.bottomRightPoint.y);
-        const y2 = Math.max(this.topLeftPoint.y, this.bottomRightPoint.y);
-
-        gridItems.forEach(item => {
+        const [x1, x2] = [this.topLeftPoint.x, this.bottomRightPoint.x].sort((a,b) => a - b);
+        const [y1, y2] = [this.topLeftPoint.y, this.bottomRightPoint.y].sort((a,b) => a - b);
+        document.querySelectorAll(".grid-item").forEach(item => {
             const rect = item.getBoundingClientRect();
-
-            const intersects = !(rect.right < x1 || rect.left > x2 || rect.bottom < y1 || rect.top > y2);
-
-            if (intersects) {
-                item.classList.add('selected');
-            } else {
-                item.classList.remove('selected');
-            }
+            item.classList.toggle("selected", !(rect.right < x1 || rect.left > x2 || rect.bottom < y1 || rect.top > y2));
         });
     }
 
-    _handleDragStart(event) {
-        event.dataTransfer.setData('text/plain', event.target.id);
+    _handleDragStart(e) {
+        e.dataTransfer.setData('text/plain', e.target.id);
     }
 
-    _handleDragOver(event) {
-        event.preventDefault();
+    _handleDragOver(e) {
+        e.preventDefault();
     }
 
-    _handleDrop(event) {
-        event.preventDefault();
+    _handleDrop(e) {
+        e.preventDefault();
+        const id = e.dataTransfer.getData('text/plain');
+        const el = document.getElementById(id);
+        const sel = document.querySelectorAll(".grid-item.selected");
+        const dropTarget = [...document.querySelectorAll(".grid-item")].find(i => {
+            const r = i.getBoundingClientRect();
+            return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+        });
+        if (!dropTarget) return;
 
-        const draggedElementId = event.dataTransfer.getData('text/plain');
-        const draggedElement = document.getElementById(draggedElementId);
+        const [row, col] = dropTarget.style.gridArea.split(" / ").map(Number);
+        const [oRow, oCol] = el.style.gridArea.split(" / ").map(Number);
 
-        if (event.target.classList.contains('selected')) {
+        const btn = window.folder_data.buttons.find(b => b.row === oRow && b.column === oCol);
+        if (!btn) return;
 
-            //funtion to pass the dragged element to the function
-            resize_element(draggedElement);
+        if (sel.length && dropTarget.classList.contains("selected")) return resize_element(el);
+        if (!canFitInGrid(row, col, row, col, btn)) return alert("Cannot place button: position is occupied");
 
+        Object.assign(el.style, { gridArea: `${row} / ${col} / ${row + 1} / ${col + 1}` });
+        Object.assign(btn, { row, column: col, endrow: row + 1, endcolumn: col + 1 });
 
-        }
+        uploadFolderData(folder_name, folder_data).then(res => updateGrid(res.folder)).catch(console.error);
     }
 }
 
 const selector = new Selection();
 
+function createOccupiedGrid(exclude = null) {
+    const { rows, columns, buttons } = window.folder_data;
+    const grid = Array.from({ length: rows }, () => Array(columns).fill(false));
 
-function resize_element(element) {
-    let minRow = Infinity, maxRow = -Infinity, minCol = Infinity, maxCol = -Infinity;
+    buttons.forEach(({ row, column, endrow, endcolumn }) => {
+        if (exclude && exclude.row === row && exclude.column === column && exclude.endrow === endrow && exclude.endcolumn === endcolumn) return;
+        for (let r = row; r < endrow; r++) for (let c = column; c < endcolumn; c++)
+            if (r > 0 && r <= rows && c > 0 && c <= columns) grid[r - 1][c - 1] = true;
+    });
+    return grid;
+}
 
-    // Get coordinates of selected elements
-    document.querySelectorAll(".grid-item.selected").forEach(selectedElement => {
-        const [row, column] = selectedElement.style.gridArea.split(" / ").map(Number);
-        minRow = Math.min(minRow, row);
-        maxRow = Math.max(maxRow, row);
-        minCol = Math.min(minCol, column);
-        maxCol = Math.max(maxCol, column);
+function canFitInGrid(minR, minC, maxR, maxC, exclude = null) {
+    const { rows, columns } = window.folder_data;
+    if (minR < 1 || maxR > rows || minC < 1 || maxC > columns) return false;
+    const grid = createOccupiedGrid(exclude);
+    for (let r = minR; r <= maxR; r++) for (let c = minC; c <= maxC; c++) if (grid[r - 1][c - 1]) return false;
+    return true;
+}
+
+function resize_element(el) {
+    let minR = Infinity, maxR = -1, minC = Infinity, maxC = -1;
+    document.querySelectorAll(".grid-item.selected").forEach(el => {
+        const [r, c] = el.style.gridArea.split(" / ").map(Number);
+        minR = Math.min(minR, r), maxR = Math.max(maxR, r);
+        minC = Math.min(minC, c), maxC = Math.max(maxC, c);
     });
 
-    // Check if the selected area overlaps with other buttons
-    const buttons = document.querySelectorAll(".button_div");
-    for (let button of buttons) {
-        [ogrow, ogcol] = element.style.gridArea.split(" / ").map(Number);
-        if (button === element) continue;
+    const [oR, oC, oER, oEC] = el.style.gridArea.split(" / ").map(Number);
+    const btn = window.folder_data.buttons.find(b => b.row === oR && b.column === oC && b.endrow === oER && b.endcolumn === oEC);
+    if (!btn) return;
 
-        [buttonRow, buttonCol] = button.style.gridArea.split(" / ").map(Number);;
-        
-        
-        
-        // Check if the button overlaps with the new button area
-        if (buttonRow >= minRow && buttonRow <= maxRow && buttonCol >= minCol && buttonCol <= maxCol) {
-            alert("Cannot overlap with existing buttons");
-            return;
-        }
-    }
+    if (!canFitInGrid(minR, minC, maxR, maxC, btn)) return alert("Cannot resize: would overlap with existing buttons");
 
-    // Set the new grid area for the element
-    element.style.gridArea = `${minRow} / ${minCol} / ${maxRow + 1} / ${maxCol + 1}`;
+    Object.assign(el.style, { gridArea: `${minR} / ${minC} / ${maxR + 1} / ${maxC + 1}` });
+    Object.assign(btn, { row: minR, column: minC, endrow: maxR + 1, endcolumn: maxC + 1 });
 
-
-    let button_to_update = window.folder_data.buttons.find(button => button.row === ogrow && button.column === ogcol);
-
-    if (!button_to_update) {
-        alert("Button not found");
-        return;
-    }
-
-    // Update button data
-    button_to_update.row = minRow;
-    button_to_update.column = minCol;
-    button_to_update.endrow = maxRow + 1;
-    button_to_update.endcolumn = maxCol + 1;
-
-    console.log(window.folder_data.buttons);
-    uploadFolderData(folder_name, folder_data).then(result => {
-        updateGrid(result.folder);
-    }).catch(error => {
-        console.error(error);
-    });
-
-    // Call a function to save the new grid layout
+    uploadFolderData(folder_name, folder_data).then(res => updateGrid(res.folder)).catch(console.error);
 }

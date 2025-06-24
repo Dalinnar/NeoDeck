@@ -266,7 +266,7 @@
           }
         },
         {
-          "command": "/soundcontrol mute",
+          "command": "/soundcontrol_mute",
           "inputs": [],
           "style": {
             "image": "volume-mute.svg",
@@ -279,15 +279,15 @@
       "TYPE": "multiple",
       "commands": [
         {
-          "command": "/mediacontrol previous",
+          "command": "/mediacontrol_previous",
           "inputs": []
         },
         {
-          "command": "/mediacontrol playpause",
+          "command": "/mediacontrol_playpause",
           "inputs": []
         },
         {
-          "command": "/mediacontrol next",
+          "command": "/mediacontrol_next",
           "inputs": []
         }
       ]
@@ -572,6 +572,16 @@
         "image": "clipboard-clear.png",
         "image_size": "75%"
       }
+    },
+    "macro" : {
+      "command": "/macro {macro}",
+      "inputs": [
+        {
+          "TYPE": "textarea",
+          "name": "macro"
+        }
+      ]
+
     }
   },
   "Utilities": {
