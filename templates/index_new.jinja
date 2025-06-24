@@ -12,6 +12,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
     rel="stylesheet">
+  <script src="/static/js/grid-manager.js"></script>
   <script src="/static/js/button_generator.js"></script>
   <script src="/static/js/default_functions.js"></script>
   <script defer src="/static/js/folderConfig.js"></script>
@@ -63,288 +64,17 @@
     </script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
-
-        // Cargar la página inicial desde el contexto
         const initialPage = JSON.parse('{{ context["deck_folder"] | tojson | safe}}');
         updateGrid(initialPage);
 
         const commands = JSON.parse('{{ context["commands"] | tojson | safe}}');
-
         set_menu_commands(commands);
       });
+
+      // Keep the same updateGrid function signature for compatibility
       function updateGrid(pageData) {
-        // Background handling
-        const main_container = document.querySelector(".main-container");
-        if (pageData.background) {
-          main_container.style.background = pageData.background;
-        }
-        if (pageData.background_img) {
-          Object.assign(main_container.style, {
-            backgroundImage: `url(${pageData.background_img})`,
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-          });
-        }
-
-        // Grid container setup
-        const container = document.querySelector(".buttons-container");
-        if (!container) return;
-        container.innerHTML = "";
-
-        const rows = Number(pageData.rows);
-        const cols = Number(pageData.columns);
-        if (!rows || !cols) return;
-
-        Object.assign(container.style, {
-          display: "grid",
-          gridTemplateRows: `repeat(${rows}, 1fr)`,
-          gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          aspectRatio: `${cols} / ${rows}`
-        });
-
-        // Track occupied positions for empty grid filling
-        const occupiedPositions = new Set();
-
-        // Create buttons
-        pageData.buttons.forEach((button, index) => {
-          // Handle custom generators
-          if (button.custom_generator) {
-            eval(button.custom_generator);
-            return;
-          }
-
-          // Create button element
-          const button_div = document.createElement("div");
-          button_div.classList.add("button_div");
-          button_div.id = "button_" + index;
-
-          // Set button styling
-          Object.assign(button_div.style, {
-            backgroundColor: button.background_color,
-            color: button.text_color,
-            gridArea: `${button.row} / ${button.column} / ${button.endrow ?? button.row} / ${button.endcolumn ?? button.column}`
-          });
-
-          // Add button image if specified
-          if (button.image) {
-            const img = document.createElement("img");
-            Object.assign(img, {
-              src: button.image,
-              draggable: false,
-              alt: "Button Image"
-            });
-            Object.assign(img.style, {
-              width: `${button.image_size}%`,
-              height: `${button.image_size}%`
-            });
-            button_div.appendChild(img);
-
-          }
-          // Add button text if specified
-          if (button.btn_text) {
-            const btn_text = document.createElement("h3");
-            btn_text.innerText = button.btn_text;
-            btn_text.style.zIndex = 2;
-            button_div.appendChild(btn_text);
-          }
-
-          // Handle button commands
-          setupButtonCommands(button, button_div);
-
-          // Handle button click events (single, double, hold)
-          setupButtonClickEvents(button, button_div);
-
-          // Add button to container and track position
-          container.appendChild(button_div);
-          occupiedPositions.add(`${button.row}-${button.column}`);
-        });
-
-        // Fill empty grid cells
-        fillEmptyGridCells(container, rows, cols);
-
-        // Setup additional functionality
-        setupDragAndDrop();
-        toggle_buttons_edition();
+        gridManager.updateGrid(pageData);
       }
-
-      // Helper function to set up button commands
-      function setupButtonCommands(button, button_div) {
-        if (!button.command) return;
-
-        // Handle JavaScript evaluation commands
-        if (button.command.startsWith("$")) {
-          button_div.addEventListener("click", () => {
-            eval(button.command.slice(1));
-          });
-        }
-
-        // Handle server commands
-        if (button.command.startsWith("/")) {
-          button_div.addEventListener("click", () => {
-            send_data(button.command);
-          });
-        }
-
-        // Handle monitor commands
-        if (button.command === "#monitor") {
-          Initialize_monitors(button.track ?? undefined);
-          const monitor = document.createElement("h2");
-          monitor.style.zIndex = 2;
-          monitor.setAttribute("data_from", button.collect_data_from);
-          button_div.appendChild(monitor);
-        }
-
-        // Handle slider commands
-        if (button.command.startsWith("!")) {
-          const range = document.createElement("input");
-          send_data(button.command + " get").then((data) => {
-            if (data){
-              range.value = data;
-            }
-          });
-
-          
-          Object.assign(range, {
-            type: "range",
-            min: button.min,
-            max: button.max
-          });
-
-          // Calculate grid dimensions
-          const rowSpan = (button.endrow || button.row) - button.row;
-          const colSpan = (button.endcolumn || button.column) - button.column;
-          const isVertical = rowSpan > colSpan;
-
-          // Apply styles based on orientation
-          if (isVertical) {
-            Object.assign(range.style, {
-              writingMode: "sideways-lr",
-              minWidth: "30px",
-              maxWidth: "20%",
-              height: "100%"
-            });
-            range.style.setProperty('--thumb-width', '120%');
-            range.style.setProperty('--thumb-height', '10%');
-          } else {
-            Object.assign(range.style, {
-              writingMode: "horizontal-tb",
-              width: "100%",
-              minHeight: "30px",
-              maxHeight: "20%"
-            });
-            range.style.setProperty('--thumb-width', '10%');
-            range.style.setProperty('--thumb-height', '120%');
-          }
-
-          // Add common styling
-          range.classList.add("slider");
-          range.style.zIndex = 2;
-
-          if (button.btn_text) {
-            button_div.style.flexDirection = "column-reverse";
-            range.style.marginBottom = "10px";
-          }
-
-          // Add to DOM and set up event listener
-          button_div.appendChild(range);
-          range.addEventListener("change", () => {
-            send_data(button.command + " " + range.value);
-          });
-        }
-      }
-
-      // Helper function to set up button click events
-      function setupButtonClickEvents(button, button_div) {
-        if (!(button.single_click || button.double_click || button.hold)) return;
-
-        // Event state tracking variables
-        const state = {
-          clickTimeout: null,
-          isHolding: false,
-          doubleClickPending: false,
-          lastClickTime: 0,
-          doubleClickThreshold: 300, // ms
-          holdThreshold: 1000 // ms
-        };
-
-        // Handle single clicks
-        button_div.addEventListener("click", (event) => {
-          const currentTime = new Date().getTime();
-
-          // Handle potential double-click detection
-          if (currentTime - state.lastClickTime < state.doubleClickThreshold) {
-            state.doubleClickPending = true;
-            clearTimeout(state.clickTimeout);
-            return; // Wait for dblclick event
-          }
-
-          state.lastClickTime = currentTime;
-
-          // Process single click with delay for possible double-click
-          if (!state.isHolding && button.single_click) {
-            state.clickTimeout = setTimeout(() => {
-              if (!state.doubleClickPending && !state.isHolding) {
-                send_data(button.single_click);
-              }
-              state.doubleClickPending = false;
-            }, state.doubleClickThreshold);
-          }
-        });
-
-        // Handle double clicks
-        if (button.double_click) {
-          button_div.addEventListener("dblclick", () => {
-            clearTimeout(state.clickTimeout);
-            state.doubleClickPending = false;
-            send_data(button.double_click);
-            state.lastClickTime = 0; // Prevent subsequent single click
-          });
-        }
-
-        // Handle press and hold
-        if (button.hold) {
-          let holdTimeout;
-
-          button_div.addEventListener("mousedown", () => {
-            clearTimeout(state.clickTimeout);
-
-            holdTimeout = setTimeout(() => {
-              state.isHolding = true;
-              state.doubleClickPending = false;
-              send_data(button.hold);
-            }, state.holdThreshold);
-          });
-
-          // Handle release events (mouseup, mouseleave)
-          const handleRelease = () => {
-            clearTimeout(holdTimeout);
-
-            if (state.isHolding) {
-              setTimeout(() => {
-                state.isHolding = false;
-                state.lastClickTime = 0;
-              }, 300);
-            }
-          };
-
-          button_div.addEventListener("mouseup", handleRelease);
-          button_div.addEventListener("mouseleave", handleRelease);
-        }
-      }
-
-      // Helper function to fill empty grid cells
-      function fillEmptyGridCells(container, rows, cols) {
-        for (let r = 1; r <= rows; r++) {
-          for (let c = 1; c <= cols; c++) {
-            const element = document.createElement("div");
-            element.style.gridArea = `${r} / ${c}`;
-            element.classList.add("grid-item");
-            container.appendChild(element);
-          }
-        }
-      }
-
     </script>
 
     <script>
@@ -696,84 +426,73 @@
 
       }
     </script>
+    <script>
+      function setupDragAndDrop() {
+        document.addEventListener("dragover", (e) => e.preventDefault());
 
-    <script>function setupDragAndDrop() {
-        document.addEventListener("dragover", (event) => event.preventDefault());
+        const menuButtons = document.querySelectorAll('#menuContainer .button_opt');
+        const deckSlots = document.querySelectorAll(".buttons-container div:empty");
+        const validButtonIds = new Set([...menuButtons].map(btn => btn.id));
 
-        // Obtener los botones del menú
-        const buttons = document.getElementById('menuContainer').querySelectorAll('.button_opt');
-        const deck_buttons = document.querySelector(".buttons-container").querySelectorAll('div:empty');
+        // Función para crear y devolver una imagen falsa para el drag
+        function createDragImage() {
+          const dragImage = document.createElement('div');
+          Object.assign(dragImage.style, {
+            width: '100px',
+            height: '100px',
+            opacity: '0.8',
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            borderRadius: '8px',
+            pointerEvents: 'none',
+            position: 'absolute',
+            zIndex: '9999',
+          });
+          document.body.appendChild(dragImage);
+          return dragImage;
+        }
 
-        const buttonIds = new Set([...buttons].map(button => button.id)); // Crear un set con los IDs de los botones permitidos
+        // Asignar eventos a cada botón del menú
+        menuButtons.forEach(button => {
+          button.addEventListener('dragstart', (e) => {
+            const dragImage = createDragImage();
+            e.dataTransfer.setDragImage(dragImage, 50, 50);
+            e.dataTransfer.setData("text/plain", button.id);
 
-        // Configurar el evento de dragstart para los botones
-        buttons.forEach(button => {
-          button.addEventListener('dragstart', (event) => {
-            // Crea un div falso o cualquier otro elemento que desees usar como imagen del drag
-            const dragImage = document.createElement('div');
-            dragImage.style.width = '100px';
-            dragImage.style.height = '100px';
-            dragImage.style.opacity = "0.8"; // Ajusta la opacidad para que no sea completamente transparente
-            dragImage.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-            dragImage.style.borderRadius = '8px';
-            dragImage.style.pointerEvents = 'none';
-            dragImage.style.position = 'absolute';
-            dragImage.style.zIndex = '9999'; // Asegúrate de que esté por encima de otros elementos
-            document.body.appendChild(dragImage);
-
-            // Establece el div como la imagen de arrastre
-            event.dataTransfer.setDragImage(dragImage, 50, 50);  // Puedes ajustar las coordenadas del cursor si es necesario
-
-            // Elimina el div después de que se haya soltado
-            event.target.addEventListener('dragend', () => {
-              if (dragImage && dragImage.parentNode) {
-                document.body.removeChild(dragImage);
-              }
-            });
-
-            // Establece el contenido de los datos que se arrastran
-            event.dataTransfer.setData("text", event.target.id);
+            button.addEventListener('dragend', () => {
+              dragImage.remove();
+            }, { once: true }); // Solo una vez por cada drag
           });
         });
 
-        // Configurar el evento de drop para los elementos vacíos (donde se puede soltar)
-        deck_buttons.forEach(deck => {
-          deck.addEventListener('drop', (event) => {
-            event.preventDefault();
+        // Asignar eventos de drop a las celdas vacías
+        deckSlots.forEach(slot => {
+          slot.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const id = e.dataTransfer.getData("text/plain");
+            if (!validButtonIds.has(id)) return;
 
-            const draggedButtonId = event.dataTransfer.getData("text");
+            const buttonData = window.buttonData?.[id];
+            if (!buttonData) return;
 
-            // Verificar si el ID pertenece a los botones permitidos
-            if (!buttonIds.has(draggedButtonId)) {
-              return;
-            }
-
-            const draggedButton = document.getElementById(draggedButtonId);
-            const parent = deck.parentNode;
-            const gridStyle = window.getComputedStyle(parent);
-            const gridColumns = gridStyle.getPropertyValue('grid-template-columns').split(' ');
-            const gridRows = gridStyle.getPropertyValue('grid-template-rows').split(' ');
-
-            const deckRect = deck.getBoundingClientRect();
+            const parent = slot.parentNode;
             const parentRect = parent.getBoundingClientRect();
+            const slotRect = slot.getBoundingClientRect();
 
-            const columnWidth = parseFloat(gridColumns[0].replace('px', ''));
-            const rowHeight = parseFloat(gridRows[0].replace('px', ''));
+            const getSize = (value) => parseFloat(value.replace('px', '')) || 1;
+            const columnWidth = getSize(getComputedStyle(parent).getPropertyValue('grid-template-columns').split(' ')[0]);
+            const rowHeight = getSize(getComputedStyle(parent).getPropertyValue('grid-template-rows').split(' ')[0]);
 
-            const offsetX = deckRect.left - parentRect.left;
-            const offsetY = deckRect.top - parentRect.top;
+            const col = Math.floor((slotRect.left - parentRect.left) / columnWidth) + 1;
+            const row = Math.floor((slotRect.top - parentRect.top) / rowHeight) + 1;
 
-            const column = Math.floor(offsetX / columnWidth) + 1;
-            const row = Math.floor(offsetY / rowHeight) + 1;
-
-            let current_button_data = window.buttonData[draggedButtonId];
-
-            generate_button(current_button_data, window.folder_name, window.folder_data, column, row);
+            generate_button(buttonData, window.folder_name, window.folder_data, col, row);
           });
         });
       }
-      window.onload = setupDragAndDrop;
+
+      window.addEventListener('load', setupDragAndDrop);
     </script>
+
 
     <script>
       let isFetching = false;
