@@ -404,6 +404,23 @@ function open_image_gallery(img) {
     const dialog = createImageDialog();
     const gallery = dialog.querySelector("#image_gallery");
 
+
+    //create a input for link upload
+    const link_input = document.createElement("input");
+    link_input.type = "text";
+    link_input.placeholder = "Link de la imagen";
+
+    link_input.addEventListener("input", (e) => {
+        const link = e.target.value;
+        if (link) {
+            img.src = link;
+            console.log(link);
+            dialog.close();
+        }
+    });
+
+    dialog.prepend(link_input);
+
     // Crear input de subida y botón de carga
     const input = createUploadInput(img, dialog, gallery);
     const uploadButton = createUploadButton(input);
@@ -617,10 +634,14 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         background_color: inputs.background_color?.value || "#1e1e1e",
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
+        toggleable: button_data.toggleable ?? false,
     };
 
-    if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
-        obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+
+        // Si es una imagen del mismo servidor, recortar el origen
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
         obj.image_size = inputs.img_size?.value || "80";
     }
 
@@ -684,8 +705,11 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
     };
 
     // Add image handling similar to buildButton
-    if (inputs.img_size || document.querySelector(".button_image").src.includes("/static/img/empty_img.png") === false) {
-        obj.image = document.querySelector(".button_image").src.replace(/^([^\/]*\/[^\/]*\/[^\/]*)/, "");
+        if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+
+        // Si es una imagen del mismo servidor, recortar el origen
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
         obj.image_size = inputs.img_size?.value || "80";
     }
 

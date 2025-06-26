@@ -3,7 +3,9 @@ import sys
 import time
 import psutil
 import json
-
+from PIL import ImageGrab
+import pyperclip
+import win32api
 
 import comtypes
 import keyboard
@@ -154,3 +156,14 @@ def get_disks_usage():
 def get_network_usage():
     network = psutil.net_io_counters()
     return {"bytes_sent": network.bytes_sent, "bytes_recv": network.bytes_recv}
+
+def get_color_under_cursor():
+    x, y = win32api.GetCursorPos()  # Obtiene posición del mouse sin pyautogui
+    image = ImageGrab.grab()
+    color = image.getpixel((x, y))
+    hex_color = f"#{color[0]:02x}{color[1]:02x}{color[2]:02x}".upper()
+    pyperclip.copy(hex_color)
+    return {
+        "rgb": f"{color[0]}, {color[1]}, {color[2]}",
+        "hex": hex_color
+    }

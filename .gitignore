@@ -25,6 +25,7 @@ __pycache__/
 # backup files
 *copy.*
 !copy.png
+*.bak
 
 # misc
 .logs/*

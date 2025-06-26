@@ -653,3 +653,12 @@ input[type="color"] {
     outline: none;
     margin: 0;
 }
+
+.toggled{
+    border: 10px solid red;
+    filter: invert(10%);
+    img{
+        filter: contrast(100%);
+        border-radius: 0;
+    }
+}

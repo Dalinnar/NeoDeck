@@ -12,7 +12,7 @@ from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
 
-from . import (actions, audio, color_picker, exec, soundboard,
+from . import (actions, audio, exec, soundboard,
                system, window)
 
 def get_monitors(requested_monitors):
@@ -79,7 +79,7 @@ command_map ={
         "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
 
-        "/colorpicker":             lambda message: color_picker.handle_command(message),
+        "/colorpicker":             lambda : actions.get_color_under_cursor(),
         "/exec":                    lambda message: exec.python(message),
         "/batch":                   lambda message: exec.batch(message),
         "/firstplan":               lambda message: actions.bring_window_to_foreground(message),
@@ -89,8 +89,6 @@ command_map ={
         ("/appvolume +", "/appvolume -", "/appvolume set"):     lambda message: actions.adjust_app_volume(message),
         ("/copy","/paste"):                                     lambda message: actions.clipboard_action(message),
         ("/openfolder", "/opendir","/openfile", "/start"):      lambda message: system.handle_command(message),
-
-
 
         "/screensaver": lambda message: (
             subprocess.Popen("%windir%\system32\scrnsave.scr /s", shell=True) if message.endswith(("on", "/screensaver", "start")) else

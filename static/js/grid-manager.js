@@ -30,6 +30,7 @@ class BaseButton {
   addContent() {
     this.addImage();
     this.addText();
+    this.addToggleable();
   }
 
   addImage() {
@@ -54,6 +55,14 @@ class BaseButton {
       btn_text.innerText = this.data.btn_text;
       btn_text.style.zIndex = 2;
       this.element.appendChild(btn_text);
+    }
+  }
+  addToggleable(){
+    if (this.data.toggleable){
+      this.element.addEventListener("click", () => {
+        this.element.classList.toggle("toggled");
+        console.log("toggleable triggered");
+      });
     }
   }
 
@@ -353,8 +362,4 @@ class GridManager {
     toggle_buttons_edition();
   }
 }
-
-// Initialize grid manager instance
 const gridManager = new GridManager();
-
-// Main script - maintains the same interface
