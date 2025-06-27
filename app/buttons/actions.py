@@ -5,6 +5,7 @@ import psutil
 import json
 from PIL import ImageGrab
 import pyperclip
+from GPUtil import getGPUs
 import win32api
 
 import comtypes
@@ -157,6 +158,7 @@ def get_network_usage():
     network = psutil.net_io_counters()
     return {"bytes_sent": network.bytes_sent, "bytes_recv": network.bytes_recv}
 
+
 def get_color_under_cursor():
     x, y = win32api.GetCursorPos()  # Obtiene posición del mouse sin pyautogui
     image = ImageGrab.grab()
@@ -167,3 +169,25 @@ def get_color_under_cursor():
         "rgb": f"{color[0]}, {color[1]}, {color[2]}",
         "hex": hex_color
     }
+
+
+def get_gpus_info():
+    try:
+        gpus = {}
+        for gpu in getGPUs():
+            name = gpu.name
+            used_mb = gpu.memoryUsed
+            total_mb = gpu.memoryTotal
+            usage_percent = round((gpu.load * 100), 1)
+            
+            key = name if name not in gpus else f"{name} #{len([k for k in gpus if k.startswith(name)]) + 1}"
+
+            gpus[key] = {
+                "used_mb": used_mb,
+                "total_mb": total_mb,
+                "usage_percent": f"{usage_percent:.1f}%"
+            }
+        return gpus
+    except Exception as e:
+        print("GPU detection error:", e)
+        return {}

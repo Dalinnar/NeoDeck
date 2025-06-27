@@ -206,7 +206,7 @@ def api(value):
     
     value_map = {
         "disks": [p.device[0] for p in psutil.disk_partitions()],
-        "gpus" : [f"GPU{i+1}" for i in range(len(getGPUs()))],
+        "gpus": [gpu.name for gpu in getGPUs()],
         "deck_folders" : load_deck_folders()
     }
     return jsonify(value_map[value])

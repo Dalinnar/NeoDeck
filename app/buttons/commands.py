@@ -47,6 +47,7 @@ monitors_map = {
     "memory":   lambda: actions.get_memory_usage(),
     "disks":    lambda: actions.get_disks_usage(),
     "network":  lambda: actions.get_network_usage(),
+    "gpus":     lambda: actions.get_gpus_info(),
 }
 
 command_map ={

@@ -27,21 +27,6 @@ def install_requirements(plugin_name, root):
         log.exception(f"Failed to install requirements for plugin {plugin_name}: {e}")
 
 
-def process_languages(root, plugins_translation_keywords):
-    for file in os.listdir(root):
-        if file.endswith(".lang"):
-            lang_name = file[:-5]
-            plugins_translation_keywords.setdefault(lang_name, {}).update(
-                load_lang_file(lang_name, os.path.join(root, file))
-            )
-
-    lang_path = os.path.join(TEMP_PATH, "languages")
-    os.makedirs(lang_path, exist_ok=True)
-    for language, lang_dict in plugins_translation_keywords.items():
-        with open(os.path.join(lang_path, f"{language}.lang"), "w", encoding="utf-8") as f:
-            for key, value in lang_dict.items():
-                f.write(f"{key}={value}\n")
-        log.info(f"Loaded language file: {language}")
 
 
 def load_plugin_module(app, root, file, plugin_name):
@@ -124,3 +109,20 @@ def load_plugins(app):
     updated_default = deep_merge(default_settings, get_settings())
     loaded_settings = load_settings(updated_default)
     return buttons
+
+
+def process_languages(root, plugins_translation_keywords):
+    for file in os.listdir(root):
+        if file.endswith(".lang"):
+            lang_name = file[:-5]
+            plugins_translation_keywords.setdefault(lang_name, {}).update(
+                load_lang_file(lang_name, os.path.join(root, file))
+            )
+
+    lang_path = os.path.join(TEMP_PATH, "languages")
+    os.makedirs(lang_path, exist_ok=True)
+    for language, lang_dict in plugins_translation_keywords.items():
+        with open(os.path.join(lang_path, f"{language}.lang"), "w", encoding="utf-8") as f:
+            for key, value in lang_dict.items():
+                f.write(f"{key}={value}\n")
+        log.info(f"Loaded language file: {language}")

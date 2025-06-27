@@ -8,31 +8,28 @@ from app.functions import objetify
 from app.utils.args import parse_args, get_arg
 from app.utils.working_dir import chdir_base
 
+import ctypes
+import win32gui
+import win32con
 
 settings = objetify(loaded_settings["webdeck"])
 
-def attach_console():
-    if not getattr(sys, "frozen", False):
-        return
-    
-    try:
-        # Attach to an existing console
-        ctypes.windll.kernel32.AttachConsole(-1)
-        
-        # Redirect standard output and error to the console
-        sys.stdout = open("CONOUT$", "w")
-        sys.stderr = open("CONOUT$", "w")
-        
-        print()
-    except Exception as e:
-        print(f"Error attaching console: {e}")
 
-attach_console()
 chdir_base()
 
 parse_args()
 
+def hide_console_window():
+    try:
+        hwnd = win32gui.GetForegroundWindow()
+        ctypes.windll.user32.ShowWindow(hwnd, win32con.SW_HIDE)
+    except Exception as e:
+        from app.utils.logger import log
+        log.debug(f"Could not hide window: {e}")
 
+# Solo si está congelado y no se desea mostrar consola
+if getattr(sys, "frozen", False) and not settings.show_console:
+    hide_console_window()
 
 
 
