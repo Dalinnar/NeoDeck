@@ -16,6 +16,43 @@ def get_availeable_languages():
     return languages
 
 
+def write_default_settings():
+    with open(os.path.join(BASE_DIR, ".config/settings.json"), "w", encoding="utf-8") as f:
+        def_settings= { 
+            "webdeck": {
+                "server": "flask",
+                "plugins_repo": "Dalinnar/NeoDeck-plugins",
+                "open_settings_in_integrated_browser": False,
+                "ear_soundboard": True,
+                "allowed_networks": [],
+                "data_transfer_method": "http",
+                "ip": "0.0.0.0",
+                "dev_mode": False,
+                "windows_start_menu_shortcut": False,
+                "show_popup": False,
+                "auto_updates": True,
+                "gpu_method": "nvidia (pynvml)",
+                "update_channel": "stable",
+                "windows_startup": True,
+                "flask_debug": True,
+                "flask_secret_key": "secret",
+                "update_repo": "dalinnar",
+                "show_console": False,
+                "optimized_usage_display": False,
+                "flask_reloader": True,
+                "fix_stop_soundboard": False,
+                "app_admin": True,
+                "port": "59997",
+                "sort_colors_on_startup": False,
+                "automatic_firewall_bypass": False,
+                "language": "en_US",
+                "netmask": "16"
+        }
+    }
+        json.dump(def_settings, f, indent=4)
+           
+
+
 def get_settings(category=None, specific_setting=None):
     """Obtiene la configuración guardada y permite acceder a categorías y ajustes específicos."""
     settings_path = os.path.join(BASE_DIR, ".config/settings.json")
@@ -28,8 +65,8 @@ def get_settings(category=None, specific_setting=None):
                 return settings.get(specific_setting, None)          
         return settings
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        print(f"Error cargando configuración: {e}")
-        return None
+        write_default_settings()
+        return get_settings()
     
 def get_default_settings():
     """returns a python type dyct with the sum of all settings"""
@@ -40,16 +77,14 @@ def get_base_settings():
     return get_settings()["webdeck"]
 
 def load_settings(settings):
-    
-    """
-    Saves the given settings to the 'settings.json' file inside the '.config' directory.
-    """
     if not settings:
         return
-    with open(os.path.join(BASE_DIR, ".config","settings.json"), "w") as f:
-        json.dump(settings, f, indent=4)
-    return settings
-    
+    # Elimina claves con valor vacío
+    cleaned_settings = {k: v for k, v in settings.items() if v != ""}
+
+    with open(os.path.join(BASE_DIR, ".config", "settings.json"), "w") as f:
+        json.dump(cleaned_settings, f, indent=4)
+    return cleaned_settings
 base_settings = {
         "ip": "0.0.0.0",
         "port": 59997,

@@ -2,8 +2,8 @@ import os
 import requests
 from settings import get_settings
 
-token = get_settings()["webdeck"]["token"]
-
+#get token if exists
+token = get_settings()["webdeck"].get("token", "")
 
 def download_github_item(path, destination):
     """Descarga un archivo o carpeta desde un repositorio de GitHub (privado o público)."""
