@@ -1,5 +1,6 @@
 import subprocess
 import sys
+import os
 import time
 import psutil
 import json
@@ -191,3 +192,19 @@ def get_gpus_info():
     except Exception as e:
         print("GPU detection error:", e)
         return {}
+    
+
+def open_file(message):
+    try:
+        direction = message.split(" ", 1)[1].strip().strip('"')  # strip quotes if any
+        
+        if not os.path.exists(direction):
+            raise FileNotFoundError(f"Path does not exist: {direction}")
+        
+        if direction.lower().endswith(".exe"):
+            subprocess.Popen([direction], cwd=os.path.dirname(direction))
+        else:
+            os.startfile(direction)
+
+    except Exception as e:
+        log.error(f"Error al abrir el archivo: {e}")

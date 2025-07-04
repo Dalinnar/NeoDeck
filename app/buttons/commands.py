@@ -2,10 +2,13 @@
 import json
 import subprocess
 import sys
-
+import os
 import keyboard
 import pyautogui
+import webbrowser
 from flask import jsonify
+
+
 
 from app.buttons.audio.volume import set_volume
 from app.utils.firewall import fix_firewall_permission
@@ -84,12 +87,15 @@ command_map ={
         "/exec":                    lambda message: exec.python(message),
         "/batch":                   lambda message: exec.batch(message),
         "/firstplan":               lambda message: actions.bring_window_to_foreground(message),
+        "/start":                   lambda message: actions.open_file(message),        
+        "/open_folder": lambda message: os.startfile(message.replace("/open_folder", "").strip()),
+        #open the default browser to search the message url
+        "/browse": lambda message: webbrowser.open(message.replace("/browse", "").strip()),
 
         ("/playsound", "/playlocalsound"):                      lambda message : soundboard.playsound(*soundboard.get_params(message)),
         ("/kill", "/taskill", "/taskkill", "/forceclose"):      lambda message: actions.killtask(message),
         ("/appvolume +", "/appvolume -", "/appvolume set"):     lambda message: actions.adjust_app_volume(message),
         ("/copy","/paste"):                                     lambda message: actions.clipboard_action(message),
-        ("/openfolder", "/opendir","/openfile", "/start"):      lambda message: system.handle_command(message),
 
         "/screensaver": lambda message: (
             subprocess.Popen("%windir%\system32\scrnsave.scr /s", shell=True) if message.endswith(("on", "/screensaver", "start")) else
