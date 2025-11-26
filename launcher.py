@@ -2,6 +2,22 @@ import sys
 import os
 import subprocess
 
+
+def install_python_with_winget():
+    try:
+        # Mostrar la consola y output
+        print("Python 3.12 not found. Installing via winget...\n")
+
+        subprocess.run(
+            ["winget", "install", "-e", "--id", "Python.Python.3.12"],
+            check=True
+            # SIN DEVNULL
+            # SIN CREATE_NO_WINDOW
+        )
+        return True
+    except Exception:
+        return False
+
 def find_python_executable():
     # Intentar py -3.12
     try:
@@ -10,11 +26,23 @@ def find_python_executable():
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
             check=True,
-            creationflags=subprocess.CREATE_NO_WINDOW  # <-- oculta consola
+            creationflags=subprocess.CREATE_NO_WINDOW
         )
         return ["py", "-3.12"]
     except Exception:
-        pass
+        # Intentar instalar Python 3.12 con winget si no se encuentra
+        if install_python_with_winget():
+            try:
+                subprocess.run(
+                    ["py", "-3.12", "--version"],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    check=True,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+                return ["py", "-3.12"]
+            except Exception:
+                pass
 
     # Intentar versiones python normales
     candidates = ["python", "python3", sys.executable]
@@ -25,12 +53,13 @@ def find_python_executable():
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
                 check=True,
-                creationflags=subprocess.CREATE_NO_WINDOW  # <-- oculta consola
+                creationflags=subprocess.CREATE_NO_WINDOW
             )
             return [py]
         except Exception:
             continue
-    raise RuntimeError("No Python executable found in PATH or sys.executable")
+
+    raise RuntimeError("No Python executable found in PATH or installed via winget")
 
 def main():
     if getattr(sys, 'frozen', False):

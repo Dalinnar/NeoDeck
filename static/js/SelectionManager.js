@@ -1,4 +1,7 @@
 // Optimized Selection Class with Drag and Resize Support
+
+window.isEditMode = false;
+
 class Selection {
     constructor({
         selectionBorder = "1px solid rgba(255,255,255,.7)",

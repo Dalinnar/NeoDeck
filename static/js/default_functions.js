@@ -1,21 +1,30 @@
 
-function send_data(message) {
-  return fetch('/send-data', {   // Debes retornar la promesa de fetch
-    method: 'POST',
+function request_data(message, action = "send", method = "POST") {
+  const endpoint = `/data/${action}`;
+  method = method.toUpperCase();
+
+  const options = {
+    method,
     headers: {
       'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ message: message })
-  })
+    }
+  };
+
+  if (method !== "GET") {
+    options.body = JSON.stringify({ message });
+  } else {
+    // En GET no se puede enviar body, podrías enviar el mensaje como header personalizado
+    options.headers['X-Message'] = message;
+  }
+
+  return fetch(endpoint, options)
     .then(response => response.json())
     .then(data => {
       if (data.success === false) {
         console.error("Error:", data.message);
         return null;
       } else {
-        if (data.data) {
-          return data.data;
-        }
+        return data.data ?? null;
       }
     })
     .catch(error => {

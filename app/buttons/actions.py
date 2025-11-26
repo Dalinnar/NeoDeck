@@ -1,9 +1,10 @@
 import subprocess
-import sys
+import re
+from pynput.keyboard import Key, Controller
+import ctypes
 import os
 import time
 import psutil
-import json
 from PIL import ImageGrab
 import pyperclip
 from GPUtil import getGPUs
@@ -14,10 +15,8 @@ import keyboard
 import pyautogui
 import pyperclip
 import win32gui
-from flask import jsonify
 from pycaw.pycaw import (AudioUtilities, IAudioEndpointVolume,
                          ISimpleAudioVolume)
-
 
 
 from app.utils.logger import log
@@ -196,15 +195,81 @@ def get_gpus_info():
 
 def open_file(message):
     try:
-        direction = message.split(" ", 1)[1].strip().strip('"')  # strip quotes if any
-        
+        direction = message.split(" ", 1)[1].strip().strip('"')  # remove quotes
+
         if not os.path.exists(direction):
             raise FileNotFoundError(f"Path does not exist: {direction}")
-        
+
+        # Use ShellExecuteEx with 'runas' to ensure admin prompt if required
         if direction.lower().endswith(".exe"):
-            subprocess.Popen([direction], cwd=os.path.dirname(direction))
+            # ShellExecuteW params: hwnd, operation, file, parameters, directory, show_cmd
+            ctypes.windll.shell32.ShellExecuteW(
+                None, "runas", direction, None, os.path.dirname(direction), 1
+            )
         else:
             os.startfile(direction)
 
     except Exception as e:
         log.error(f"Error al abrir el archivo: {e}")
+
+
+
+
+
+keyboard = Controller()
+
+# Mapa de teclas especiales
+SPECIAL_KEYS = {
+    f"@{key}": value
+    for key, value in Key.__dict__.items()
+    if not key.startswith('_') and not callable(value)
+}
+
+def parse_macro_and_execute(macro_text):
+    tokens = parse_macro(macro_text)
+    execute_macro(tokens)
+
+def parse_macro(macro_text):
+    print(f"Parsing macro: {macro_text}")
+    # Divide por partes (simultáneas, comandos o texto normal)
+    tokens = re.findall(r'\{.*?\}|@\w+(?:_\d+ms)?|[^\{@]+', macro_text)
+    return tokens
+
+def execute_macro(tokens):
+    for token in tokens:
+        token = token.strip()
+        if not token:
+            continue
+        if token.startswith("{") and token.endswith("}"):
+            # Teclas simultáneas
+            keys = re.findall(r'@[\w\d_]+|.', token[1:-1])
+            _press_simultaneously(keys)
+        elif token.startswith("@wait_"):
+            delay = int(re.findall(r'\d+', token)[0]) / 1000
+            time.sleep(delay)
+        elif token.startswith("@"):
+            key = SPECIAL_KEYS.get(token)
+            if key:
+                keyboard.press(key)
+                keyboard.release(key)
+            else:
+                print(f"Unknown special key: {token}")
+        else:
+            for char in token:
+                keyboard.press(char)
+                keyboard.release(char)
+
+def _press_simultaneously(keys):
+    key_objs = []
+    for k in keys:
+        if k.startswith("@"):
+            key_objs.append(SPECIAL_KEYS.get(k))
+        else:
+            key_objs.append(k)
+
+    # Press all
+    for k in key_objs:
+        keyboard.press(k)
+    # Release all
+    for k in reversed(key_objs):
+        keyboard.release(k)

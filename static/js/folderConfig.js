@@ -92,13 +92,14 @@ function get_folder_data(page) {
                 </svg>
             `;
             remove_cont.querySelector("svg").addEventListener("click", () => {
-                if (confirm("Are you sure you want to delete this folder?")) {
+                if (confirm(getTranslation("delete_folder_confirm"))) {
                     deletefolder(page);
                 }
             });
 
             const bgLabel = document.createElement("label");
-            bgLabel.textContent = "Background: ";
+            bgLabel.textContent = getTranslation("background");
+            
             const bgInput = document.createElement("input");
             bgInput.type = "color";
             bgInput.style.width = "-webkit-fill-available";
@@ -107,7 +108,7 @@ function get_folder_data(page) {
             bgLabel.appendChild(bgInput);
 
             const bgimglabel = document.createElement("label");
-            bgimglabel.textContent = "Background Image: ";
+            bgimglabel.textContent = getTranslation("background_image");
             
             const bgimginput = document.createElement("input");
             bgimginput.type = "file";
@@ -144,7 +145,7 @@ function get_folder_data(page) {
             });
 
             const removeBgBtn = document.createElement("button");
-            removeBgBtn.textContent = "Remove Image";
+            removeBgBtn.textContent = getTranslation("remove_image");
             removeBgBtn.style.display = currentFolderData.background_img ? "block" : "none";
             removeBgBtn.addEventListener("click", () => {
                 bgPreview.style.backgroundImage = "none";
@@ -154,7 +155,7 @@ function get_folder_data(page) {
             });
 
             const colLabel = document.createElement("label");
-            colLabel.textContent = "Columns: ";
+            colLabel.textContent = getTranslation("columns");
             const colInput = document.createElement("input");
             colInput.type = "number";
             colInput.id = `columns-${page}`;
@@ -162,7 +163,7 @@ function get_folder_data(page) {
             colLabel.appendChild(colInput);
 
             const rowLabel = document.createElement("label");
-            rowLabel.textContent = "Rows: ";
+            rowLabel.textContent = getTranslation("rows");
             const rowInput = document.createElement("input");
             rowInput.type = "number";
             rowInput.id = `rows-${page}`;
@@ -170,7 +171,7 @@ function get_folder_data(page) {
             rowLabel.appendChild(rowInput);
 
             const saveButton = document.createElement("button");
-            saveButton.textContent = "Save";
+            saveButton.textContent = getTranslation("save");
             saveButton.onclick = () => update_folder_data(page);
 
             configDiv.appendChild(remove_cont);
@@ -323,7 +324,7 @@ function add_folder() {
 
     // Crear y agregar el campo de Title
     const titleLabel = document.createElement("label");
-    titleLabel.textContent = "Title: ";
+    titleLabel.textContent = getTranslation("title");
     const titleInput = document.createElement("input");
     titleInput.type = "text";
     titleInput.id = "folder-title";
@@ -331,7 +332,7 @@ function add_folder() {
 
     // Crear y agregar el campo de Background
     const bgLabel = document.createElement("label");
-    bgLabel.textContent = "Background: ";
+    bgLabel.textContent = getTranslation("background");
     const bgInput = document.createElement("input");
     bgInput.style.width = "-webkit-fill-available"
     bgInput.type = "color";
@@ -341,7 +342,7 @@ function add_folder() {
 
     // Background image and preview
     const bgimglabel = document.createElement("label");
-    bgimglabel.textContent = "Background Image: ";
+    bgimglabel.textContent = getTranslation("background_image");
 
     const bgimginput = document.createElement("input");
     bgimginput.type = "file";
@@ -377,7 +378,7 @@ function add_folder() {
 
     // Crear y agregar el campo de Columns
     const colLabel = document.createElement("label");
-    colLabel.textContent = "Columns: ";
+    colLabel.textContent = getTranslation("columns");
     const colInput = document.createElement("input");
     colInput.type = "number";
     colInput.id = "folder-columns";
@@ -386,7 +387,7 @@ function add_folder() {
 
     // Crear y agregar el campo de Rows
     const rowLabel = document.createElement("label");
-    rowLabel.textContent = "Rows: ";
+    rowLabel.textContent = getTranslation("rows");
     const rowInput = document.createElement("input");
     rowInput.type = "number";
     rowInput.id = "folder-rows";
@@ -395,7 +396,7 @@ function add_folder() {
 
     // Crear y agregar el botón de guardar
     const saveButton = document.createElement("button");
-    saveButton.textContent = "Save";
+    saveButton.textContent = getTranslation("save");
     saveButton.onclick = () => save_new_folder();
 
     // Agregar elementos al div de configuración

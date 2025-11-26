@@ -10,7 +10,7 @@ from flask import jsonify
 
 
 
-from app.buttons.audio.volume import set_volume
+from app.buttons.audio.volume import set_volume,get_volume,get_mute
 from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
@@ -27,17 +27,27 @@ def get_monitors(requested_monitors):
     return json.dumps(result, indent=4)
 
 
-def handle_command(message: str = None):
-    """Executes a command from `command_map` based on the received message."""
-    global command_map
+
+def process_command(message: str = None, command_type: str = "command"):
+    """
+    Procesa un mensaje utilizando el mapa de comandos o getters.
+    
+    :param message: El mensaje o comando recibido.
+    :param command_type: 'command' para usar command_map, 'get' para getter_map.
+    """
+    global command_map, getter_map
+
     if not message:
         return jsonify({"success": False, "error": "No message provided"})
 
     message = message.replace("<|§|>", " ").replace("\n", "").replace("\r", "").strip()
-    log.info(f"Received command: {message}")
+    log.info(f"Received {command_type} command: {message}")
+
     cmd, _, rest = message.partition(" ")
 
-    func = command_map.get(cmd)
+    command_dict = command_map if command_type == "command" else getter_map
+
+    func = command_dict.get(cmd)
     if func:
         result = func(message) if 'message' in func.__code__.co_varnames else func()
         return result if result is not None else ""
@@ -51,6 +61,13 @@ monitors_map = {
     "disks":    lambda: actions.get_disks_usage(),
     "network":  lambda: actions.get_network_usage(),
     "gpus":     lambda: actions.get_gpus_info(),
+}
+
+
+#it gets the current value of an command on initialization
+getter_map = {
+    "!volume":                 lambda: get_volume(),
+    "/soundcontrol_mute":     lambda: get_mute(),
 }
 
 command_map ={
@@ -88,9 +105,9 @@ command_map ={
         "/batch":                   lambda message: exec.batch(message),
         "/firstplan":               lambda message: actions.bring_window_to_foreground(message),
         "/start":                   lambda message: actions.open_file(message),        
-        "/open_folder": lambda message: os.startfile(message.replace("/open_folder", "").strip()),
-        #open the default browser to search the message url
-        "/browse": lambda message: webbrowser.open(message.replace("/browse", "").strip()),
+        "/open_folder":             lambda message: os.startfile(message.replace("/open_folder", "").strip()),
+        "/macro":                   lambda message: actions.parse_macro_and_execute(message.split(" ",1)[1]),
+        "/browse":                  lambda message: webbrowser.open(message.replace("/browse", "").strip()),
 
         ("/playsound", "/playlocalsound"):                      lambda message : soundboard.playsound(*soundboard.get_params(message)),
         ("/kill", "/taskill", "/taskkill", "/forceclose"):      lambda message: actions.killtask(message),

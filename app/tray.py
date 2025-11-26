@@ -10,6 +10,7 @@ import qrcode
 import webview
 from PIL import Image, ImageTk
 from io import BytesIO
+import threading
 
 from .utils.settings.get_config import get_config
 from .utils.exit import exit_program
@@ -257,4 +258,4 @@ def create_tray_icon():
     global icon
     if icon is None:  # Only create the icon if it doesn't already exist
         icon = generate_tray_icon()
-        icon.run()
+        threading.Thread(target=icon.run, daemon=True).start()

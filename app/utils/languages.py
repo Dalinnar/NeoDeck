@@ -1,8 +1,6 @@
 import os
 import locale
 from settings import BASE_DIR
-import time
-from functools import lru_cache
 
 # Global state
 lang_files = {}
@@ -10,8 +8,6 @@ languages_info = []
 default_lang = 'en_US'
 lang_files_dir = ''
 misc_lang_files_dir = ''
-_temp_overrides_cache = {}
-_file_last_modified = {}
 
 
 def parse_lang_file(path: str) -> dict:
@@ -24,18 +20,16 @@ def parse_lang_file(path: str) -> dict:
                 try:
                     key, value = line.split("=", 1)
                     lang_dict[key.strip()] = value.strip()
-                except ValueError as e:
-                    raise ValueError(f"Invalid line format: {line}") from e
+                except ValueError:
+                    raise ValueError(f"Invalid line format: {line}")
     return lang_dict
 
 
 def load_lang_file(lang, lang_file_path=None) -> dict:
     """Load a language file by name or path (preserved for backwards compatibility)."""
-    # If a direct path is provided, parse it immediately
     if lang_file_path and os.path.isfile(lang_file_path):
         return parse_lang_file(lang_file_path)
 
-    # Check standard locations
     search_paths = []
     if lang_files_dir:
         search_paths.append(os.path.join(lang_files_dir, f"{lang}.lang"))
@@ -46,23 +40,20 @@ def load_lang_file(lang, lang_file_path=None) -> dict:
         if os.path.isfile(path):
             return parse_lang_file(path)
 
-    # If not found in standard locations, search recursively
     if lang_files_dir:
         for root, _, files in os.walk(lang_files_dir):
             for file in files:
                 if file.endswith(".lang") and file.startswith(lang):
                     return parse_lang_file(os.path.join(root, file))
 
-    # If language is already loaded in memory, return that instead of failing
     if lang in lang_files:
         return lang_files[lang]
 
     raise FileNotFoundError(f"Language file for '{lang}' not found.")
 
 
-@lru_cache(maxsize=32)
 def get_language(lang=None) -> str:
-    """Get the language code, with caching for performance."""
+    """Get the language code."""
     lang = lang or get_system_language()
     return next((l for l in lang_files if l.lower().startswith(lang.lower())), default_lang)
 
@@ -90,49 +81,33 @@ def batch_load_lang_files() -> dict:
     """Load all language files at once to reduce file operations."""
     loaded_files = {}
     file_paths = {}
-    
-    # First, collect all file paths
+
     if os.path.isdir(lang_files_dir):
         for file in os.listdir(lang_files_dir):
             if file.endswith(".lang"):
                 lang = file.split(".")[0]
                 file_paths[lang] = os.path.join(lang_files_dir, file)
-                _file_last_modified[file_paths[lang]] = os.path.getmtime(file_paths[lang])
                 loaded_files[lang] = {'misc': False}
-    
+
     if misc_lang_files_dir and os.path.isdir(misc_lang_files_dir):
         for file in os.listdir(misc_lang_files_dir):
             if file.endswith(".lang"):
                 lang = file.split(".")[0]
                 if lang not in file_paths:
                     file_paths[lang] = os.path.join(misc_lang_files_dir, file)
-                    _file_last_modified[file_paths[lang]] = os.path.getmtime(file_paths[lang])
                     loaded_files[lang] = {}
                 loaded_files[lang]['misc'] = True
-    
-    # Then parse all files in one batch
+
     for lang, path in file_paths.items():
         loaded_files[lang].update(parse_lang_file(path))
-    
-    # Pre-load temp overrides for common languages
-    temp_dir = os.path.join(BASE_DIR, ".temp", "languages")
-    if os.path.isdir(temp_dir):
-        for file in os.listdir(temp_dir):
-            if file.endswith(".lang"):
-                lang = file.split(".")[0]
-                path = os.path.join(temp_dir, file)
-                _temp_overrides_cache[lang] = parse_lang_file(path)
-                _file_last_modified[path] = os.path.getmtime(path)
-    
+
     return loaded_files
 
 
 def reload_all_lang_files():
     """Reload all language files."""
-    global lang_files, _temp_overrides_cache
+    global lang_files
     lang_files = batch_load_lang_files()
-    _temp_overrides_cache = {}  # Clear cache on reload
-    get_language.cache_clear()  # Clear the LRU cache
 
 
 def get_languages_info(current_lang_files=None) -> list:
@@ -168,7 +143,6 @@ def init(lang_files_directory=None, misc_lang_files_directory=None, default_lang
     lang_files_dir = lang_files_directory
     misc_lang_files_dir = misc_lang_files_directory or misc_lang_files_dir
 
-    # Load all languages at once
     reload_all_lang_files()
     set_default_language(default_language or default_lang)
     languages_info = get_languages_info()
@@ -176,77 +150,31 @@ def init(lang_files_directory=None, misc_lang_files_directory=None, default_lang
 
 
 def get_temp_overrides(lang: str) -> dict:
-    """Get temporary overrides for a language with caching."""
-    if lang in _temp_overrides_cache:
-        path = os.path.join(BASE_DIR, ".temp", "languages", f"{lang}.lang")
-        if os.path.isfile(path):
-            current_mtime = os.path.getmtime(path)
-            if path in _file_last_modified and current_mtime > _file_last_modified[path]:
-                # File changed, reload it
-                _temp_overrides_cache[lang] = parse_lang_file(path)
-                _file_last_modified[path] = current_mtime
-        return _temp_overrides_cache[lang]
-    
+    """Get temporary overrides for a language without cache."""
     path = os.path.join(BASE_DIR, ".temp", "languages", f"{lang}.lang")
     if os.path.isfile(path):
-        _temp_overrides_cache[lang] = parse_lang_file(path)
-        _file_last_modified[path] = os.path.getmtime(path)
-        return _temp_overrides_cache[lang]
-    
-    _temp_overrides_cache[lang] = {}
+        return parse_lang_file(path)
     return {}
 
 
-# Create a merged language dictionary to avoid repeated merges
-_merged_lang_cache = {}
-_merged_lang_timestamp = {}
-
 def get_merged_lang_dict(lang):
     """Get a merged language dictionary, including all overrides."""
-    global _merged_lang_cache, _merged_lang_timestamp
-    
-    current_time = time.time()
-    cache_key = lang
-    
-    # Use cached version if recent (within 5 seconds)
-    if cache_key in _merged_lang_cache and cache_key in _merged_lang_timestamp:
-        if current_time - _merged_lang_timestamp[cache_key] < 5:
-            return _merged_lang_cache[cache_key]
-    
-    # Start with English (base language)
     merged = lang_files.get("en_US", {}).copy()
-    
-    # Add English overrides
-    en_overrides = get_temp_overrides("en_US")
-    merged.update(en_overrides)
-    
-    # Add target language and its overrides if different from English
+    merged.update(get_temp_overrides("en_US"))
+
     if lang != "en_US":
         if lang in lang_files:
             merged.update(lang_files[lang])
-        
-        lang_overrides = get_temp_overrides(lang)
-        merged.update(lang_overrides)
-    
-    # Cache the result
-    _merged_lang_cache[cache_key] = merged
-    _merged_lang_timestamp[cache_key] = current_time
-    
+        merged.update(get_temp_overrides(lang))
+
     return merged
 
 
-def text(text=None, lang=None) -> str:
-    """Get a translated text string."""
-    if not text:
-        return ""
-    
+def text(key=None, lang=None) -> str | dict:
+    """Get a translated string if key is given, or full language dict if key is None."""
     lang = get_language(lang or default_lang)
     merged = get_merged_lang_dict(lang)
-    
-    return merged.get(text, text)
 
-
-def get_new_text(lang=None) -> dict:
-    """Get all translations for a language."""
-    lang = get_language(lang or default_lang)
-    return get_merged_lang_dict(lang)
+    if key is None:
+        return merged
+    return merged.get(key, key)

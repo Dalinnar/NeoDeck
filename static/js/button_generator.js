@@ -623,7 +623,18 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         return
     }
 
-    const replacePlaceholders = (str) => str.replace(/\{(.*?)\}/g, (match, v) => { const val = inputs[v]?.value; return (val && val !== match) ? val : ""; });
+    const replacePlaceholders = (str) =>
+        str.replace(/\{(.*?)\}/g, (match, v) => {
+            const input = inputs[v];
+            if (!input) return "";
+
+            if (input.type === "checkbox") {
+                return input.checked; // true si está marcado, false si no
+            }
+
+            const val = input.value;
+            return (val && val !== match) ? val : "";
+        });
 
 
 
@@ -705,7 +716,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
     };
 
     // Add image handling similar to buildButton
-        if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
         const src = document.querySelector(".button_image").src;
 
         // Si es una imagen del mismo servidor, recortar el origen

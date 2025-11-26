@@ -1,102 +1,77 @@
-*,*::before,*::after{
+/* Reset básico */
+*, *::before, *::after {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: "Noto Sans SC", sans-serif;
     user-select: none;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
 }
 
+/* Body */
 body {
     font-family: Arial, sans-serif;
     background-color: #1e1e1e;
     color: white;
-    padding-top: 40px;
     display: flex;
     justify-content: center;
-    height: 100vh;
-    margin: 0;
-}
-.plugin-store {
-    
-        width: 90%;
-        max-width: 1280px;
-        background: #2a2a2a;
-        padding: 20px;
-        border-radius: 10px;
-        max-height: 80vh; /* Limitar la altura máxima */
-        overflow-y: auto; /* Agregar scroll vertical si hay muchos plugins */
-}
-.header, .footer {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-.plugin-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
-}
-.plugin-card {
-    background: #333;
-    padding: 15px;
-    border-radius: 10px;
-}
-.description {
-    width: 100%;
-    height: 75px;    
-    overflow: hidden;
+    padding: 40px 0 0 0;
+    min-height: 100vh;
 }
 
-.title-div{
+/* Contenedor principal */
+.plugin-store {
+    width: 90%;
+    max-width: 1280px;
+    background: #2a2a2a;
+    padding: 20px;
+    border-radius: 10px;
+    max-height: 80vh;
+    overflow-y: auto; /* Scroll si hay muchos plugins */
+}
+
+/* Grid con flex wrap */
+.plugin-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+/* Cada plugin */
+.plugin-item {
+    background-color: #333;
+    color: white;
+    width: 180px;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: center;
     display: flex;
     flex-direction: column;
-    gap: 10px;
-}
-.installed_container{
-    display: flex;
     align-items: center;
-    flex-direction: row;
-    gap: 10px;
 }
 
-.external-plugin{
-    background-color: #4d403e;
+/* Icono */
+.plugin-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 8px;
+    margin-bottom: 8px;
 }
 
-
-.first-container{
-    display: flex;
-    flex-direction: row;    
-    gap: 10px;
-}
-.plugin-card img {
-    width: 100px;
-    height: 100px;
-    border-radius: 15px;
-}
-button {
-    background: #444;
-    color: white;
-    border: none;
-    padding: 10px;
-    border-radius: 5px;
-    cursor: pointer;
-}
-.install-btn {
-    background: #429c51;
-    transition: .3s;
-}
-.remove-btn{
-    background: #9c5142;
-    transition: .3s;
+/* Nombre */
+.plugin-name {
+    font-size: 1.1em;
+    margin-bottom: 4px;
 }
 
-.check-updates-btn{
-    background: #42449c;
-    transition: .3s;
+/* Descripción */
+.plugin-desc {
+    font-size: 0.9em;
+    margin-bottom: 4px;
 }
-.install-btn:hover {
-    background: #388044;
+
+/* Meta info */
+.plugin-meta {
+    font-size: 0.8em;
+    color: #bbb;
 }

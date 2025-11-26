@@ -12,6 +12,7 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
     rel="stylesheet">
+  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
   <script src="/static/js/grid-manager.js"></script>
   <script src="/static/js/button_generator.js"></script>
   <script src="/static/js/default_functions.js"></script>
@@ -54,6 +55,10 @@
         </a>
       </div>
     </div>
+
+    <script>
+      window.isUsingScrollPad = false;  // MUST exist before touch listeners are attached
+    </script>
     <script>
       //add all the data to the grid
       window.buttonData = {}
@@ -61,6 +66,15 @@
       window.folder_name = "{{ context['folder_name'] }}"
       window.image_list = {{ context["image_list"] | tojson | safe }}
       window.pages = {{ context["pages"] | tojson | safe }}
+    </script>
+    <script>
+      const translations = {{ context["text"] | tojson | safe }};
+      function getTranslation(key) {
+        if (!translations[key]) {
+          console.log(`Translation key not found: ${key}`);
+        }
+        return translations[key] || key;
+      }
     </script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -79,14 +93,18 @@
 
     <script>
       let startX = 0;
+      window.menu_open = false;
+
       function toggleMenu() {
-        const menu = document.querySelector(".menuContainer");
-        const pages_container = document.getElementById("pages-container");
+        window.menu_open = !window.menu_open;
 
-        menu.classList.toggle("hidden");
-        pages_container.classList.toggle("hidden");
+      const menu = document.querySelector(".menuContainer");
+      const pages_container = document.getElementById("pages-container");
 
-        toggle_buttons_edition()
+      menu.classList.toggle("hidden");
+      pages_container.classList.toggle("hidden");
+
+      toggle_buttons_edition()
 
       }
       function toggle_buttons_edition(override = false) {
@@ -119,13 +137,13 @@
 
             // Agregar el evento de click al SVG para removerlo
             svg.addEventListener("click", (event) => {
+              event.stopPropagation(); // Detener la propagación del evento
               const button_grid_area = button.style.gridArea;
               const [row, col] = button_grid_area.split(" / ");
 
-              if (confirm("Are you sure you want to delete this button?")) {
+              if (confirm(getTranslation("delete_button_confirm"))) {
                 remove_button_from_grid(row, col);
               }
-              event.stopPropagation(); // Detener la propagación del evento
             });
 
             button.appendChild(svg); // Añadir el SVG al botón
@@ -152,18 +170,15 @@
 
       // Detectar el toque en pantalla (para dispositivos móviles)
       document.addEventListener("touchstart", function (event) {
-        startX = event.touches[0].clientX;  // Posición inicial del toque
+        if (window.isUsingScrollPad) return;  // now it works
+        startX = event.touches[0].clientX;
       });
 
       document.addEventListener("touchend", function (event) {
-        const endX = event.changedTouches[0].clientX;  // Posición final del toque
-        if (startX - endX > 50) {
-          // Toque de derecha a izquierda
-          toggleMenu();
-        } else if (endX - startX > 50) {
-          // Toque de izquierda a derecha
-          toggleMenu();
-        }
+        if (window.isUsingScrollPad) return;
+        const endX = event.changedTouches[0].clientX;
+        if (startX - endX > 50) toggleMenu();
+        else if (endX - startX > 50) toggleMenu();
       });
     </script>
 
@@ -193,13 +208,7 @@
       }
     </script>
 
-    <script>
-      const translations = {{ context["text"] | tojson | safe }};
-      function getTranslation(key) {
 
-        return translations[key] || key;
-      }
-    </script>
 
     <script>
       function search_commands(search) {
@@ -270,152 +279,139 @@
       } </script>
 
 
-    <script>
+    <script defer>
+      function clean(str) {
+        return str.replace(/ /g, "_").replace("'", "").replace(/[{}]/g, "").toLowerCase();
+      }
+
       function set_menu_commands(jsonData) {
         const container = document.getElementById("menuContainer");
-        //add an input to search
+
+        // Add search input
         let search = document.createElement("input");
-        search.placeholder = "Search something...";
+        search.placeholder = getTranslation("SEARCH_COMMANDS");
         search.addEventListener("input", function () {
           search_commands(search.value);
-        })
+        });
         container.appendChild(search);
 
-
         Object.entries(jsonData).forEach(([category, data]) => {
-          let _category = category.replace(/ /g, "").replace("'", "").toUpperCase();
-          let Q1 = _category + "_CATEGORY_NAME";
+          const _category = clean(category).toUpperCase();
+          const Q1 = `${_category}_CATEGORY_NAME`;
           let category_name = getTranslation(Q1);
-          if (category_name == Q1) {
+          if (category_name === Q1) {
             category_name = category;
-            console.log("missig translation for " + Q1);
-
+            console.log("missing translation for " + Q1);
           }
 
-          // create the category div
-          const categoryDiv = document.createElement("div"); 1
+          // Create category container
+          const categoryDiv = document.createElement("div");
           categoryDiv.id = "category_" + _category;
           container.appendChild(categoryDiv);
 
-          //set title 
+          // Title container
           let title = document.createElement("h2");
           title.textContent = category_name;
 
-
-          //set category icon
           let icon = document.createElement("img");
           icon.src = "static/img/menu_icon_white.png";
           icon.style.width = "30px";
           icon.style.aspectRatio = "1";
 
           let title_container = document.createElement("div");
-
-          //make a div to style the title
           title_container.classList.add("title_container");
-          title_container.onclick = function () {
-            toggleCategory(categoryDiv);
-          };
+          title_container.onclick = () => toggleCategory(categoryDiv);
           title_container.appendChild(icon);
           title_container.appendChild(title);
 
           categoryDiv.prepend(title_container);
 
-          // create a container for all the buttons and subcats on the category
+          // Buttons container
           const categ_container = document.createElement("div");
           categ_container.id = "container_" + _category;
           categ_container.classList.add("container", "hidden");
           categoryDiv.appendChild(categ_container);
 
-
-          //iter trhough all the elements of each category
           Object.entries(data).forEach(([name, subdata]) => {
-            // if the type is multiple, create a subcategory div
             if (subdata.TYPE === "multiple") {
-              let _subcategory = _category + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase();
-              let Q2 = _subcategory + "__category_name";
-              let _subcat_desc = _subcategory + "__category_description";
+              const _subcategory = `${_category}_${clean(name)}`;
+              const Q2 = `${_subcategory}__category_name`;
+              const _subcat_desc = `${_subcategory}__category_description`;
 
               let subcat_name = getTranslation(Q2);
-              let subcat_desc = getTranslation(_subcat_desc);
+              if (subcat_name === Q2) subcat_name = name;
 
-              if (subcat_name == Q2) {
-                subcat_name = name;
-              }
               const subcategoryDiv = document.createElement("div");
               const subcateg_container = document.createElement("div");
 
-              //create a title container
+              // Subcategory title
               let subtitle_container = document.createElement("div");
               subtitle_container.classList.add("title_container");
-              subtitle_container.onclick = function () {
-                toggleCategory(subcategoryDiv);
-              }
+              subtitle_container.onclick = () => toggleCategory(subcategoryDiv);
 
               let icon = document.createElement("img");
-              let subTitle = document.createElement("h3");
               icon.src = "static/img/menu_icon_white.png";
               icon.style.width = "30px";
               icon.style.aspectRatio = "1";
 
+              let subTitle = document.createElement("h3");
+              subTitle.textContent = subcat_name;
+
               subtitle_container.appendChild(icon);
               subtitle_container.appendChild(subTitle);
 
-
-              subTitle.textContent = subcat_name;
-
               subcategoryDiv.prepend(subtitle_container);
-
 
               subcateg_container.classList.add("container", "hidden");
               subcategoryDiv.appendChild(subcateg_container);
               categ_container.appendChild(subcategoryDiv);
 
-              Object.entries(subdata.commands).forEach(([index, button_data]) => {
-                button_data.inputs.forEach((input, inp_index) => input.label = getTranslation(`${_subcategory ? _subcategory : _category}_${index}_input${inp_index}`));
-
-
-                addButton(subcateg_container, index, button_data, _category, _subcategory);
-
-              })
+              // Iterate subcommands (now as object)
+              Object.entries(subdata.commands || {}).forEach(([command_name, button_data]) => {
+                button_data.inputs?.forEach((input, inp_index) => {
+                  input.label = getTranslation(`${_subcategory}_${clean(command_name)}_input${inp_index}`);
+                });
+                addButton(subcateg_container, command_name, button_data, _category, _subcategory);
+              });
 
             } else {
-              //this are buttons of a category
-              subdata.inputs?.forEach((input, inp_index) => { input.label = getTranslation(`${_category}_${name.replace(/ /g, "_").replace("'", "").toLowerCase()}_input${inp_index}`); });
+              // Top-level command buttons
+              subdata.inputs?.forEach((input, inp_index) => {
+                input.label = getTranslation(`${_category}_${clean(name)}_input${inp_index}`);
+              });
               addButton(categ_container, name, subdata, _category);
             }
           });
         });
       }
 
-
       function addButton(parentElement, name, data, categ = "", subcateg = "") {
-        var div = document.createElement("div");
+        let div = document.createElement("div");
         div.classList.add("button_opt");
 
-        // Agregar una imagen dentro del div si data.image está definido
         if (data.image) {
           var img = document.createElement("img");
           img.src = data.image;
           div.appendChild(img);
         }
 
-        // Verificar si el nombre es un número (entero), y no una cadena
+        let cleanName = clean(name);
         let query;
-        if (Number.isInteger(Number(name))) {
-          query = subcateg + "_sub" + (Number(name) + 1) + "__btn_name";
-          div.innerText = getTranslation(query);
+
+        if (subcateg) {
+          const sub = clean(subcateg.replace(/^.*?_/, "")); // remove category prefix
+          query = `${categ}_${sub}_${cleanName}__btn_name`;
         } else {
-          query = categ + "_" + name.replace(/ /g, "_").replace("'", "").toLowerCase() + "__btn_name";
-          div.innerText = getTranslation(query);
+          query = `${categ}_${cleanName}__btn_name`;
         }
 
+        div.innerText = getTranslation(query);
         div.id = query;
         window.buttonData[div.id] = data;
 
         div.draggable = true;
         parentElement.appendChild(div);
       }
-
     </script>
     <script>
       //scrupt to show the menu contents

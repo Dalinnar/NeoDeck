@@ -70,7 +70,6 @@ body {
     height: 100%;
     padding: 20px;
     background-color: #1e1e1e3d;
-    border-radius: 20px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -114,7 +113,9 @@ body {
 
 
 }
-
+.grid-item{
+    border-radius: 4%;
+}
 .menuContainer button:hover {
     background-color: #429c51;
     cursor: grab;
@@ -422,6 +423,7 @@ input[type="color"] {
     display: flex;
     height: 100%;
     overflow: hidden;
+    border-radius: 4%;
     text-overflow: ellipsis;
     position: relative;
 }

@@ -71,3 +71,15 @@ def get_temp_scripts():
             if file.endswith(".js"):
                 scripts.append(file)
     return scripts
+
+
+def replace_double_quotes(obj):
+    if isinstance(obj, dict):
+        return {k: replace_double_quotes(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [replace_double_quotes(item) for item in obj]
+    elif isinstance(obj, str):
+        #also replace line jumps
+        return obj.replace('"', "'").replace("\n", "")
+    else:
+        return obj

@@ -10,6 +10,7 @@ import logging
 import psutil
 from app.utils.plugins.plugin_fetcher import *
 from settings import default_settings,loaded_settings, get_settings, load_settings
+from flask_socketio import SocketIO, emit
 
 import tkinter as tk
 from tkinter import filedialog
@@ -22,7 +23,6 @@ from flask import Flask, request, jsonify, render_template, send_file, make_resp
 from flask.wrappers import Response
 from flask_minify import Minify
 
-from engineio.async_drivers import gevent # DO NOT REMOVE
 from win32com.client import Dispatch
 from app.utils.plugins.load_plugins import load_plugins
 
@@ -40,12 +40,12 @@ from .utils.settings.audio_devices import get_audio_devices
 
 
 from .utils.firewall import fix_firewall_permission, check_firewall_permission
-from .utils.languages import text, get_languages_info, get_language,get_new_text
+from .utils.languages import text
 from .utils.logger import log
 from .utils.args import get_arg
 
 from .functions import *
-from .buttons.commands import get_monitors ,handle_command
+from .buttons.commands import get_monitors,process_command
 
 class CustomFlask(Flask):
     def run(self, *args, **kwargs):
@@ -73,6 +73,9 @@ app.load_settings = load_settings
 app.BASE_DIR = base_dir
 app.local_ip = local_ip
 app.url_path = f"{get_arg('host') or local_ip}:{get_port()}"
+
+socketio = SocketIO(app, cors_allowed_origins="*")
+PORT = int(get_port())
 
 
 logging.getLogger("werkzeug").disabled = True
@@ -146,7 +149,7 @@ def home():
         context["pages"] = list(pages.keys())
         context["deck_folder"] = pages[next(iter(pages))]  
         context["folder_name"] = str(next(iter(pages)))
-        textdir = get_new_text()
+        textdir = text()
         context["text"] = textdir
         context["commands"] = commands
     return render_template("index_new.jinja",context=context)
@@ -155,7 +158,7 @@ def home():
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
     context = {}
-    context["text"] = get_new_text()
+    context["text"] = text()
     context["default_settings"] = default_settings
     context["saved_settings"] = loaded_settings
     return render_template("settings.jinja", context=context)
@@ -165,21 +168,21 @@ def settings_page():
 def plugins_page():
     context = {}
     # Get installed plugins
-    context["installed_plugins"] = app.blueprints
-    context["plugins_namelist"] = list(app.blueprints.keys())
-    
-    # Fetch metadata for installed plugins
-    installed_metadata = {}
-    for plugin_name in context["plugins_namelist"]:
-        if hasattr(app.blueprints[plugin_name], "metadata"):
-            installed_metadata[plugin_name] = app.blueprints[plugin_name].metadata
-    
-    context["installed_metadata"] = installed_metadata
+    #context["installed_plugins"] = app.blueprints
+    #context["plugins_namelist"] = list(app.blueprints.keys())
+    #
+    ## Fetch metadata for installed plugins
+    #installed_metadata = {}
+    #for plugin_name in context["plugins_namelist"]:
+    #    if hasattr(app.blueprints[plugin_name], "metadata"):
+    #        installed_metadata[plugin_name] = app.blueprints[plugin_name].metadata
+    #
+    #context["installed_metadata"] = installed_metadata
     # Get plugin data from repository
-    data = get_github_file_content("plugins.json")
-    context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
-    data = json.loads(data)
-    context["plugins_data"] = data
+    #data = get_github_file_content("plugins.json")
+    #context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
+    #data = json.loads(data)
+    #context["plugins_data"] = data
     
     return render_template("plugins.jinja", context=context)
 
@@ -286,46 +289,57 @@ def get_config_file(directory, filename):
         log.exception(e, f"An error occurred while trying to get the file '{file_path}'")
         return make_response(f"Error: {str(e)}", 500)
 
-@app.route("/send-data", methods=["POST"])
-def send_data_route():
+@app.route("/data/<action>", methods=["POST", "GET"])
+def data_route(action):
     try:
-        result = handle_command(message=request.get_json().get("message", ""))        
+        if request.method == "POST":
+            message = request.get_json().get("message", "")
+        else:
+            message = request.headers.get("X-Message", "")
+
+        if action == "send":
+            result = process_command(message, command_type="command")
+        elif action == "get":
+            result = process_command(message, command_type="get")
+        else:
+            return jsonify({"success": False, "message": f"Unknown action: {action}"}), 400
+
     except Exception as e:
-        log.exception(e, "An error occurred while handling a command")
+        log.exception(e, "An error occurred while handling a data request")
         return jsonify({"success": False, "message": str(e)})
-    
+
     if result is False:
         return jsonify({"success": False})
-    
     elif isinstance(result, Response):
         log.info("sending response from route")
         return result
-    
     elif isinstance(result, dict):
         log.info("sending response from route")
         return jsonify(result)
-    
-    # Si el resultado es algo que se puede representar como JSON (por ejemplo, un string o un número).
+
     return jsonify({"success": True, "data": result})
 
 
 @app.route("/update_folder_data/<folder_name>", methods=["POST"])
 def update_folder_data(folder_name):
     data = request.get_json()
-    #if data background_img i sremove_image , remove it from the folder
-    if "background_img" in data and data["background_img"] == "remove_image":
-        data["background_img"] = ""
-    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
-        pages = json.load(f)  
-        pages[folder_name] = data 
+    
+    #replace all double quotes with single quotes to avoid json errors
+    data = replace_double_quotes(data)
 
-        f.seek(0)  
+    # Remover imagen si está marcada como "remove_image"
+    if data.get("background_img") == "remove_image":
+        data["background_img"] = ""
+
+    with open(os.path.join(base_dir, ".config/pages.json"), "r+") as f:
+        pages = json.load(f)
+        pages[folder_name] = data
+
+        f.seek(0)
         json.dump(pages, f, indent=4)
         f.truncate()
 
-    return jsonify({"success": True, "message": "Folder data updated successfully", "folder":pages[folder_name] })
-    
-
+    return jsonify({"success": True,"message": "Folder data updated successfully","folder": pages[folder_name]})
 
 
 @app.route("/get_page/<folder_name>", methods=["GET"])
@@ -435,15 +449,147 @@ log.info(f"Local IP address detected: {local_ip}")
 
 def run_server():
 
-    change_server_state(1)    
+    change_server_state(1)
+
+    # Si usa werkzeug y NO está compilado como .exe
     if default_settings["webdeck"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
-        server = make_server(local_ip, get_port(), app)
-        server.serve_forever()
+        
+        print(f"[INFO] Running server (Werkzeug + SocketIO) on http://{local_ip}:{PORT}")
+        socketio.run(
+            app,
+            host=local_ip,
+            port=PORT,
+            debug=loaded_settings["webdeck"].get("flask_debug"),
+            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False)
+        )
+
     else:
-        print(f"Server running on http://{local_ip}:{get_port()}")
-        app.run(
-    host="0.0.0.0",
-    port=get_port(),
-    debug=loaded_settings["webdeck"].get("flask_debug"),
-    use_reloader=loaded_settings["webdeck"].get("flask_reloader", False),
-)
+        print(f"Server running on http://{local_ip}:{PORT}")
+        socketio.run(
+            app,
+            host="0.0.0.0",
+            port=PORT,
+            debug=loaded_settings["webdeck"].get("flask_debug"),
+            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False)
+        )
+
+
+# Add this to your Flask app file (after the socketio initialization)
+
+
+
+# Trackea si hubo movimiento en el gesto actual (por scrollpad)
+
+import time
+from pynput.mouse import Controller, Button
+import pyautogui
+mouse = Controller()
+
+scrollpad_state = {}
+
+# Timing protection constants
+CLICK_COOLDOWN = 0.1       # avoids double click spam
+DRAG_END_COOLDOWN = 0.15    # prevents click right after drag
+MOVE_THRESHOLD = 2          # movement below this = still a tap
+STOP_DEBOUNCE = 0.05        # protects against SocketIO async duplicate events
+SCREEN_W, SCREEN_H = pyautogui.size()
+SENSITIVITY = 3.0
+
+def get_state(scrollpad_id):
+    if scrollpad_id not in scrollpad_state:
+        scrollpad_state[scrollpad_id] = {
+            "moved": False,
+            "last_click": 0,
+            "drag_ended": 0,
+            "last_stop": 0
+        }
+    return scrollpad_state[scrollpad_id]
+
+
+@socketio.on("scrollpad_move")
+def handle_scrollpad_move(data):
+    try:
+        scrollpad_id = data.get("id", "unknown")
+        payload = data.get("payload", {})
+        mode = payload.get("mode")
+
+        st = get_state(scrollpad_id)
+        now = time.time()
+
+        # -------------------------
+        # RELATIVE MODE
+        # -------------------------
+        if mode == "relative":
+            dx = payload.get("dx", 0) * SENSITIVITY
+            dy = payload.get("dy", 0) * SENSITIVITY
+
+            print(f"[{now:.4f}] REL {scrollpad_id} dx={dx} dy={dy}")
+
+            if abs(dx) > MOVE_THRESHOLD or abs(dy) > MOVE_THRESHOLD:
+                st["moved"] = True
+
+            mouse.move(dx, dy)
+            return
+
+        # -------------------------
+        # ABSOLUTE MODE
+        # -------------------------
+        elif mode == "absolute":
+            abs_x = int(SCREEN_W * payload.get("x", 0))
+            abs_y = int(SCREEN_H * payload.get("y", 0))
+
+            print(f"[{now:.4f}] ABS {scrollpad_id} -> ({abs_x}, {abs_y})")
+
+            st["moved"] = True
+            mouse.position = (abs_x, abs_y)
+            return
+
+        # -------------------------
+        # TWO-FINGER WHEEL MODE
+        # -------------------------
+        elif mode == "wheel":
+            dy = payload.get("dy", 0)
+
+            print(f"[{now:.4f}] WHEEL {scrollpad_id} dy={dy}")
+
+            mouse.scroll(0, dy)
+            return
+
+        # -------------------------
+        # STOP MODE
+        # -------------------------
+        elif mode == "stop":
+            print(f"[{now:.4f}] STOP {scrollpad_id} moved={st['moved']}")
+
+            if now - st["last_stop"] < STOP_DEBOUNCE:
+                print("   - ignored: STOP debounce")
+                return
+            st["last_stop"] = now
+
+            if now - st["drag_ended"] < DRAG_END_COOLDOWN:
+                st["moved"] = False
+                return
+
+            if not st["moved"]:
+                if now - st["last_click"] >= CLICK_COOLDOWN:
+                    print("   - TAP → CLICK")
+                    mouse.click(Button.left, 1)
+                    st["last_click"] = now
+
+            else:
+                st["drag_ended"] = now
+
+            st["moved"] = False
+
+    except Exception as e:
+        print(f"[ScrollPad Error] {e}")
+
+
+@socketio.on("connect")
+def handle_connect():
+    print(f"Client connected! SID: {request.sid}")
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    print(f"Client disconnected! SID: {request.sid}")
