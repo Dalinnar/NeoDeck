@@ -3,7 +3,7 @@ import sys
 import os
 
 # GUI base: avoids showing a console
-base = "Console"
+base = "Win32GUI"  # Keep as Console for launcher
 
 build_exe_options = {
     "excludes": [
@@ -22,7 +22,6 @@ build_exe_options = {
         "settings.py",
         "webdeck",
         "templates",
-        #".logs",
     ],
     "zip_include_packages": [],
     "zip_exclude_packages": ["*"],
