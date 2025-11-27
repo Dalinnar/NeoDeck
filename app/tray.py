@@ -24,6 +24,20 @@ from .utils.languages import text, get_languages_info, get_language, set_default
 from .utils.logger import log
 
 
+def toggle_console():
+    """Muestra u oculta la consola del EXE."""
+    hwnd = win32gui.GetConsoleWindow()
+
+    if not hwnd:
+        return  # No hay consola (probablemente modo GUI)
+
+    # Está visible?
+    if win32gui.IsWindowVisible(hwnd):
+        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
+    else:
+        win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
+
+
 def reload_config():
     default_settings = get_settings()
     settings = objetify(default_settings["webdeck"])
@@ -161,6 +175,7 @@ def generate_menu(language, server_status=1):
         ),
         pystray.Menu.SEPARATOR,
         pystray.MenuItem(text('report_issue'), lambda: webbrowser.open('https://github.com/Lenochxd/WebDeck/issues')),
+        pystray.MenuItem(text('toggle_console'),lambda: toggle_console()),
         pystray.MenuItem(text('exit'), lambda: exit_program()),
     )
 
@@ -258,4 +273,4 @@ def create_tray_icon():
     global icon
     if icon is None:  # Only create the icon if it doesn't already exist
         icon = generate_tray_icon()
-        threading.Thread(target=icon.run, daemon=True).start()
+        icon.run_detached()

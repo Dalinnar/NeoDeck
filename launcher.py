@@ -62,7 +62,9 @@ def find_python_executable():
     raise RuntimeError("No Python executable found in PATH or installed via winget")
 
 def main():
-    if getattr(sys, 'frozen', False):
+    is_frozen = getattr(sys, "frozen", False)
+
+    if is_frozen:
         base_dir = os.path.dirname(sys.executable)
     else:
         base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -71,44 +73,47 @@ def main():
     main_script = os.path.join(base_dir, "run.py")
 
     python_exe = find_python_executable()
-    
-    # Only print if we're not frozen (running from source)
-    if not getattr(sys, 'frozen', False):
+
+    # Solo imprimir si NO está congelado
+    if not is_frozen:
         print(f"Using Python executable: {' '.join(python_exe)}")
         print(f"Installing requirements from: {req_file}")
 
-    # Install requirements silently when frozen
-    if getattr(sys, 'frozen', False):
-        result = subprocess.run(
-            python_exe + ["-m", "pip", "install", "-r", req_file],
-            cwd=base_dir,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=subprocess.CREATE_NO_WINDOW  # <-- oculta consola
-        )
-    else:
-        result = subprocess.run(
-            python_exe + ["-m", "pip", "install", "-r", req_file],
-            cwd=base_dir
-        )
-    
+    # ---------------------------------------------------------
+    # INSTALAR REQUIREMENTS (oculto si está congelado)
+    # ---------------------------------------------------------
+    install_flags = subprocess.CREATE_NO_WINDOW if is_frozen else 0
+
+    result = subprocess.run(
+        python_exe + ["-m", "pip", "install", "-r", req_file],
+        cwd=base_dir,
+        stdout=subprocess.DEVNULL if is_frozen else None,
+        stderr=subprocess.DEVNULL if is_frozen else None,
+        creationflags=install_flags,
+    )
+
     if result.returncode != 0:
-        if not getattr(sys, 'frozen', False):
+        if not is_frozen:
             print("Failed to install base requirements.")
         else:
-            # Write error to log file when frozen
             with open(os.path.join(base_dir, "error.log"), "a", encoding="utf-8") as f:
-                f.write(f"Failed to install requirements. Return code: {result.returncode}\n")
+                f.write(
+                    f"Failed to install requirements. Return code: {result.returncode}\n"
+                )
         sys.exit(result.returncode)
 
-    if not getattr(sys, 'frozen', False):
+    if not is_frozen:
         print("Starting main application...")
-    
-    # Run the main script
+
+    # ---------------------------------------------------------
+    # EJECUTAR run.py (oculto si está congelado)
+    # ---------------------------------------------------------
+    run_flags = subprocess.CREATE_NO_WINDOW if is_frozen else 0
+
     subprocess.run(
         python_exe + [main_script],
         cwd=base_dir,
-        creationflags=subprocess.CREATE_NO_WINDOW  # <-- oculta consola
+        creationflags=run_flags
     )
 
 if __name__ == "__main__":

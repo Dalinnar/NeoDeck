@@ -74,7 +74,7 @@ app.BASE_DIR = base_dir
 app.local_ip = local_ip
 app.url_path = f"{get_arg('host') or local_ip}:{get_port()}"
 
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*",async_mode="threading")
 PORT = int(get_port())
 
 
