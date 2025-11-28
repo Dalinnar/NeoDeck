@@ -2,8 +2,12 @@ from cx_Freeze import setup, Executable
 import sys
 import os
 
-# GUI base: avoids showing a console
-base = "Win32GUI"  # Keep as Console for launcher
+# Two executables:
+# - WebDeckLauncher.exe        (GUI, no console)
+# - WebDeckLauncherConsole.exe (Console visible)
+
+gui_base = "Win32GUI"
+console_base = None  # console-enabled executable
 
 build_exe_options = {
     "excludes": [
@@ -31,10 +35,16 @@ build_exe_options = {
 executables = [
     Executable(
         script="launcher.py",
-        base=base,
+        base=gui_base,
         target_name="WebDeckLauncher.exe",
         icon="static/icons/icon.ico",
-    )
+    ),
+    Executable(
+        script="launcher.py",
+        base=console_base,
+        target_name="WebDeckLauncherConsole.exe",
+        icon="static/icons/icon.ico",
+    ),
 ]
 
 setup(

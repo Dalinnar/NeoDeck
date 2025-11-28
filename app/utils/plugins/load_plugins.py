@@ -1,4 +1,5 @@
 import os
+import subprocess
 import importlib.util
 import shutil
 import json
@@ -21,20 +22,54 @@ SATISFIED_INSTALLS = "satisfied_installs.txt"
 PLUGINS_PATH = "plugins"                # now contains *.deck files
 TEMP_PATH = os.path.join(BASE_DIR, ".temp")
 
+def get_user_python():
+    # Windows launcher for Python
+    try:
+        subprocess.run(
+            ["py", "-3.12", "--version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        return ["py", "-3.12"]
+    except:
+        pass
 
+    # fallback: python
+    try:
+        subprocess.run(
+            ["python", "--version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        return ["python"]
+    except:
+        pass
+
+    raise RuntimeError("No Python 3.12 installation found.")
 # ---------------------------------------------------------------------------
 # Install plugin requirements
 # ---------------------------------------------------------------------------
 def install_requirements(plugin_name, root):
     log.info(f"Installing requirements for plugin: {plugin_name}")
+
     try:
-        os.system(f"pip install -r \"{os.path.join(root, 'requirements.txt')}\"")
+        python_exe = get_user_python()     # <— SIEMPRE PYTHON DEL USUARIO
+        req_path = os.path.join(root, "requirements.txt")
+
+        subprocess.run(
+            python_exe + ["-m", "pip", "install", "-r", req_path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            creationflags=subprocess.CREATE_NO_WINDOW
+        )
+
         with open(SATISFIED_INSTALLS, "a", encoding="utf-8") as f:
             f.write(plugin_name + "\n")
+
     except Exception as e:
         log.exception(f"Failed to install requirements for plugin {plugin_name}: {e}")
-
-
 # ---------------------------------------------------------------------------
 # Extract .deck plugin (zip)
 # ---------------------------------------------------------------------------

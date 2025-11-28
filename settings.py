@@ -41,7 +41,7 @@ def write_default_settings():
                 "optimized_usage_display": False,
                 "flask_reloader": False,
                 "fix_stop_soundboard": False,
-                "app_admin": True,
+                "app_admin": False,
                 "port": "59997",
                 "sort_colors_on_startup": False,
                 "automatic_firewall_bypass": False,
