@@ -29,10 +29,10 @@ def is_opened():
     # Check running processes
     processes = [p.name().lower() for p in psutil.process_iter(["name"])]
     
-    if "webdeck.exe" in processes:
-        # Remove the current instance of webdeck.exe from the list of processes
-        processes.remove("webdeck.exe")
-    return any("webdeck" in p for p in processes)
+    if "neodeck.exe" in processes:
+        # Remove the current instance of neodeck.exe from the list of processes
+        processes.remove("neodeck.exe")
+    return any("neodeck" in p for p in processes)
 
 # tests
 if __name__ == '__main__':

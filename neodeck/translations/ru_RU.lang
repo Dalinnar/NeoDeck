@@ -1,6 +1,6 @@
-# Translation file: en_US.lang
-# Author: Lenoch — Feel free to submit a PR for any corrections:
-# GitHub: https://github.com/Lenochxd/WebDeck/pulls
+# Translation file: ru_RU.lang
+# Author: Asuma228 — Feel free to submit a PR for any corrections:
+# GitHub: https://github.com/Lenochxd/Neodeck/pulls
 # Discord: https://discord.gg/tUPsYHAGfm
 
 
@@ -19,17 +19,17 @@
 
 
 
-native_name=English
-english_name=English
-lang_code=en
-author_name=Lenoch
-author_github_username=Lenochxd
+native_name=Русский
+english_name=Russian
+lang_code=ru
+author_name=Asuma228
+author_github_username=Asuma228
 
 
 // -- Welcome Message --
 
 welcome_message_window_title=Welcome
-welcome_message_label_1=Welcome to WebDeck!
+welcome_message_label_1=Welcome to Neodeck!
 welcome_message_label_2=You can find the tray icon here for quick access.
 welcome_message_button_dont_show_again=Don't show again
 welcome_message_button_ok=OK
@@ -38,236 +38,229 @@ welcome_message_button_ok=OK
 // -- Tray icon --
 
 qr_code=QR Code
-options=Options
-open_config=Open Config
-restart_application=Restart WebDeck
-edit_port=Edit port
-randomize=Randomize
-change_server_port=Change server port
-enter_new_port=Enter new port:
-fix_firewall=Fix firewall
-server_status=Server Status:
-server_online=🟢 Online
-server_offline=🔴 Offline
-server_loading=Loading...
-report_issue=Report an Issue
-exit=Quit
+options=настройки
+open_config=Открыть конфиг
+restart_application=Перезапустить Neodeck
+edit_port=Отредактировать порт
+randomize=Слуйчайно
+change_server_port=Изменить порт сервера
+enter_new_port=Введите новый порт:
+fix_firewall=Исправить правила брандмауэра
+server_status=Статус сервера:
+server_online=🟢 В сети
+server_offline=🔴 Не в сети
+server_loading=Загрузка...
+report_issue=Отчёт об ошибке
+exit=Выход
 
 
 // -- Errors --
 
-open_github_issue_prompt_title=Open GitHub Issue
-open_github_issue_prompt_message=Do you want to open a GitHub issue for this error? (Recommended)
+open_github_issue_prompt_title=Открыть GitHub Issue
+open_github_issue_prompt_message=Вы хотите открыть новый GitHub issue по этой ошибке? (Recommended)
 
-copy_to_clipboard_prompt_title=Copy to Clipboard
-copy_to_clipboard_prompt_message=Do you want to copy the error message to the clipboard?
+copy_to_clipboard_prompt_title=Копировать в буфер обмена
+copy_to_clipboard_prompt_message=Вы хотите скопировать текст ошибки в буфер обмена?
 
-server_disconnected=Server Disconnected
-failed=Failed
-error=Error
-error_occurred=An error has occurred
+server_disconnected=Сервер отключен
+failed=Не удалось
+error=Ошибка
+error_occurred=Произошла ошибка
 
-settings_load_error=An error occurred while loading settings.
-settings_save_error=An error occurred while saving settings.
+settings_load_error=Произошла ошибка при загрузке настроек.
+settings_save_error=Произошла ошибка при сохранении настроек.
 
-auto_update_error=Error while updating WebDeck, please update it manually from https://github.com/Lenochxd/WebDeck/releases/latest
+auto_update_error=Ошибка при обновлении Neodeck, пожалуйста загрузите обновление вручную с https://github.com/Lenochxd/Neodeck/releases/latest
 
-no_files_found_error=No files were found
+no_files_found_error=Файлов не найдено
 
-ffmpeg_not_installed_error=Installing FFMPEG...
-vlc_not_installed_error=VLC is not installed!
-mp3_loading_error=Error while loading MP3 file named.
+ffmpeg_not_installed_error=Установка FFMPEG...
+vlc_not_installed_error=VLC не установлен!
+mp3_loading_error=Произошла ошибка при загрузке имени MP3 файла.
 
-obs_failed_connection_error=Failed connection to obs.
-obs_error_10061=The websocket server cannot be found. (WinError 10061)
-obs_error_incorrect_password=Password may be incorrect.
-obs_already_recording=OBS is already recording.
-obs_already_streaming=OBS is already streaming.
-obs_already_vcam=Virtual cam is already started.
-obs_not_recording=OBS is not recording.
-obs_not_streaming=OBS is not streaming.
-obs_no_vcam=Virtual cam is already stopped.
-obs_no_recording_can_be_paused=No recording can be paused.
-obs_no_recording_is_paused=No recording is paused.
+obs_failed_connection_error=Не удалось подключиться к OBS.
+obs_error_10061=Сервер websocket не найден. (WinError 10061)
+obs_error_incorrect_password=Неверный пароль.
+obs_already_recording=OBS уже осуществляет запись.
+obs_already_streaming=OBS уже осуществляет трансляцию.
+obs_already_vcam=Виртуальная камера уже запущена.
+obs_not_recording=OBS не осуществляет запись.
+obs_not_streaming=OBS не осуществляет трансляцию.
+obs_no_vcam=Виртуальная камера уже остановлена.
+obs_no_recording_can_be_paused=Запись не может быть остановлена.
+obs_no_recording_is_paused=Запись не остановлена.
 
-spotify_not_initialized=Spotify token is not initialized. Please check if the client ID and client secret are set correctly.
-spotify_apply_volume_error=Error, unable to apply volume
-spotify_volume_prenium_error=Error, unable to apply volume because Spotify Prenium is required
-spotify_no_active_device_error=No active Spotify device found. Please ensure that Spotify is running and active.
-spotify_no_track_playing_error=No track currently playing.
-spotify_playlist_not_found_error=Playlist named '%playlist_name%' not found.
+spotify_not_initialized=Токен авторизации Spotify не инициализирован. Проверьте значения client ID и client secret.
+spotify_apply_volume_error=Ошибка при попытке установить громкость Spotify
+spotify_volume_prenium_error=Ошибка при попытке установить громкость Spotify, требуется Spotify Premium
+spotify_no_active_device_error=Не обнаружено активного устройства Spotify. Проверьте что Spotify запущен.
+spotify_no_track_playing_error=Сейчас ничего не играет.
+spotify_playlist_not_found_error=Плейлист с названием '%playlist_name%' не найден.
 
 
 // -- Success messages --
 
-settings_save_success=Settings saved successfully.
-downloaded_successfully=File downloaded successfully
-folder_created_successfully=Folder created successfully!
+settings_save_success=Настройки успешно сохранены.
+downloaded_successfully=Файл успешно загружен
+folder_created_successfully=Папка успешно создана!
 
-spotify_follow_artist_success=Subscribed to %artist_name%.
-spotify_unfollow_artist_success=Unsubscribed from %artist_name%.
+spotify_follow_artist_success=Подписался на  %artist_name%.
+spotify_unfollow_artist_success=Отписался от %artist_name%.
 
 
 // -- Button configuration --
 
-add_a_button=Add a button
-configure_your_button=Configure your button
+add_a_button=Добавить кнопку
+configure_your_button=Настроить кнопку
 
-image=Image
-image_size=Image Size
-background_color=Background Color
-background_color_hex=Background Color (HEX)
-button_title=Button Title
-edit_command=Command (experimental)
+image=Изображение
+image_size=Размер изображения
+background_color=Цвет фона
+background_color_hex=Цвет фона (HEX)
+button_title=Заголовок кнопки
+edit_command=Команда (экспериментально)
 
-select_your_file=Select your file
-no_file_chosen=No file chosen
+select_your_file=Выберите файл
+no_file_chosen=Файл не выбран!
 
-choose_option=Choose an option
+choose_option=Выберите вариант
 
-button_delete_confirmation=Do you really want to remove this button?
+button_delete_confirmation=Вы уверены, что хотите удалить эту кнопку?
 
 
 // -- Editor --
 
-enter_editor_mode=Enter editor mode
-exit_editor_mode=Exit editor mode
+enter_editor_mode=Открыть режим редактора
+exit_editor_mode=Закрыть режим редактора
 
-open_folder=Open Folder
+open_folder=Открыть папку
 
-delete_folder=Delete Folder
-delete_folder_confirm=Are you sure you want to delete the folder?
-folder_not_found=Folder not found
+quit_without_saving=Закрыть без сохранения
+save_and_exit=Сохранить и закрыть
+swap_buttons=Поменять 2 кнопки местами
+stop_swap_mode=Закрыть режим смены местами
+no_changes_to_undo=Нет изменений для отмены.
 
-quit_without_saving=Quit without saving
-save_and_exit=Save and exit
-swap_buttons=Swap 2 Buttons
-stop_swap_mode=Stop Swap Mode
-no_changes_to_undo=There are no changes to undo.
-
-ACTION_NAME_single_click= When clicked
-ACTION_NAME_double_click= When double clicked
-ACTION_NAME_hold= When held
 
 // Settings tab
-configuration=Configuration
-settings=Settings
+configuration=Конфигурация
+settings=Настройки
 
-see_patchnotes=See patchnotes
-github_issue=Report an issue on GitHub
+see_patchnotes=Посмотреть список изменений
+github_issue=Написать отчёт об ошибках на Github
 
-language=Language
-config-windows_startup=Start on Windows startup
-auto_updates=Auto updates
+language=Язык
+config-windows_startup=Запускать при старте Windows
+auto_updates=Автообновление
 
-soundboard=Soundboard
-input_device=Input device
-output_device=Output device (vbcable)
-toggle_soundboard=Soundboard enabled
-ear_soundboard=Ear Soundboard
+soundboard=Звуковая панель
+input_device=Устройство ввода
+output_device=Устройство вывода (vbcable)
+toggle_soundboard=Звуковая панель включена
+ear_soundboard=Прослушивать звуковую панель
 
 spotify_api=Spotify API
-username=Username
+username=Имя пользователя
 
 obs_studio=OBS Studio
-host=Host
-port=Port
-password=Password
+host=Адрес
+port=Порт
+password=Пароль
 
 
-visuals=Visuals
+visuals=Внешний вид
 
-gridsize=Grid-size
-height=height
-width=width
+gridsize=Размер сетки
+height=высота
+width=ширина
 
-portrait_rotate=Portrait mode rotation degrees
+portrait_rotate=Угол поворота портретного режима
 
-themes=Themes
-open_theme_menu=Open the themes menu
+themes=Темы
+open_theme_menu=Открыть меню тем
 
-backgrounds=Background images
-open_background_image_menu=Open the backgrounds menu
+backgrounds=Фоновые изображения
+open_background_image_menu=Открыть меню фоновых изображений
 
-dark_theme=Dark theme
+dark_theme=Тёмная тема
 
-show_btn_names=Show button names
+show_btn_names=Показать названия кнопок
 
-edit_btn_color=Change the default button color
+edit_btn_color=Изменить цвет кнопок по-умолчанию
 
 
-experimental=Experimental
+experimental=Экспериментально
 
-usage_btn_reload_time=Usage buttons reload time (ms)
+usage_btn_reload_time=Автообновление страницы (ms)
 
-optimized_usage_display=Optimized usage display buttons
+optimized_usage_display=Оптимизировать использование пространства дисплея
 
-gpu_usage_method=GPU usage method (if the gpu usage does not show)
-doesnt_work=doesn't work
-lmao=lmao
-none=None
+gpu_usage_method=Метод использования GPU (if the gpu usage does not show)
+doesnt_work=не работает
+lmao=лмао
+none=Нет
 
-open_settings_in_integrated_browser=Open settings in a dedicated browser
+open_settings_in_integrated_browser=Открыть настройки в отдельном браузере
 
-show_console=Show console
-dev_mode=Dev mode
-authorize_windows_firewall=Authorize WebDeck via Windows Firewall
-automatic_firewall_bypass=Automatic firewall bypass at startup
-fix_stop_soundboard=Fix stop soundboard button issue (may be unstable)
+show_console=Отобразить консоль
+dev_mode=Режим разработчика
+authorize_windows_firewall=Авторизовать Neodeck в брандмауэре Защитника Windows
+automatic_firewall_bypass=Автоматически обходить ограничения брандмауэра при запуске
+fix_stop_soundboard=Исправить ошибку кнопки остановки звуковой панели (может работать нестабильно)
 
-server=Server
+server=Сервер
 
-themes_menu_title=Themes list
-random_bg_menu_title=Random backgrounds list
+themes_menu_title=Список тем
+random_bg_menu_title=Список случайных фонов
 
-disabled_themes=Available
-enabled_themes=Selected
+disabled_themes=Доступно
+enabled_themes=Выбрано
 
-open_themes_folder=Open themes folder
+open_themes_folder=Открыть папку с темами
 
-wallpaper_color=Background Color
-add_background_color=Add a color backgroud
+wallpaper_color=Цвет фона
+add_background_color=Добавить цвет фона
 or=or
 
-remove_background=Remove this background
+remove_background=Убрать этот фон
 
 
 // Links
-link_soundboard=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-set-up-my-soundboard
-link_spotify=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-connect-your-spotify-account
-link_obs=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-set-up-obs-studio
-link_themes=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#im-a-developer-how-can-i-customize-the-pages-css
+link_soundboard=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-set-up-my-soundboard
+link_spotify=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-connect-your-spotify-account
+link_obs=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-set-up-obs-studio
+link_themes=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#im-a-developer-how-can-i-customize-the-pages-css
 
-soundboard_tutorial=Soundboard setup tutorial
-spotify_tutorial=Spotify setup tutorial
-obs_tutorial=OBS setup tutorial
-themes_tutorial=Themes creation tutorial
+soundboard_tutorial=Обучение установки звуковой панели
+spotify_tutorial=Обучение установки Spotify
+obs_tutorial=Обучение установки OBS
+themes_tutorial=Обучение создания тем
 
 
-not_specified=Not specified
+not_specified=Не указано
 
-save=Save
-back=Back
+save=Сохранить
+back=Вернуться
 
 
 // -- Buttons --
 
-WEBDECK_fullscreen__btn_name=Fullscreen
-WEBDECK_fullscreen__btn_default_display_name=
-WEBDECK_fullscreen__btn_description=Toggle full screen mode on the device
+NEODECK_fullscreen__btn_name=Fullscreen
+NEODECK_fullscreen__btn_default_display_name=
+NEODECK_fullscreen__btn_description=Toggle full screen mode on the device
 
-WEBDECK_reload_page__btn_name=Reload page
-WEBDECK_reload_page__btn_default_display_name=Reload
-WEBDECK_reload_page__btn_description=
+NEODECK_reload_page__btn_name=Reload page
+NEODECK_reload_page__btn_default_display_name=Reload
+NEODECK_reload_page__btn_description=
 
-WEBDECK_open_a_folder__btn_name=Open a folder
-WEBDECK_open_a_folder__btn_default_display_name=Open folder
-WEBDECK_open_a_folder__btn_description=Opens the specified webdeck folder
-WEBDECK_open_a_folder__arg_1_name=Folder name
+NEODECK_open_a_folder__btn_name=Open a folder
+NEODECK_open_a_folder__btn_default_display_name=Open folder
+NEODECK_open_a_folder__btn_description=Opens the specified neodeck folder
+NEODECK_open_a_folder__arg_1_name=Folder name
 
-WEBDECK_config__btn_name=Configuration
-WEBDECK_config__btn_default_display_name=Settings
-WEBDECK_config__btn_description=Open settings menu
+NEODECK_config__btn_name=Configuration
+NEODECK_config__btn_default_display_name=Settings
+NEODECK_config__btn_description=Open settings menu
 
 
 DISPLAY_CATEGORY_NAME=Display
@@ -472,7 +465,7 @@ SYSTEM_restart_a_task__arg_1_name=Task (app.exe)
 
 SYSTEM_execute_python_code__btn_name=Execute python code
 SYSTEM_execute_python_code__btn_default_display_name=
-SYSTEM_execute_python_code__btn_description=Execute python code from the webdeck program
+SYSTEM_execute_python_code__btn_description=Execute python code from the neodeck program
 SYSTEM_execute_python_code__arg_1_name=Option
 SYSTEM_execute_python_code__arg_1_option_1_name=Python file (upload)
 SYSTEM_execute_python_code__arg_1_option_2_name=Python file (path)
@@ -480,7 +473,7 @@ SYSTEM_execute_python_code__arg_1_option_3_name=Python code (single line)
 
 SYSTEM_execute_batch_code__btn_name=Execute batch code
 SYSTEM_execute_batch_code__btn_default_display_name=
-SYSTEM_execute_batch_code__btn_description=Execute batch from the webdeck program
+SYSTEM_execute_batch_code__btn_description=Execute batch from the neodeck program
 SYSTEM_execute_batch_code__arg_1_name=Batch code
 
 
@@ -527,9 +520,6 @@ TEXT_open_clipboard__btn_name=Open clipboard
 TEXT_open_clipboard__btn_default_display_name=Clipboard
 TEXT_open_clipboard__btn_description=
 
-
-SOUNDBOARD_playsound_input0 =Select sound to play
-
 TEXT_clear_clipboard__btn_name=Clear clipboard
 TEXT_clear_clipboard__btn_default_display_name=
 TEXT_clear_clipboard__btn_description=
@@ -560,15 +550,10 @@ OBSSTUDIO_hotkey__btn_default_display_name=OBS Hotkey
 OBSSTUDIO_hotkey__btn_description=Trigger a hotkey in OBS
 OBSSTUDIO_hotkey__arg_1_name=Key name
 
-OBSSTUDIO_changescene__btn_name=Change scene con drogas
+OBSSTUDIO_changescene__btn_name=Change scene
 OBSSTUDIO_changescene__btn_default_display_name=
 OBSSTUDIO_changescene__btn_description=Set current scene by name on OBS
 OBSSTUDIO_changescene__arg_1_name=Scene name
-
-OBSSTUDIO_togglesource__btn_name=Toggle source
-OBSSTUDIO_togglesource__btn_default_display_name=OBS Toggle Source
-OBSSTUDIO_togglesource__btn_description=Change a source visibility on OBS
-OBSSTUDIO_togglesource__arg_1_name=Key name
 
 OBSSTUDIO_togglerecording__btn_name=Toggle recording
 OBSSTUDIO_togglerecording__btn_default_display_name=
@@ -687,98 +672,3 @@ SPOTIFY_follow_current_played_artist_(doesnt_unfollow_if_already)__btn_descripti
 SPOTIFY_unfollow_current_played_artist__btn_name=Unfollow artist
 SPOTIFY_unfollow_current_played_artist__btn_default_display_name=
 SPOTIFY_unfollow_current_played_artist__btn_description=Unfollow the artist of the currently played song
-
-
-
-//category titles
-
-CATEGORY__TILE_Display=Display
-CATEGORY__TILE_OBS_Studio=OBS Studio
-CATEGORY__TILE_Soundboard=Soundboard
-CATEGORY__TILE_Spotify=Spotify
-CATEGORY__TILE_System=System
-CATEGORY__TILE_Text=Text
-CATEGORY__TILE_Utilities=Utilities
-CATEGORY__TILE_Webdeck=Webdeck
-
-//category subtitles
-
-SUBCATEGORY__TILE_Display_Disks=Disks
-SUBCATEGORY__TILE_Display_GPU=GPU
-SUBCATEGORY__TILE_Display_Memory=Memory
-SUBCATEGORY__TILE_Display_Network=Network
-SUBCATEGORY__TILE_Spotify_Volume_(ONLY_WITH_SPOTIFY_PREMIUM)=Spotify Volume (ONLY_WITH_SPOTIFY_PREMIUM)
-SUBCATEGORY__TILE_System_Media_control=System Media Control
-SUBCATEGORY__TILE_System_Volume=System Volume
-
-
-//generic buttons 
-upload_image_generic=Upload image
-close_generic=Close
-submit_generic=Submit
-open_generic=Open
-save_generic=Save
-edit_generic=Edit
-delete_generic=Delete
-cancel_generic=Cancel
-back_generic=Back
-next_generic=Next
-continue_generic=Continue
-confirm_generic=Confirm
-reset_generic=Reset
-refresh_generic=Refresh
-home_generic=Home
-search_generic=Search
-filter_generic=Filter
-sort_generic=Sort
-view_generic=View
-details_generic=Details
-more_generic=More
-login_generic=Log in
-logout_generic=Log out
-register_generic=Register
-profile_generic=Profile
-settings_generic=Settings
-like_generic=Like
-dislike_generic=Dislike
-comment_generic=Comment
-share_generic=Share
-download_generic=Download
-ok_generic=OK
-yes_generic=Yes
-no_generic=No
-error_generic=Error
-success_generic=Success
-warning_generic=Warning
-info_generic=Info
-no_image_generic=No image
-
-# settings
-webdeck_setting_allowed_networks=Allowed networks
-webdeck_setting_app_admin=Run app as admin
-webdeck_setting_auto_updates=Auto updates
-webdeck_setting_automatic_firewall_bypass=Bypass  firewall at startup
-webdeck_setting_data_transfer_method=Data transfer method
-webdeck_setting_dev_mode=Developer mode
-webdeck_setting_ear_soundboard=Ear soundboard
-webdeck_setting_fix_stop_soundboard= Fix stop soundboard 
-webdeck_setting_flask_debug=Flask debug
-webdeck_setting_flask_reloader=Flask reloader
-webdeck_setting_flask_secret_key=Flask secret key
-
-webdeck_setting_gpu_method=GPU method
-webdeck_setting_language=Language
-webdeck_setting_netmask=Netmask
-webdeck_setting_open_settings_in_integrated_browser=Open settings in integrated browser
-webdeck_setting_optimized_usage_display=Optimized usage display
-webdeck_setting_server=Server
-webdeck_setting_show_console=Show console
-webdeck_setting_show_popup=Show popup
-webdeck_setting_sort_colors_on_startup=Sort colors on startup
-webdeck_setting_update_channel=Update channel
-webdeck_setting_update_repo=Update repo
-webdeck_setting_windows_start_menu_shortcut=Windows start menu shortcut
-webdeck_setting_windows_startup=Windows startup
-
-
-WEBDECK_CATEGORY_NAME=Webdeck

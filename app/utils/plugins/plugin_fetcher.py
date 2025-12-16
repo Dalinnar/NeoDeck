@@ -3,12 +3,12 @@ import requests
 from settings import get_settings
 
 #get token if exists
-token = get_settings()["webdeck"].get("token", "")
+token = get_settings()["neodeck"].get("token", "")
 
 def download_github_item(path, destination):
     """Descarga un archivo o carpeta desde un repositorio de GitHub (privado o público)."""
     global token
-    repo = get_settings()["webdeck"]["plugins_repo"]
+    repo = get_settings()["neodeck"]["plugins_repo"]
 
 
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
@@ -50,7 +50,7 @@ def download_file(file, destination, headers):
 
 def get_github_file_content(path):
     global token
-    repo = get_settings()["webdeck"]["plugins_repo"]
+    repo = get_settings()["neodeck"]["plugins_repo"]
     url = f"https://raw.githubusercontent.com/{repo}/main/{path}"
     headers = {"Authorization": f"token {token}"} if token else {}
     

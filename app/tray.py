@@ -12,17 +12,18 @@ from PIL import Image, ImageTk
 from io import BytesIO
 import threading
 
-from .utils.settings.get_config import get_config
+
 from .utils.exit import exit_program
 from .utils.restart import restart_program
 from .utils.firewall import fix_firewall_permission
 from settings import *
 from .functions import *
 from .utils.get_local_ip import get_local_ip
-from .utils.settings.get_config import get_port
+
 from .utils.languages import text, get_languages_info, get_language, set_default_language
 from .utils.logger import log
 
+SERVER_STATE = 0  # 0 = loading, 1 = online, 2 = offline
 
 def toggle_console():
     """Muestra u oculta la consola del EXE."""
@@ -40,7 +41,7 @@ def toggle_console():
 
 def reload_config():
     default_settings = get_settings()
-    settings = objetify(default_settings["webdeck"])
+    settings = objetify(default_settings["neodeck"])
     
             
     return (
@@ -59,13 +60,13 @@ def open_config():
     config_url = f"http://{local_ip}:{get_port()}?config=show"
     
     if open_in_integrated_browser:
-        webview.create_window('WebDeck Config', url=config_url, background_color='#141414')
+        webview.create_window('Neodeck Config', url=config_url, background_color='#141414')
         webview.start()
         
         foreground_window = win32gui.GetForegroundWindow()
         window_title = win32gui.GetWindowText(foreground_window)
         
-        if "webdeck" in window_title.lower():
+        if "neodeck" in window_title.lower():
             win32gui.ShowWindow(foreground_window, win32con.SW_MAXIMIZE)
     else:
         webbrowser.open(config_url)
@@ -174,7 +175,7 @@ def generate_menu(language, server_status=1):
             open_config
         ),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem(text('report_issue'), lambda: webbrowser.open('https://github.com/Lenochxd/WebDeck/issues')),
+        pystray.MenuItem(text('report_issue'), lambda: webbrowser.open('https://github.com/Lenochxd/Neodeck/issues')),
         pystray.MenuItem(text('toggle_console'),lambda: toggle_console()),
         pystray.MenuItem(text('exit'), lambda: exit_program()),
     )
@@ -183,13 +184,13 @@ def generate_tray_icon():
     global icon
     image = Image.open("static/icons/icon.ico")
 
-    menu = generate_menu(language, server_status=0)
+    menu = generate_menu(language, server_status=SERVER_STATE)
 
-    # Create the Tray Icon
     if getattr(sys, 'frozen', False):
-        icon = pystray.Icon("name", image, "WebDeck", menu)
+        icon = pystray.Icon("name", image, "Neodeck", menu)
     else:
-        icon = pystray.Icon("name", image, "WebDeck DEV", menu)
+        icon = pystray.Icon("name", image, "Neodeck DEV", menu)
+
     return icon
 
 def change_port_prompt():
@@ -198,7 +199,7 @@ def change_port_prompt():
         if validate_port_input(new_port) and new_port not in ['', str(get_port())]:
             prompt_window.destroy() 
             
-            loaded_settings["webdeck"]["port"] = int(new_port)
+            loaded_settings["neodeck"]["port"] = int(new_port)
             load_settings(loaded_settings)
             restart_program()
 
@@ -259,18 +260,19 @@ def update_language(new_lang):
     set_default_language(new_lang)
     change_tray_language(new_lang)
 
-    loaded_settings["webdeck"]["language"] = new_lang
+    loaded_settings["neodeck"]["language"] = new_lang
     load_settings(loaded_settings)
 
 def change_server_state(new_state):
-    global icon
-    if icon is not None:
-        icon.menu = generate_menu(language, server_status=new_state)
-        icon.update_menu()
+    global icon, SERVER_STATE
+    SERVER_STATE = new_state
 
+    if icon is not None:
+        icon.menu = generate_menu(language, server_status=SERVER_STATE)
+        icon.update_menu()
 
 def create_tray_icon():
     global icon
     if icon is None:  # Only create the icon if it doesn't already exist
         icon = generate_tray_icon()
-        icon.run_detached()
+        icon.run()

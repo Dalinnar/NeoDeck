@@ -5,7 +5,7 @@ import sys
 def locate_file_directory(filename, base_dir=None) -> str:
     """
     Helper function to locate a file in the current directory or up to 4 parent directories.
-    This is necessary because the base path can be 'WebDeck/lib/library.zip/app/utils' for example.
+    This is necessary because the base path can be 'Neodeck/lib/library.zip/app/utils' for example.
     If the application is not frozen, returns the current directory directly.
     """
     if not getattr(sys, 'frozen', False):
@@ -25,10 +25,10 @@ def locate_file_directory(filename, base_dir=None) -> str:
 
 def get_base_dir() -> str:
     """
-    Returns the base project directory by navigating up to 2 levels to find 'WebDeck.exe'.
+    Returns the base project directory by navigating up to 2 levels to find 'Neodeck.exe'.
     If the application is not frozen, returns the current directory directly.
     """
-    return locate_file_directory("WebDeck.exe")
+    return locate_file_directory("Neodeck.exe")
 
 def get_update_dir() -> str:
     """

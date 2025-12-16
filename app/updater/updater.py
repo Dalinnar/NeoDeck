@@ -16,12 +16,12 @@ from app.utils.args import parse_args, raw_args, get_arg
 
 log = Logger(from_updater=True)
 
-settings = loaded_settings["webdeck"]
+settings = loaded_settings["neodeck"]
 
 
 def check_files():
     wd_dir = get_base_dir()
-    version_path = os.path.join(wd_dir, "webdeck/version.json")
+    version_path = os.path.join(wd_dir, "neodeck/version.json")
     temp_json_path = os.path.join(wd_dir, "temp.json")
 
     # Get version from the versions JSON file
@@ -142,7 +142,7 @@ def compare_versions(version1, version2):
 
 
 def check_updates(current_version):
-    update_repo = settings.get('update_repo', 'Lenochxd/WebDeck')
+    update_repo = settings.get('update_repo', 'Lenochxd/Neodeck')
     url = f"https://api.github.com/repos/{update_repo}/releases"
     response = requests.get(url)
     releases = response.json()
@@ -179,7 +179,7 @@ def check_updates(current_version):
 
         # Removing update files
         files_to_remove = [
-            os.path.join(update_dir, "WebDeck"),
+            os.path.join(update_dir, "Neodeck"),
             os.path.join(update_dir, "WD-update"),
             os.path.join(update_dir, "WD-update.zip")
         ]
@@ -193,14 +193,14 @@ def check_updates(current_version):
                         os.remove(file_path)
                 pbar.update(1)
 
-        # Launch WebDeck.exe from the wd_dir (root) directory
-        log.success("\nRestarting WebDeck.exe")
+        # Launch Neodeck.exe from the wd_dir (root) directory
+        log.success("\nRestarting Neodeck.exe")
         os.chdir(wd_dir)
-        webdeck_path = os.path.join(wd_dir, "WebDeck.exe")
+        neodeck_path = os.path.join(wd_dir, "Neodeck.exe")
         if compare_versions(latest_version, "2.0.0") < 0:
-            os.startfile(webdeck_path)
+            os.startfile(neodeck_path)
         else:
-            os.startfile(webdeck_path, " ".join(raw_args))
+            os.startfile(neodeck_path, " ".join(raw_args))
         
 
 
@@ -209,7 +209,7 @@ def download_and_extract(download_url):
     if response.status_code != 200:
         show_error(
             f"Failed to download update ZIP file.\n\n{response.json()}",
-            title="WebDeck Updater Error"
+            title="Neodeck Updater Error"
         )
     else:
         total_size = int(response.headers.get('content-length', 0))
@@ -233,7 +233,7 @@ def download_and_extract(download_url):
             }
             show_error(
                 f"Failed to download the complete update ZIP file.\n\n{infos}",
-                title="WebDeck Updater Error"
+                title="Neodeck Updater Error"
             )
             return
 
@@ -241,7 +241,7 @@ def download_and_extract(download_url):
             for file in tqdm(zip_ref.namelist(), desc="Extracting"):
                 zip_ref.extract(file, "WD-update")
 
-        source = os.path.join(update_dir, "WD-update/WebDeck")
+        source = os.path.join(update_dir, "WD-update/Neodeck")
         destination = wd_dir
 
         move_folder_content(source, destination)
@@ -254,7 +254,7 @@ def download_and_extract(download_url):
 #     with zipfile.ZipFile("WD-update.zip", "r") as zip_ref:
 #         zip_ref.extractall("WD-update")
 #
-#     source = os.path.join(update_dir, "WD-update/WebDeck")
+#     source = os.path.join(update_dir, "WD-update/Neodeck")
 #     destination = wd_dir
 #
 #     move_folder_content(source, destination)
@@ -343,7 +343,7 @@ if __name__ == "__main__" and getattr(sys, "frozen", False):   # This ensures th
     if needs_admin_permissions():
         request_admin_permissions()
     
-    version_path = os.path.join(wd_dir, "webdeck/version.json")
+    version_path = os.path.join(wd_dir, "neodeck/version.json")
     with open(version_path, encoding="utf-8") as f:
         current_version = json.load(f)["versions"][0]["version"]
 

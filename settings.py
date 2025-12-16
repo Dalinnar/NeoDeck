@@ -8,65 +8,84 @@ BASE_DIR = get_base_dir()
 def get_availeable_languages():
     languages = {}
 
-    for root, dirs, files in os.walk(os.path.join(BASE_DIR, "webdeck", "translations")):
+    for root, dirs, files in os.walk(os.path.join(BASE_DIR, "neodeck", "translations")):
         for index, file in enumerate(files):
             if file.endswith(".lang"):
                 languages[index] = file.split(".")[0]
     
     return languages
 
+def get_port():
+    return loaded_settings["neodeck"].get("port", 5000)
+
+
 
 def write_default_settings():
-    with open(os.path.join(BASE_DIR, ".config/settings.json"), "w", encoding="utf-8") as f:
-        def_settings= { 
-            "webdeck": {
-                "server": "flask",
-                "plugins_repo": "Dalinnar/NeoDeck-plugins",
-                "open_settings_in_integrated_browser": False,
-                "ear_soundboard": True,
-                "allowed_networks": [],
-                "data_transfer_method": "http",
-                "ip": "0.0.0.0",
-                "dev_mode": False,
-                "windows_start_menu_shortcut": False,
-                "show_popup": True,
-                "auto_updates": True,
-                "gpu_method": "nvidia (pynvml)",
-                "update_channel": "stable",
-                "windows_startup": True,
-                "flask_debug": False,
-                "flask_secret_key": "secret",
-                "update_repo": "dalinnar",
-                "show_console": False,
-                "optimized_usage_display": False,
-                "flask_reloader": False,
-                "fix_stop_soundboard": False,
-                "app_admin": False,
-                "port": "59997",
-                "sort_colors_on_startup": False,
-                "automatic_firewall_bypass": False,
-                "language": "en_US",
-                "netmask": "16"
+    config_dir = os.path.join(BASE_DIR, ".config")
+    settings_path = os.path.join(config_dir, "settings.json")
+
+    # Crear carpeta .config si no existe
+    os.makedirs(config_dir, exist_ok=True)
+
+    def_settings = {
+        "neodeck": {
+            "server": "flask",
+            "plugins_repo": "Dalinnar/NeoDeck-plugins",
+            "open_settings_in_integrated_browser": False,
+            "ear_soundboard": True,
+            "allowed_networks": [],
+            "data_transfer_method": "http",
+            "ip": "0.0.0.0",
+            "dev_mode": False,
+            "windows_start_menu_shortcut": False,
+            "show_popup": True,
+            "auto_updates": True,
+            "gpu_method": "nvidia (pynvml)",
+            "update_channel": "stable",
+            "windows_startup": True,
+            "flask_debug": False,
+            "flask_secret_key": "secret",
+            "update_repo": "dalinnar",
+            "show_console": False,
+            "optimized_usage_display": False,
+            "flask_reloader": False,
+            "fix_stop_soundboard": False,
+            "app_admin": False,
+            "port": "59997",
+            "sort_colors_on_startup": False,
+            "automatic_firewall_bypass": False,
+            "language": "en_US",
+            "netmask": "16"
         }
     }
+
+    with open(settings_path, "w", encoding="utf-8") as f:
         json.dump(def_settings, f, indent=4)
            
 
 
 def get_settings(category=None, specific_setting=None):
-    """Obtiene la configuración guardada y permite acceder a categorías y ajustes específicos."""
-    settings_path = os.path.join(BASE_DIR, ".config/settings.json")
+    settings_path = os.path.join(BASE_DIR, ".config", "settings.json")
+
+    # Si no existe, crear settings por defecto
+    if not os.path.exists(settings_path):
+        write_default_settings()
+
     try:
         with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f) 
+            settings = json.load(f)
+
         if category is not None:
-            settings = settings.get(category, {})  
+            settings = settings.get(category, {})
             if specific_setting is not None:
-                return settings.get(specific_setting, None)          
+                return settings.get(specific_setting)
+
         return settings
-    except (FileNotFoundError, json.JSONDecodeError) as e:
+
+    except json.JSONDecodeError:
+        # Archivo corrupto → regenerar
         write_default_settings()
-        return get_settings()
+        return get_settings(category, specific_setting)
     
 def get_default_settings():
     """returns a python type dyct with the sum of all settings"""
@@ -74,7 +93,7 @@ def get_default_settings():
     
 def get_base_settings():
     """returns only the base settings"""
-    return get_settings()["webdeck"]
+    return get_settings()["neodeck"]
 
 def load_settings(settings):
     if not settings:
@@ -94,7 +113,7 @@ base_settings = {
         "windows_start_menu_shortcut": False,
         "auto_updates": True,
         "update_channel": "stable",
-        "update_repo": "Lenochxd/WebDeck",
+        "update_repo": "Lenochxd/Neodeck",
         "plugins_repo" : "Dalinnar/NeoDeck-plugins",
         "dev_mode": False,
         "server": "flask",
@@ -120,4 +139,4 @@ base_settings = {
 loaded_settings = get_settings()
 
 default_settings = {}
-default_settings["webdeck"] = base_settings
+default_settings["neodeck"] = base_settings

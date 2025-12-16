@@ -1,51 +1,34 @@
 
-import re
-import random
-import json
-import os
-import sys
 import ipaddress
-import ast
+import json
 import logging
+import os
+import re
+import sys
 import psutil
-from app.utils.plugins.plugin_fetcher import *
-from settings import default_settings,loaded_settings, get_settings, load_settings
-from flask_socketio import SocketIO, emit
-
 import tkinter as tk
 from tkinter import filedialog
-
-# Third-party library imports
-from PIL import Image
-from GPUtil import getGPUs
-from werkzeug.serving import make_server
-from flask import Flask, request, jsonify, render_template, send_file, make_response,send_from_directory, abort
+from flask import ( Flask, abort, jsonify, make_response,render_template, request, send_file, send_from_directory, )
+from flask_socketio import SocketIO
 from flask.wrappers import Response
 from flask_minify import Minify
+from GPUtil import getGPUs
 
-from win32com.client import Dispatch
+from app.tray import change_server_state
+from app.utils.args import get_arg
+from app.utils.languages import text
+from app.utils.logger import log
 from app.utils.plugins.load_plugins import load_plugins
+from app.utils.plugins.plugin_fetcher import *
+from app.utils.settings.audio_devices import get_audio_devices
+#from app.utils.settings.get_config import get_port
+from app.utils.working_dir import get_base_dir
+from app.utils.firewall import check_firewall_permission, fix_firewall_permission
 
-
-# WebDeck imports
-from .on_start import on_start
-
-
-
-from app.tray import change_tray_language, change_server_state
-from .utils.themes.parse_themes import parse_themes
-from .utils.working_dir import get_base_dir
-from .utils.settings.get_config import get_port, get_config
-from .utils.settings.audio_devices import get_audio_devices
-
-
-from .utils.firewall import fix_firewall_permission, check_firewall_permission
-from .utils.languages import text
-from .utils.logger import log
-from .utils.args import get_arg
-
+from settings import (default_settings,get_settings,load_settings,loaded_settings,get_port)
+from .buttons.commands import get_monitors, process_command
 from .functions import *
-from .buttons.commands import get_monitors,process_command
+from .on_start import on_start
 
 class CustomFlask(Flask):
     def run(self, *args, **kwargs):
@@ -85,7 +68,7 @@ app.jinja_env.globals.update(
 )
 if getattr(sys, "frozen", False):
     Minify(app=app, html=True, js=True, cssless=True)
-app.config["SECRET_KEY"] = loaded_settings["webdeck"].get("secret_key", "secret_key")
+app.config["SECRET_KEY"] = loaded_settings["neodeck"].get("secret_key", "secret_key")
 
 
 
@@ -111,13 +94,13 @@ def check_local_network():
         return None  # OK
 
     # Verificar si está dentro de la red local
-    netmask = loaded_settings["webdeck"].get("netmask", 16)
+    netmask = loaded_settings["neodeck"].get("netmask", 16)
     local_net = ipaddress.ip_network(f"{local_ip}/{netmask}", strict=False)
     if remote_ip in local_net:
         return None  # OK
 
     # Verificar redes permitidas manualmente
-    for network_str in loaded_settings["webdeck"].get("allowed_networks", []):
+    for network_str in loaded_settings["neodeck"].get("allowed_networks", []):
         try:
             network = ipaddress.ip_network(network_str, strict=False)
             if remote_ip in network:
@@ -135,24 +118,52 @@ def after_request(response):
     return response
 
    
+
+DEFAULT_PAGES = {
+    "first page": {
+        "background": "#3f3f3f",
+        "columns": 8,
+        "rows": 3,
+        "buttons": []
+    }
+}
+
 @app.route('/')
 def home():
     context = {}
     context["image_list"] = get_image_list()
     context["temp_scripts"] = get_temp_scripts()
 
-    if not os.path.exists(os.path.join(base_dir ,".config/pages.json")):
-        with open(os.path.join(base_dir ,".config/pages.json"), "w") as f:
-            json.dump({}, f)
-    with open(os.path.join(base_dir ,".config/pages.json") , "r+") as f:
-        pages = json.load(f)
-        context["pages"] = list(pages.keys())
-        context["deck_folder"] = pages[next(iter(pages))]  
-        context["folder_name"] = str(next(iter(pages)))
-        textdir = text()
-        context["text"] = textdir
-        context["commands"] = commands
-    return render_template("index_new.jinja",context=context)
+    pages_path = os.path.join(base_dir, ".config/pages.json")
+    os.makedirs(os.path.dirname(pages_path), exist_ok=True)
+
+    # Intentar cargar el JSON
+    try:
+        with open(pages_path, "r") as f:
+            pages = json.load(f)
+
+        # Si el archivo existe pero está vacío o no es un dict
+        if not isinstance(pages, dict) or len(pages) == 0:
+            pages = DEFAULT_PAGES
+            with open(pages_path, "w") as f:
+                json.dump(pages, f, indent=4)
+
+    except (FileNotFoundError, json.JSONDecodeError, ValueError):
+        # Si no existe o está corrupto → recrearlo con default
+        pages = DEFAULT_PAGES
+        with open(pages_path, "w") as f:
+            json.dump(pages, f, indent=4)
+
+    # Obtener primera página de forma segura
+    first_key = next(iter(pages))
+
+    context["pages"] = list(pages.keys())
+    context["deck_folder"] = pages[first_key]
+    context["folder_name"] = str(first_key)
+    context["text"] = text()
+    context["commands"] = commands
+
+    return render_template("index_new.jinja", context=context)
 
 #add method get and post to settings
 @app.route("/settings", methods=["GET", "POST"])
@@ -180,7 +191,7 @@ def plugins_page():
     #context["installed_metadata"] = installed_metadata
     # Get plugin data from repository
     #data = get_github_file_content("plugins.json")
-    #context["repo"] = loaded_settings["webdeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
+    #context["repo"] = loaded_settings["neodeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
     #data = json.loads(data)
     #context["plugins_data"] = data
     
@@ -190,7 +201,7 @@ def plugins_page():
 @app.route('/gitcontent/<user>/<repo>/<path:file_path>')
 def get_github_image(user, repo, file_path):
     GITHUB_RAW_URL = "https://raw.githubusercontent.com"
-    token = loaded_settings["webdeck"].get("token", "")
+    token = loaded_settings["neodeck"].get("token", "")
     branch = "main"  # Puedes hacerlo dinámico si necesitas
     github_url = f"{GITHUB_RAW_URL}/{user}/{repo}/refs/heads/{branch}/{file_path}"
     #headers with the api key
@@ -433,14 +444,14 @@ def handle_exception(e):
     if request.url:
         log.warning(f"An error occurred while handling a request to {request.url}")
     log.exception(e, "An error occurred during a request")    
-    if not loaded_settings["webdeck"].get("flask_debug"):
+    if not loaded_settings["neodeck"].get("flask_debug"):
         response = jsonify({"success": False, "message": str(e)})
         response.status_code = 500
         return response
 
 
 if (    
-    loaded_settings["webdeck"].get("automatic_firewall_bypass") == True
+    loaded_settings["neodeck"].get("automatic_firewall_bypass") == True
     and check_firewall_permission() == False
 ):
     fix_firewall_permission()
@@ -448,37 +459,43 @@ if (
 log.info(f"Local IP address detected: {local_ip}")
 
 def run_server():
-
     change_server_state(1)
 
-    # Si usa werkzeug y NO está compilado como .exe
-    if default_settings["webdeck"].get("server") == "werkzeug" and not getattr(sys, "frozen", False):
-        
-        print(f"[INFO] Running server (Werkzeug + SocketIO) on http://{local_ip}:{PORT}")
+    is_exe = getattr(sys, "frozen", False)
+    use_werkzeug = default_settings["neodeck"].get("server") == "werkzeug"
+    debug_enabled = loaded_settings["neodeck"].get("flask_debug")
+    reloader_enabled = loaded_settings["neodeck"].get("flask_reloader", False)
+
+    # -------------------------------------------------
+    # DEVELOPMENT MODE
+    # -------------------------------------------------
+    if use_werkzeug and not is_exe:
+        log.info(f"Running server (Werkzeug) on http://{local_ip}:{PORT}")
         socketio.run(
             app,
             host=local_ip,
             port=PORT,
-            debug=loaded_settings["webdeck"].get("flask_debug"),
-            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False)
+            debug=debug_enabled,
+            use_reloader=reloader_enabled
         )
+        return
 
-    else:
-        print(f"Server running on http://{local_ip}:{PORT}")
-        socketio.run(
-            app,
-            host="0.0.0.0",
-            port=PORT,
-            debug=loaded_settings["webdeck"].get("flask_debug"),
-            use_reloader=loaded_settings["webdeck"].get("flask_reloader", False)
-        )
+    # -------------------------------------------------
+    # PRODUCTION MODE (EXE)
+    # -------------------------------------------------
+    log.info(f"Running production server on http://{local_ip}:{PORT}")
+    socketio.run(
+        app,
+        host="0.0.0.0",
+        port=PORT,
+        debug=debug_enabled,
+        use_reloader=False
+    )
 
 
-# Add this to your Flask app file (after the socketio initialization)
+if __name__ == "__main__":
+    run_server()
 
-
-
-# Trackea si hubo movimiento en el gesto actual (por scrollpad)
 
 import time
 from pynput.mouse import Controller, Button

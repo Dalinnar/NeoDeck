@@ -8,7 +8,7 @@ from .languages import text
 from .logger import log
 
 
-def show_error(message=None, title="WebDeck Error", error=True, exception=None) -> None:
+def show_error(message=None, title="Neodeck Error", error=True, exception=None) -> None:
     if exception is not None:
         log.exception(exception, message, expected=False)
         if message is not None:
@@ -41,7 +41,7 @@ def show_error(message=None, title="WebDeck Error", error=True, exception=None) 
                 f"{github_message}"
             )
             issue_body = issue_body.replace("\n", "%0A").replace(" ", "%20").replace("#", "%23")
-            webbrowser.open(f"https://github.com/Lenochxd/WebDeck/issues/new?labels=bug&template=bug_report.md&title={issue_title}&body={issue_body}")
+            webbrowser.open(f"https://github.com/Lenochxd/Neodeck/issues/new?labels=bug&template=bug_report.md&title={issue_title}&body={issue_body}")
         elif messagebox.askyesno(
             text("copy_to_clipboard_prompt_title"),
             text("copy_to_clipboard_prompt_message")

@@ -1,6 +1,6 @@
 # Translation file: ko_KR.lang
 # Author: KiiMyu(KiMyu) — Feel free to submit a PR for any corrections:
-# GitHub: https://github.com/Lenochxd/WebDeck/pulls
+# GitHub: https://github.com/Lenochxd/Neodeck/pulls
 # Discord: https://discord.gg/tUPsYHAGfm
 
 
@@ -29,7 +29,7 @@ author_github_username=KiiMyu
 // -- Welcome Message --
 
 welcome_message_window_title=Welcome
-welcome_message_label_1=Welcome to WebDeck!
+welcome_message_label_1=Welcome to Neodeck!
 welcome_message_label_2=You can find the tray icon here for quick access.
 welcome_message_button_dont_show_again=Don't show again
 welcome_message_button_ok=OK
@@ -40,7 +40,7 @@ welcome_message_button_ok=OK
 qr_code=QR 코드
 options=옵션
 open_config=설정 열기
-restart_application=WebDeck 재시작
+restart_application=Neodeck 재시작
 edit_port=포트 수정
 change_server_port=서버 포트 변경
 enter_new_port=새 포트 입력:
@@ -70,7 +70,7 @@ error_occurred=오류 발생
 settings_load_error=설정을 로드하는 중에 오류가 발생하였습니다.
 settings_save_error=설정을 저장하는 중에 오류가 발생하였습니다.
 
-auto_update_error=WebDeck을 업데이트 하는 중 오류가 발생하였습니다. https://github.com/Lenochxd/WebDeck/releases/latest 를 방문하여 수동으로 업데이트 하세요.
+auto_update_error=Neodeck을 업데이트 하는 중 오류가 발생하였습니다. https://github.com/Lenochxd/Neodeck/releases/latest 를 방문하여 수동으로 업데이트 하세요.
 
 no_files_found_error=파일을 찾을 수 없습니다.
 
@@ -204,7 +204,7 @@ open_settings_in_integrated_browser=전용 브라우저에서 설정 열기
 
 show_console=콘솔 표시
 dev_mode=개발 모드
-authorize_windows_firewall=WebDeck을 통해 Windows 방화벽 인증
+authorize_windows_firewall=Neodeck을 통해 Windows 방화벽 인증
 automatic_firewall_bypass=시작 시 자동 방화벽 우회
 fix_stop_soundboard=사운드보드 중지 버튼 문제 수정 ( 불안정할 수 있음 )
 
@@ -226,10 +226,10 @@ remove_background=이 배경 제거
 
 
 // Links
-link_soundboard=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-ko.md#%EC%82%AC%EC%9A%B4%EB%93%9C%EB%B3%B4%EB%93%9C%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%84%A4%EC%A0%95%ED%95%98%EB%82%98%EC%9A%94
-link_spotify=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-ko.md#spotify-%EA%B3%84%EC%A0%95%EC%9D%84-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95
-link_obs=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-ko.md#obs-studio%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%84%A4%EC%A0%95%ED%95%98%EB%82%98%EC%9A%94
-link_themes=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-ko.md#%EC%A0%80%EB%8A%94-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%9E%85%EB%8B%88%EB%8B%A4-%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98-css-%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%BB%A4%EC%8A%A4%ED%84%B0%EB%A7%88%EC%9D%B4%EC%A7%95-%ED%95%A0-%EC%88%98-%EC%9E%88%EB%82%98%EC%9A%94
+link_soundboard=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-ko.md#%EC%82%AC%EC%9A%B4%EB%93%9C%EB%B3%B4%EB%93%9C%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%84%A4%EC%A0%95%ED%95%98%EB%82%98%EC%9A%94
+link_spotify=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-ko.md#spotify-%EA%B3%84%EC%A0%95%EC%9D%84-%EC%97%B0%EA%B2%B0%ED%95%98%EB%8A%94-%EB%B0%A9%EB%B2%95
+link_obs=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-ko.md#obs-studio%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%84%A4%EC%A0%95%ED%95%98%EB%82%98%EC%9A%94
+link_themes=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-ko.md#%EC%A0%80%EB%8A%94-%EA%B0%9C%EB%B0%9C%EC%9E%90%EC%9E%85%EB%8B%88%EB%8B%A4-%ED%8E%98%EC%9D%B4%EC%A7%80%EC%9D%98-css-%EB%A5%BC-%EC%96%B4%EB%96%BB%EA%B2%8C-%EC%BB%A4%EC%8A%A4%ED%84%B0%EB%A7%88%EC%9D%B4%EC%A7%95-%ED%95%A0-%EC%88%98-%EC%9E%88%EB%82%98%EC%9A%94
 
 soundboard_tutorial=사운드보드 설정 튜토리얼
 spotify_tutorial=스포티파이 설정 튜토리얼
@@ -245,22 +245,22 @@ back=뒤로
 
 // -- Buttons --
 
-WEBDECK_fullscreen__btn_name=전체 화면
-WEBDECK_fullscreen__btn_default_display_name=
-WEBDECK_fullscreen__btn_description=제어장치의 전체 화면 모드를 활성화하거나 비활성화합니다.
+NEODECK_fullscreen__btn_name=전체 화면
+NEODECK_fullscreen__btn_default_display_name=
+NEODECK_fullscreen__btn_description=제어장치의 전체 화면 모드를 활성화하거나 비활성화합니다.
 
-WEBDECK_reload_page__btn_name=새로고침
-WEBDECK_reload_page__btn_default_display_name=
-WEBDECK_reload_page__btn_description=
+NEODECK_reload_page__btn_name=새로고침
+NEODECK_reload_page__btn_default_display_name=
+NEODECK_reload_page__btn_description=
 
-WEBDECK_open_a_folder__btn_name=폴더 열기
-WEBDECK_open_a_folder__btn_default_display_name=
-WEBDECK_open_a_folder__btn_description=웹덱 폴더를 엽니다.
-WEBDECK_open_a_folder__arg_1_name=폴더 이름
+NEODECK_open_a_folder__btn_name=폴더 열기
+NEODECK_open_a_folder__btn_default_display_name=
+NEODECK_open_a_folder__btn_description=웹덱 폴더를 엽니다.
+NEODECK_open_a_folder__arg_1_name=폴더 이름
 
-WEBDECK_config__btn_name=설정
-WEBDECK_config__btn_default_display_name=
-WEBDECK_config__btn_description=설정 메뉴를 엽니다.
+NEODECK_config__btn_name=설정
+NEODECK_config__btn_default_display_name=
+NEODECK_config__btn_description=설정 메뉴를 엽니다.
 
 
 DISPLAY_CATEGORY_NAME=디스플레이

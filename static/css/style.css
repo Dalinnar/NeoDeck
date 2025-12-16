@@ -1,7 +1,7 @@
 /*
 
-theme-name = WebDeck
-theme-description = WebDeck default theme
+theme-name = Neodeck
+theme-description = Neodeck default theme
 theme-icon = https://i.imgur.com/qhaL1EU.png
 theme-author-github = Lenochxd
 
@@ -997,7 +997,7 @@ div.args_container {
   width: -webkit-fill-available;
 }
 
-.webdeck_foldername {
+.neodeck_foldername {
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;

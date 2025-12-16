@@ -9,7 +9,7 @@ def fix_firewall_permission():
         "-NoProfile",
         "New-NetFirewallRule",
         "-DisplayName",
-        '"WebDeck"',
+        '"Neodeck"',
         "-Direction",
         "Inbound",
         "-Program",

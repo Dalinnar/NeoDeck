@@ -11,9 +11,9 @@ from .logger import log
 
 def exit_program(force=True, from_timeout=False):
     if from_timeout:
-        log.info("Timeout reached. Exiting WebDeck...")
+        log.info("Timeout reached. Exiting Neodeck...")
     else:
-        log.info("Exiting WebDeck...")
+        log.info("Exiting Neodeck...")
         #remove all files from temp
         for f in glob.glob(os.path.join(str(BASE_DIR), ".temp", "*")):
             if os.path.isfile(f):os.remove(f)
@@ -25,7 +25,7 @@ def exit_program(force=True, from_timeout=False):
 
         process_names_to_terminate = ["nircmd.exe"]
         if force:
-            process_names_to_terminate.append("webdeck.exe")
+            process_names_to_terminate.append("neodeck.exe")
             if not getattr(sys, 'frozen', False):
                 log.debug("Curently not running in a frozen state (not compiled). Adding python executables to termination list.")
                 os.kill(os.getpid(), signal.SIGINT)

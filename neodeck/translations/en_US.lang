@@ -1,0 +1,208 @@
+# --------------------------------------------------------------------------------------
+# 🌐 TRANSLATION FILE INSTRUCTIONS
+# --------------------------------------------------------------------------------------
+# File: en_US.lang (change this to match your language file, e.g., es_ES.lang)
+# Author: YourNameHere — Contribute your translations via Pull Request (PR):
+# GitHub: https://github.com/Lenochxd/Neodeck
+# Discord: https://discord.gg/tUPsYHAGfm
+#
+# 📌 GENERAL GUIDELINES:
+# - This file uses the `.properties` format. Be careful with syntax!
+# - All lines follow this pattern: `key=value`
+# - **Only translate the value** (text after `=`). NEVER change the key.
+# - If a translation is missing, the application will fall back to the key as text.
+#
+# ✍️ TRANSLATION RULES:
+# 1. Leave lines that begin with `//` untouched — they are used for grouping/comments.
+# 2. Lines that begin with `#` are comments and will be ignored by the program.
+#    Use them for notes or organization, but do not translate them.
+# 3. Preserve all variables and placeholders exactly as they are, such as:
+#       %username%, %count%, \n, \t, {0}, {1}
+#    Example: greeting=Hello, %username%! → Saludo=¡Hola, %username%!
+# 4. Do NOT add or remove any spaces around the `=`.
+# 5. Use UTF-8 encoding without BOM. Emojis and accents are allowed.
+# 6. Keep formatting consistent — no tabs or trailing spaces.
+#
+# 🌍 METADATA SECTION:
+# Please fill in your translation metadata below:
+native_name=English
+english_name=English
+lang_code=en_US
+author_name=Dalinnar
+author_github_username=Dalinnar
+#
+# Happy translating! Thank you for contributing 💛
+# --------------------------------------------------------------------------------------
+
+
+#errors ------------------------------------------------------------
+
+no_files_found_error=No files found.
+downloaded_successfully=Downloaded successfully.
+file_not_found_error=File not found.
+file_deleted_successfully=File deleted successfully.
+randomize=Randomize
+save=Save
+vlc_not_installed_error=VLC is not installed.
+ffmpeg_not_installed_error=FFmpeg is not installed.
+open_github_issue_prompt_title=Open GitHub Issue Prompt
+open_github_issue_prompt_message=Do you want to open a GitHub issue?
+copy_to_clipboard_prompt_title=Copy to Clipboard
+copy_to_clipboard_prompt_message=Do you want to copy the following text to the clipboard?
+welcome_message_window_title=Welcome to NeoDeck
+
+welcome_message_label_1=Welcome to NeoDeck!
+welcome_message_label_2=You can find the tray icon here for quick access.
+welcome_message_button_dont_show_again=Don`t show this message again
+welcome_message_button_ok=OK
+not_specified=Not specified
+qr_code=QR Code
+server_loading=Server loading...
+server_online=Server online
+server_offline=Server offline
+options=Options
+open_config=Open config
+language=Language
+restart_application=Restart application
+edit_port=Edit port
+fix_firewall=Fix firewall
+server_status=Server status
+report_issue=Report an issue
+exit=Exit
+change_server_port=Change server port
+enter_new_port=Enter new port
+auto_update_error=Auto update error
+error=Error
+background=Background
+title=Title
+save=Save
+background_image=Background image
+remove_image=Remove image
+columns=Columns
+rows=Rows
+delete_folder_confirm=Are you sure you want to delete this folder?
+delete_button_confirm=Are you sure you want to delete this button?
+no_image_generic=No image
+upload_image_generic=Upload image
+SEARCH_COMMANDS=Search for commands...
+#category names
+DISPLAY_CATEGORY_NAME=Display
+DISPLAY_disks__category_name=Disks
+DISPLAY_gpu__category_name=GPU
+DISPLAY_memory__category_name=Memory
+DISPLAY_network__category_name=Network
+SOUNDBOARD_CATEGORY_NAME=Soundboard
+SYSTEM_CATEGORY_NAME=System
+SYSTEM_media_control__category_name=Media Control
+TEXT_CATEGORY_NAME=Text
+UTILITIES_CATEGORY_NAME=Utilities
+NEODECK_CATEGORY_NAME=NeoDeck
+
+
+#default buttons
+#Display
+DISPLAY_cpu__btn_name=Cpu Load
+DISPLAY_disks_free_gb__btn_name=Free Disk Space
+DISPLAY_disks_total_gb__btn_name=Total Disk Space
+DISPLAY_disks_usage_percent__btn_name=Disk Usage
+DISPLAY_disks_used_gb__btn_name=Used Disk Space
+#display inputs
+DISPLAY_disks_free_gb_input0=Select disk
+DISPLAY_disks_total_gb_input0=Select disk
+DISPLAY_disks_usage_percent_input0=Select disk
+DISPLAY_disks_used_gb_input0=Select disk
+#gpu
+DISPLAY_gpu_total_mb__btn_name=Total GPU Memory
+DISPLAY_gpu_usage_percent__btn_name=GPU Usage
+DISPLAY_gpu_used_mb__btn_name=Used GPU Memory
+#gpu inputs
+DISPLAY_gpu_total_mb_input0=Select GPU
+DISPLAY_gpu_usage_percent_input0=Select GPU
+DISPLAY_gpu_used_mb_input0=Select GPU
+
+DISPLAY_memory_available_gb__btn_name=Available Memory
+DISPLAY_memory_total_gb__btn_name=Total Memory
+DISPLAY_memory_usage_percent__btn_name=Memory Usage
+DISPLAY_memory_used_gb__btn_name=Used Memory
+
+DISPLAY_network_bytes_recv__btn_name=Bytes Received
+DISPLAY_network_bytes_sent__btn_name=Bytes Sent
+
+#soundboard
+SOUNDBOARD_playsound__btn_name=Play Sound
+SOUNDBOARD_stopsound__btn_name=Stop Sound
+
+#system
+SYSTEM_execute_batch_code__btn_name=Execute Batch Code
+SYSTEM_execute_batch_code_input0=Enter batch code
+
+SYSTEM_execute_python_code__btn_name=Execute Python Code
+SYSTEM_execute_python_code_input0=Enter python code
+SYSTEM_execute_python_code_input1=select file
+SYSTEM_execute_python_code_input2=select path
+SYSTEM_execute_python_code_input3=single line code
+
+
+select_verbose_uploaded_file=uploaded file
+select_verbose_NONE=None
+select_verbose_file_path=file path
+select_verbose_single_line=single line
+
+SYSTEM_hibernate_pc__btn_name=Hibernate PC
+SYSTEM_kill_a_task__btn_name=Kill a Task
+SYSTEM_kill_a_task_input0=task path
+
+SYSTEM_lock_session__btn_name=Lock Session
+SYSTEM_open__btn_name=Open
+SYSTEM_open_input0=file path
+SYSTEM_open_a_website__btn_name=Open a Website
+SYSTEM_open_a_website_input0=website url
+SYSTEM_restart_pc__btn_name=Restart PC
+SYSTEM_restart_a_task__btn_name=Restart a Task
+SYSTEM_restart_a_task_input0=task path
+SYSTEM_restart_explorer__btn_name=Restart Explorer
+SYSTEM_screensaver__btn_name=Screensaver
+SYSTEM_shutdown_pc__btn_name=Shutdown PC
+SYSTEM_sleep_pc__btn_name=Sleep PC
+SYSTEM_superaltf4__btn_name=Super Alt+F4
+SYSTEM_opendir__btn_name=Open Directory
+SYSTEM_opendir_input0=directory path
+#system/mediacontrol
+SYSTEM_media_control_next__btn_name=Next
+SYSTEM_media_control_playpause__btn_name=Play/Pause
+SYSTEM_media_control_previous__btn_name=Previous
+#system/volume
+SYSTEM_volume_mute_toggle__btn_name=Mute/Unmute
+SYSTEM_volume_volume_default__btn_name=Volume Slider
+#text
+TEXT_clear_clipboard__btn_name=Clear Clipboard
+TEXT_copy__btn_name=Copy
+TEXT_cut__btn_name=Cut (Ctrl+X)
+TEXT_open_clipboard__btn_name=Open Clipboard
+TEXT_paste__btn_name=Paste (Ctrl+V)
+TEXT_press_a_key__btn_name=Press a Key
+TEXT_speech_recognition__btn_name=Speech Recognition
+TEXT_write_text__btn_name=Write Text
+TEXT_write_text_input0=Enter text
+TEXT_write_text_and_press_enter__btn_name=Write Text and Press Enter
+TEXT_write_text_and_press_enter_input0=Enter text
+TEXT_macro__btn_name=Macro
+TEXT_macro_input0=Enter macro
+
+#utilities
+UTILITIES_color_picker__btn_name=Color Picker
+
+#neodeck
+NEODECK_config__btn_name=Config
+NEODECK_fullscreen__btn_name=Fullscreen
+NEODECK_open_a_folder__btn_name=Open a Folder
+NEODECK_reload_page__btn_name=Reload Page
+
+
+#settings labels
+label__allowed_networks=Allowed Networks
+label__app_admin=Open app as admin
+label__auto_updates=Auto Updates
+label__automatic_firewall_bypass=Bypass firewall
+label__data_transfer_method=http method
+label__dev_mode=Developer mode

@@ -88,14 +88,3 @@ class Logger:
 
 # Instancia global
 log = Logger()
-
-if __name__ == '__main__':
-    log.info('hello world')
-    log.success('task completed successfully')
-    log.warning('this is a warning')
-    log.debug('this is a debug message')
-    log.error('this is an error')
-    try:
-        1 / 0
-    except ZeroDivisionError as e:
-        log.exception(e, "An error occurred while performing division")

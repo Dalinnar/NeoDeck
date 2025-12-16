@@ -7,7 +7,7 @@ from .show_error import show_error
 from .logger import log
 from .exit import exit_program
 
-temp_file = os.path.join("temp", "webdeck_args.json")
+temp_file = os.path.join("temp", "neodeck_args.json")
 args = {}
 raw_args = [arg for arg in sorted(sys.argv[1:]) if not (arg.endswith('.pyc') or arg.endswith('library.zip'))]
 # log.debug(f"{raw_args=}")
@@ -82,7 +82,7 @@ available_args = {
 
 positionals = {
     "exit": {
-        "help": "Exit all instances of WebDeck running on the device",
+        "help": "Exit all instances of Neodeck running on the device",
         "choices": ["exit", "stop", "close", "quit", "kill", "terminate", "shutdown"],
         "nargs": "?",
         "default": None
@@ -95,7 +95,7 @@ def parse_args():
     clear_args()
     
     # Set up argument parser
-    parser = argparse.ArgumentParser(description="WebDeck")
+    parser = argparse.ArgumentParser(description="Neodeck")
     
     # Add arguments to the parser
     for arg, arg_params in available_args.items():
@@ -195,7 +195,7 @@ def handle_startup_arguments():
     # -V, --version
     if get_arg('version'):
         import json
-        with open("webdeck/version.json", encoding="utf-8") as f:
+        with open("neodeck/version.json", encoding="utf-8") as f:
             version = json.load(f)["versions"][0]["version"]
         
         last_commit = ""
@@ -208,7 +208,7 @@ def handle_startup_arguments():
                 pass
                 # print("Could not retrieve the last commit.")
                 
-        print(f"WebDeck v{version} {last_commit}")
+        print(f"Neodeck v{version} {last_commit}")
         sys.exit()
         
 
@@ -236,8 +236,8 @@ def handle_startup_arguments():
         except Exception as e:
             import app.utils.languages as languages
             languages.init(
-                lang_files_directory="webdeck/translations",
-                misc_lang_files_directory="webdeck/translations/misc",
+                lang_files_directory="neodeck/translations",
+                misc_lang_files_directory="neodeck/translations/misc",
                 default_language="en_US"
             )
             

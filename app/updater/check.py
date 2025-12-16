@@ -7,7 +7,6 @@ import subprocess
 import requests
 
 from .updater import compare_versions, prepare_update_directory
-from app.utils.settings.get_config import get_config
 from app.utils.show_error import show_error
 from app.utils.languages import text
 from settings import loaded_settings
@@ -19,13 +18,13 @@ def check_for_updates():
     if not getattr(sys, "frozen", False):
         return
     
-    settings = loaded_settings["webdeck"]
+    settings = loaded_settings["neodeck"]
     
     if os.path.exists("update"):
         shutil.rmtree("update", ignore_errors=True)
 
     try:
-        with open("webdeck/version.json", encoding="utf-8") as f:
+        with open("neodeck/version.json", encoding="utf-8") as f:
             current_version = json.load(f)["versions"][0]["version"]
 
         update_repo = settings.get('update_repo', 'Dalinnar/NeoDeck')
@@ -62,13 +61,13 @@ def check_for_updates():
         log.exception(e, "UPDATER: Error occurred while checking for updates")
         show_error(
             f"{text('auto_update_error')} \n\n{text('error')}: {e}",
-            title="WebDeck Updater Error",
+            title="Neodeck Updater Error",
             exception=e
         )
 
 
 def check_for_updates_loop():
     while True:
-        if (loaded_settings["webdeck"].get("auto-updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
+        if (loaded_settings["neodeck"].get("auto-updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
             check_for_updates()
         time.sleep(3600)

@@ -22,7 +22,7 @@ def color_distance(color1, color2):
     return sqrt((r1 - r2) ** 2 + (g1 - g2) ** 2)
 
 def load_colors():
-    path = "webdeck/colors.json"
+    path = "neodeck/colors.json"
     url = "https://gist.githubusercontent.com/Lenochxd/12a1927943a2ce151560e1b9585d4bfa/raw/41d5a0dc9336827cefb217c1728f0e9415b1c7b9/colors_db.json"
     try:
         with open(path, "r", encoding="utf-8") as f:
@@ -47,18 +47,18 @@ def sort_colors():
         nearest_color = min(data, key=lambda c: color_distance(sorted_colors[-1]["hex_code"], c["hex_code"]))
         sorted_colors.append(nearest_color)
         data.remove(nearest_color)
-    with open("webdeck/colors.json", "w", encoding="utf-8") as f:
+    with open("neodeck/colors.json", "w", encoding="utf-8") as f:
         json.dump(sorted_colors, f, indent=4)
 
 def get_gpu_method():
     import pynvml
-    if "gpu_method" not in loaded_settings["webdeck"]:
-        loaded_settings["webdeck"]["gpu_method"] = "nvidia (pynvml)"
-    if loaded_settings["webdeck"]["gpu_method"] == "nvidia (pynvml)":
+    if "gpu_method" not in loaded_settings["neodeck"]:
+        loaded_settings["neodeck"]["gpu_method"] = "nvidia (pynvml)"
+    if loaded_settings["neodeck"]["gpu_method"] == "nvidia (pynvml)":
         try:
             pynvml.nvmlInit()
         except pynvml.NVMLError:
-            loaded_settings["webdeck"]["gpu_method"] = "AMD"
+            loaded_settings["neodeck"]["gpu_method"] = "AMD"
     load_settings(loaded_settings)
 
 def fix_vlc_cache():
@@ -84,14 +84,14 @@ def create_directories():
 def handle_shortcut():
     if os.name != 'nt':
         return
-    shortcut_path = os.path.join(os.getenv("APPDATA"), "Microsoft/Windows/Start Menu/Programs/WebDeck.lnk")
-    if loaded_settings["webdeck"].get("windows_start_menu_shortcut", False):
+    shortcut_path = os.path.join(os.getenv("APPDATA"), "Microsoft/Windows/Start Menu/Programs/Neodeck.lnk")
+    if loaded_settings["neodeck"].get("windows_start_menu_shortcut", False):
         if not os.path.exists(shortcut_path) and getattr(sys, "frozen", False):
             shell = Dispatch("WScript.Shell")
             shortcut = shell.CreateShortCut(shortcut_path)
-            shortcut.Targetpath = os.path.join(os.getcwd(), "WebDeck.exe")
+            shortcut.Targetpath = os.path.join(os.getcwd(), "Neodeck.exe")
             shortcut.WorkingDirectory = os.getcwd()
-            shortcut.IconLocation = os.path.join(os.getcwd(), "WebDeck.exe")
+            shortcut.IconLocation = os.path.join(os.getcwd(), "Neodeck.exe")
             shortcut.save()
 
 def on_start():
@@ -99,13 +99,13 @@ def on_start():
     handle_shortcut()
     check_files()
     get_gpu_method()
-    if (loaded_settings["webdeck"].get("auto_updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
+    if (loaded_settings["neodeck"].get("auto_updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
         check_for_updates()
     local_ip = get_local_ip()
-    if loaded_settings["webdeck"].get("ip") == "local_ip":
-        loaded_settings["webdeck"]["ip"] = local_ip
+    if loaded_settings["neodeck"].get("ip") == "local_ip":
+        loaded_settings["neodeck"]["ip"] = local_ip
         load_settings(loaded_settings)
-    threading.Thread(target=on_start_threaded, args=(loaded_settings["webdeck"].get("sort_colors_on_startup", False),)).start()
+    threading.Thread(target=on_start_threaded, args=(loaded_settings["neodeck"].get("sort_colors_on_startup", False),)).start()
     return local_ip
 
 def on_start_threaded(sort_colors_flag: bool):

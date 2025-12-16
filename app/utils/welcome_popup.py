@@ -1,14 +1,14 @@
 import customtkinter as ctk
 from PIL import Image
 
-from .settings.get_config import get_config, save_config
+#from .settings.get_config import get_config, save_config
 from .logger import log
 from .languages import text
 from settings import loaded_settings,load_settings
 
 
 def show_popup():
-    if not loaded_settings["webdeck"].get("show_popup", True):
+    if not loaded_settings["neodeck"].get("show_popup", True):
         return
     
     # Create a popup window
@@ -26,8 +26,8 @@ def show_popup():
     y = screen_height - (220+100)
     popup.geometry(f"450x220+{x}+{y}")
 
-    # Add the WebDeck logo
-    logo_image = Image.open("static/img/webdeck.png")
+    # Add the Neodeck logo
+    logo_image = Image.open("static/img/neodeck.png")
     logo = ctk.CTkImage(logo_image, size=(373, 78))  # Reduce size to 50%
     logo_label = ctk.CTkLabel(popup, image=logo, text="")
     logo_label.pack(side="top", pady=(20, 10))
@@ -43,7 +43,7 @@ def show_popup():
 
     def disable_message():
         log.info("Disabling popup message")
-        loaded_settings["webdeck"]["show_popup"] = False
+        loaded_settings["neodeck"]["show_popup"] = False
         load_settings(loaded_settings)
         popup.destroy()
 

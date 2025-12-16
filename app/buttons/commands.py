@@ -15,7 +15,7 @@ from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
 
-from . import (actions, audio, exec, soundboard,
+from . import (actions, audio, exec,
                system, window)
 
 def get_monitors(requested_monitors):
@@ -74,7 +74,7 @@ command_map ={
         "/debug-send":              lambda: log.info("Debug message sent"),
         "/bypass-windows-firewall": lambda: fix_firewall_permission(),
         "/exit" :                   lambda: sys.exit("/exit received"),
-        "/stop_sound":              lambda: soundboard.stopsound(),
+        #"/stop_sound":              lambda: soundboard.stopsound(),
         "/PCshutdown":              lambda: subprocess.Popen("shutdown /s /f /t 0", shell=True),
         "/PCrestart":               lambda: subprocess.Popen("shutdown /r /f /t 0", shell=True),
         "/PCsleep":                 lambda: subprocess.Popen("rundll32.exe powrprof.dll,SetSuspendState 0,1,0", shell=True),
@@ -109,7 +109,7 @@ command_map ={
         "/macro":                   lambda message: actions.parse_macro_and_execute(message.split(" ",1)[1]),
         "/browse":                  lambda message: webbrowser.open(message.replace("/browse", "").strip()),
 
-        ("/playsound", "/playlocalsound"):                      lambda message : soundboard.playsound(*soundboard.get_params(message)),
+        #("/playsound", "/playlocalsound"):                      lambda message : soundboard.playsound(*soundboard.get_params(message)),
         ("/kill", "/taskill", "/taskkill", "/forceclose"):      lambda message: actions.killtask(message),
         ("/appvolume +", "/appvolume -", "/appvolume set"):     lambda message: actions.adjust_app_volume(message),
         ("/copy","/paste"):                                     lambda message: actions.clipboard_action(message),

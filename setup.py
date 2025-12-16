@@ -3,15 +3,15 @@ import sys
 import os
 
 # Two executables:
-# - WebDeckLauncher.exe        (GUI, no console)
-# - WebDeckLauncherConsole.exe (Console visible)
+# - NeodeckLauncher.exe        (GUI, no console)
+# - NeodeckLauncherConsole.exe (Console visible)
 
 gui_base = "Win32GUI"
 console_base = None  # console-enabled executable
 
 build_exe_options = {
     "excludes": [
-        "tkinter", "unittest", "email", "http", "xml", "distutils", "setuptools", "pkg_resources"
+        "unittest", "email", "http", "xml", "distutils", "setuptools", "pkg_resources"
     ],
     "include_files": [
         "satisfied_installs.txt",
@@ -20,11 +20,11 @@ build_exe_options = {
         "launcher.py",
         "plugins",
         ".temp",
-        ".config",
+        #".config",
         "static",
         "app",
         "settings.py",
-        "webdeck",
+        "neodeck",
         "templates",
     ],
     "zip_include_packages": [],
@@ -36,21 +36,21 @@ executables = [
     Executable(
         script="launcher.py",
         base=gui_base,
-        target_name="WebDeckLauncher.exe",
+        target_name="NeodeckLauncher.exe",
         icon="static/icons/icon.ico",
     ),
     Executable(
         script="launcher.py",
         base=console_base,
-        target_name="WebDeckLauncherConsole.exe",
+        target_name="NeodeckLauncherConsole.exe",
         icon="static/icons/icon.ico",
     ),
 ]
 
 setup(
-    name="WebDeckLauncher",
+    name="NeodeckLauncher",
     version="0.1.0",
-    description="WebDeck launcher using user Python",
+    description="Neodeck launcher using user Python",
     options={"build_exe": build_exe_options},
     executables=executables,
 )

@@ -1,6 +1,6 @@
 # Translation file: es_ES.lang
 # Author: Dalinnar — Feel free to submit a PR for any corrections:
-# GitHub: https://github.com/Lenochxd/WebDeck/pulls
+# GitHub: https://github.com/Lenochxd/Neodeck/pulls
 # Discord: https://discord.gg/tUPsYHAGfm
 
 
@@ -29,7 +29,7 @@ author_github_username=Dalinnar
 // -- Welcome Message --
 
 welcome_message_window_title=Bienvenido
-welcome_message_label_1=¡Bienvenido a WebDeck!
+welcome_message_label_1=¡Bienvenido a Neodeck!
 welcome_message_label_2=Aquí puedes encontrar el icono de la bandeja para un acceso rápido.
 welcome_message_button_dont_show_again=No mostrar de nuevo
 welcome_message_button_ok=Ok
@@ -40,7 +40,7 @@ welcome_message_button_ok=Ok
 qr_code=Código QR
 options=Opciones
 open_config=Abrir configuración
-restart_application=Reiniciar WebDeck
+restart_application=Reiniciar Neodeck
 edit_port=Editar puerto
 randomize=Aleatorizar
 change_server_port=Cambiar puerto del servidor
@@ -70,7 +70,7 @@ error_occurred=An error has occurred
 settings_load_error=An error occurred while loading settings.
 settings_save_error=An error occurred while saving settings.
 
-auto_update_error=Error while updating WebDeck, please update it manually from https://github.com/Lenochxd/WebDeck/releases/latest
+auto_update_error=Error while updating Neodeck, please update it manually from https://github.com/Lenochxd/Neodeck/releases/latest
 
 no_files_found_error=No files were found
 
@@ -207,7 +207,7 @@ open_settings_in_integrated_browser=Abrir la configuración en un navegador dedi
 
 show_console=Mostrar consola
 dev_mode=Modo de desarrollo
-authorize_windows_firewall=Autorizar WebDeck a través del Firewall de Windows
+authorize_windows_firewall=Autorizar Neodeck a través del Firewall de Windows
 automatic_firewall_bypass=Bypass automático del firewall al iniciar
 fix_stop_soundboard=Arreglar el problema del botón de detener el tablón de sonido (puede ser inestable)
 
@@ -230,10 +230,10 @@ remove_background=Eliminar este fondo
 
 
 // Links
-link_soundboard=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-set-up-my-soundboard
-link_spotify=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-connect-your-spotify-account
-link_obs=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#how-to-set-up-obs-studio
-link_themes=https://github.com/Lenochxd/WebDeck/blob/master/docs/FAQ-en.md#im-a-developer-how-can-i-customize-the-pages-css
+link_soundboard=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-set-up-my-soundboard
+link_spotify=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-connect-your-spotify-account
+link_obs=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#how-to-set-up-obs-studio
+link_themes=https://github.com/Lenochxd/Neodeck/blob/master/docs/FAQ-en.md#im-a-developer-how-can-i-customize-the-pages-css
 
 soundboard_tutorial=Soundboard setup tutorial
 spotify_tutorial=Spotify setup tutorial
@@ -249,22 +249,22 @@ back=Back
 
 // -- Buttons --
 
-WEBDECK_fullscreen__btn_name=Fullscreen
-WEBDECK_fullscreen__btn_default_display_name=
-WEBDECK_fullscreen__btn_description=Toggle full screen mode on the device
+NEODECK_fullscreen__btn_name=Fullscreen
+NEODECK_fullscreen__btn_default_display_name=
+NEODECK_fullscreen__btn_description=Toggle full screen mode on the device
 
-WEBDECK_reload_page__btn_name=Reload page
-WEBDECK_reload_page__btn_default_display_name=Reload
-WEBDECK_reload_page__btn_description=
+NEODECK_reload_page__btn_name=Reload page
+NEODECK_reload_page__btn_default_display_name=Reload
+NEODECK_reload_page__btn_description=
 
-WEBDECK_open_a_folder__btn_name=Open a folder
-WEBDECK_open_a_folder__btn_default_display_name=Open folder
-WEBDECK_open_a_folder__btn_description=Opens the specified webdeck folder
-WEBDECK_open_a_folder__arg_1_name=Folder name
+NEODECK_open_a_folder__btn_name=Open a folder
+NEODECK_open_a_folder__btn_default_display_name=Open folder
+NEODECK_open_a_folder__btn_description=Opens the specified neodeck folder
+NEODECK_open_a_folder__arg_1_name=Folder name
 
-WEBDECK_config__btn_name=Configuration
-WEBDECK_config__btn_default_display_name=Settings
-WEBDECK_config__btn_description=Open settings menu
+NEODECK_config__btn_name=Configuration
+NEODECK_config__btn_default_display_name=Settings
+NEODECK_config__btn_description=Open settings menu
 
 
 DISPLAY_CATEGORY_NAME=Monitoreo
@@ -469,7 +469,7 @@ SYSTEM_restart_a_task__arg_1_name=Task (app.exe)
 
 SYSTEM_execute_python_code__btn_name=Execute python code
 SYSTEM_execute_python_code__btn_default_display_name=
-SYSTEM_execute_python_code__btn_description=Execute python code from the webdeck program
+SYSTEM_execute_python_code__btn_description=Execute python code from the neodeck program
 SYSTEM_execute_python_code__arg_1_name=Option
 SYSTEM_execute_python_code__arg_1_option_1_name=Python file (upload)
 SYSTEM_execute_python_code__arg_1_option_2_name=Python file (path)
@@ -477,7 +477,7 @@ SYSTEM_execute_python_code__arg_1_option_3_name=Python code (single line)
 
 SYSTEM_execute_batch_code__btn_name=Execute batch code
 SYSTEM_execute_batch_code__btn_default_display_name=
-SYSTEM_execute_batch_code__btn_description=Execute batch from the webdeck program
+SYSTEM_execute_batch_code__btn_description=Execute batch from the neodeck program
 SYSTEM_execute_batch_code__arg_1_name=Batch code
 
 
