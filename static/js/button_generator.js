@@ -138,67 +138,36 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
 
 
 function collectMultiactionButtons() {
-    const containers = document.querySelectorAll(".multiaction_button_container");
     const actions = [];
 
-    containers.forEach(container => {
-        const id = container.dataset.buttonId;
-        const buttonData = window.buttonData?.[id];
-        console.log(buttonData)
+    document.querySelectorAll(".multiaction_button_container").forEach(container => {
+        const buttonData = window.buttonData?.[container.dataset.buttonId];
         if (!buttonData) return;
 
-        // Botón simple
+        // Obtengo los inputs dentro del container
+        const inputs = Object.fromEntries(
+            [...container.querySelectorAll("[name]:not([disabled])")].map(i => [i.name, i])
+        );
+
+        // Creo el reemplazador para todos los comandos
+        const replacer = createReplacer(inputs, true);
+
         if (buttonData.command) {
+            // Botón simple → aplico reemplazador
             actions.push({
-                command: buttonData.command
+                command: replacer(buttonData.command)
             });
-            return;
-        }
-
-        // Botón con acciones internas
-        if (buttonData.actions && buttonData.commands) {
-            //let cont_inputs = container.querySelectorAll("[name]:not([disabled])")
-
-
-            const cont_inputs = Object.fromEntries(
-                [...container.querySelectorAll("[name]:not([disabled])")]
-                    .map(input => [input.name, input])
-            );
-            
-
-            const triggerSelect = cont_inputs.trigger.value;
-            
-
-            console.log("VALORES DE INPUT POR CADA UNO DE LOS INPUTS EN EL ACTIONS BUTTON")
-
-
-
-
-            const replacePlaceholders = createReplacer(cont_inputs, true); // Enable global fallback
-
-            let command_to_use = replacePlaceholders(triggerSelect)
-
-            console.log("TEORICO FINAL DE COMANDO:")
-            console.log(command_to_use)
-
+        } else if (buttonData.actions && buttonData.commands) {
+            // Botón múltiple → también aplico reemplazador
             actions.push({
-                "command":command_to_use
-            })
-
-
-            // //ACA
-            // buttonData.actions.forEach(action => {
-            //     if (buttonData.commands[action]) {
-            //         actions.push({
-            //             command: buttonData.commands[action]
-            //         });
-            //     }
-            // });
+                command: replacer(inputs.trigger?.value || "")
+            });
         }
     });
 
     return actions;
 }
+
 
 // Función para generar el botón y mostrar el diálogo
 const generate_button = (button_data, folder_name, folder_data, column, row) => {
@@ -314,21 +283,11 @@ function createReplacer(inputs, useGlobalFallback = false, maxDepth = 10) {
 async function buildMultiactionButton(button_data, folder_name, folder_data, column, row) {
     const dialog = document.getElementById("button_creator_dialog");
 
-
-
     const inputs = Object.fromEntries(
-        [...dialog.querySelectorAll("[name]:not([disabled])")]
-            .map(input => [input.name, input])
+        [...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input])
     );
 
-
-    const replacePlaceholders = createReplacer(inputs, true); // Enable global fallback
-
-    const rawActions = collectMultiactionButtons();
-    const actions = rawActions.map(action => ({
-        ...action,
-        command: replacePlaceholders(action.command)
-    }));
+    const actions = collectMultiactionButtons();
 
     if (!actions.length) {
         alert("Multiaction button must contain at least one button");
@@ -356,8 +315,6 @@ async function buildMultiactionButton(button_data, folder_name, folder_data, col
     }
 
     folder_data.buttons.push(obj);
-    console.log("final obj:")
-    console.log(obj)
 
     const result = await uploadFolderData(folder_name, folder_data);
     updateGrid(result.folder);
