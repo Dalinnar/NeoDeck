@@ -11,9 +11,203 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 });
 
+
+const setup_multiaction = (button_data, folder_name, folder_data, column, row) => {
+    const dialog = document.getElementById("button_creator_dialog");
+    const dialog_content = document.querySelector(".dialog_content");
+
+    dialog_content.innerHTML = "";
+
+    // Create and setup dropzone
+    const dropzone = document.createElement("DIV");
+    dropzone.classList.add("multiaction_dropzone");
+    dropzone.addEventListener("dragover", (e) => e.preventDefault());
+    dropzone.addEventListener("drop", handleDrop);
+    dialog_content.appendChild(dropzone);
+
+    // Helper function to create element with attributes
+    const createElement = (tag, classes = [], attributes = {}) => {
+        const el = document.createElement(tag);
+        if (classes.length) el.classList.add(...classes);
+        if (attributes.text) el.textContent = attributes.text;
+        if (attributes.src) el.src = attributes.src;
+        if (attributes.dataId) el.dataset.id = attributes.dataId;
+        return el;
+    };
+
+    // Handle dropped buttons
+    function handleDrop(e) {
+        e.preventDefault();
+
+        const id = e.dataTransfer.getData("text/plain"); // ✅ FALTABA
+        const buttonData = window.buttonData?.[id];
+        if (!buttonData) return;
+
+        const buttonContainer = createElement("div", ["multiaction_button_container"]);
+
+        // ✅ AHORA SÍ
+        buttonContainer.dataset.buttonId = id;
+
+        const header = createElement("div", ["button_header"]);
+
+        // Left container
+        const leftContainer = createElement("div", ["buttondata_container"]);
+
+        const img = createElement("img", [], {
+            src: buttonData.style?.image
+                ? `/static/img/${buttonData.style.image}`
+                : "/static/img/key.png"
+        });
+
+        const title = createElement("span", ["button_title"], {
+            text: buttonData.ButtonTitle || "Button"
+        });
+
+        leftContainer.appendChild(img);
+        leftContainer.appendChild(title);
+
+        // Inputs container
+        const inputsContainer = createElement("div", ["inputs_container"]);
+
+
+        if (buttonData.commands && typeof buttonData.commands === "object" && !buttonData.command && buttonData.actions) {
+
+            buttonData.actions = ["trigger"];
+
+            inputsContainer.appendChild(setup_actions(buttonData));
+            const chevron = createElement("span", ["button_chevron"], {
+                text: "▼"
+            });
+
+            chevron.addEventListener("click", () => {
+                const isHidden = inputsContainer.classList.contains("hidden");
+                inputsContainer.classList.toggle("hidden");
+                chevron.textContent = isHidden ? "▼" : "▲";
+            });
+            leftContainer.appendChild(chevron);
+        }
+        // Add chevron if inputs exist
+        else if (buttonData.inputs?.length) {
+            buttonData.inputs.forEach(input => inputsContainer.appendChild(createInputField(input)));
+
+            const chevron = createElement("span", ["button_chevron"], {
+                text: "▼"
+            });
+
+            chevron.addEventListener("click", () => {
+                const isHidden = inputsContainer.classList.contains("hidden");
+                inputsContainer.classList.toggle("hidden");
+                chevron.textContent = isHidden ? "▼" : "▲";
+            });
+
+            leftContainer.appendChild(chevron);
+        }
+
+        // Remove button
+        const removeBtn = createElement("span", ["buttondata_cancel"], {
+            text: "✖"
+        });
+        removeBtn.addEventListener("click", () => buttonContainer.remove());
+
+        header.appendChild(leftContainer);
+        header.appendChild(removeBtn);
+        buttonContainer.appendChild(header);
+        buttonContainer.appendChild(inputsContainer);
+        dropzone.appendChild(buttonContainer);
+    }
+
+    // Add template, customization controls, and submit button
+    const button_template = createButtonTemplate(button_data);
+    dialog_content.appendChild(button_template);
+
+    const personalization_div = createElement("div", ["personalization_settings"]);
+    const { colorLabel, colorInput, text_color_input, sizeSlider } = createCustomizationControls(button_template);
+    personalization_div.append(colorLabel, colorInput, text_color_input);
+    dialog_content.appendChild(personalization_div);
+    dialog_content.appendChild(sizeSlider);
+
+    const submit_button = createElement("button", ["submit_button"], {
+        text: "Submit"
+    });
+    submit_button.addEventListener("click", () => {
+        buildMultiactionButton(button_data, folder_name, folder_data, column, row);
+        dialog.close();
+    });
+    dialog_content.appendChild(submit_button);
+};
+
+
+function collectMultiactionButtons() {
+    const containers = document.querySelectorAll(".multiaction_button_container");
+    const actions = [];
+
+    containers.forEach(container => {
+        const id = container.dataset.buttonId;
+        const buttonData = window.buttonData?.[id];
+        console.log(buttonData)
+        if (!buttonData) return;
+
+        // Botón simple
+        if (buttonData.command) {
+            actions.push({
+                command: buttonData.command
+            });
+            return;
+        }
+
+        // Botón con acciones internas
+        if (buttonData.actions && buttonData.commands) {
+            //let cont_inputs = container.querySelectorAll("[name]:not([disabled])")
+
+
+            const cont_inputs = Object.fromEntries(
+                [...container.querySelectorAll("[name]:not([disabled])")]
+                    .map(input => [input.name, input])
+            );
+            
+
+            const triggerSelect = cont_inputs.trigger.value;
+            
+
+            console.log("VALORES DE INPUT POR CADA UNO DE LOS INPUTS EN EL ACTIONS BUTTON")
+
+
+
+
+            const replacePlaceholders = createReplacer(cont_inputs, true); // Enable global fallback
+
+            let command_to_use = replacePlaceholders(triggerSelect)
+
+            console.log("TEORICO FINAL DE COMANDO:")
+            console.log(command_to_use)
+
+            actions.push({
+                "command":command_to_use
+            })
+
+
+            // //ACA
+            // buttonData.actions.forEach(action => {
+            //     if (buttonData.commands[action]) {
+            //         actions.push({
+            //             command: buttonData.commands[action]
+            //         });
+            //     }
+            // });
+        }
+    });
+
+    return actions;
+}
+
 // Función para generar el botón y mostrar el diálogo
 const generate_button = (button_data, folder_name, folder_data, column, row) => {
     const modal = document.getElementById("button_creator_dialog");
+    if (button_data.command == "__multiaction__") {
+        modal.show();
+        setup_multiaction(button_data, folder_name, folder_data, column, row)
+        return;
+    }
     modal.showModal();
     const dialog_content = document.querySelector(".dialog_content");
     dialog_content.innerHTML = "";
@@ -75,6 +269,426 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     })
     dialog_content.appendChild(submit_button);
 };
+
+// Generic replacePlaceholders function
+function createReplacer(inputs, useGlobalFallback = false, maxDepth = 10) {
+    const replaceOnce = (str) =>
+        str.replace(/\{(.*?)\}/g, (match, v) => {
+            let key = v;
+
+            if (useGlobalFallback && !inputs[v]) {
+                key = `global_${v}`;
+            }
+
+            const input = inputs[key];
+            if (!input) return "";
+
+            if (input.type === "checkbox") {
+                return input.checked;
+            }
+
+            return input.value ?? "";
+        });
+
+    return (str) => {
+        let result = str;
+        let depth = 0;
+
+        while (depth < maxDepth) {
+            const replaced = replaceOnce(result);
+
+            // Stop if no more changes
+            if (replaced === result) break;
+
+            result = replaced;
+            depth++;
+        }
+
+        return result;
+    };
+}
+
+// ========================================
+// BUILD MULTIACTION BUTTON
+// ========================================
+async function buildMultiactionButton(button_data, folder_name, folder_data, column, row) {
+    const dialog = document.getElementById("button_creator_dialog");
+
+
+
+    const inputs = Object.fromEntries(
+        [...dialog.querySelectorAll("[name]:not([disabled])")]
+            .map(input => [input.name, input])
+    );
+
+
+    const replacePlaceholders = createReplacer(inputs, true); // Enable global fallback
+
+    const rawActions = collectMultiactionButtons();
+    const actions = rawActions.map(action => ({
+        ...action,
+        command: replacePlaceholders(action.command)
+    }));
+
+    if (!actions.length) {
+        alert("Multiaction button must contain at least one button");
+        return;
+    }
+
+    const obj = {
+        command: "__multiaction__",
+        column,
+        row,
+        endcolumn: column + 1,
+        endrow: row + 1,
+        btn_text: inputs.button_text?.value,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        actions
+    };
+
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("empty_img")) {
+        const src = document.querySelector(".button_image").src;
+        obj.image = src.startsWith(window.location.origin)
+            ? src.replace(window.location.origin, "")
+            : src;
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+
+    folder_data.buttons.push(obj);
+    console.log("final obj:")
+    console.log(obj)
+
+    const result = await uploadFolderData(folder_name, folder_data);
+    updateGrid(result.folder);
+}
+
+// ========================================
+// BUILD BUTTON
+// ========================================
+async function buildButton(button_data, folder_name, folder_data, column, row) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]))
+
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return
+    }
+
+    const replacePlaceholders = createReplacer(inputs, false); // Disable global fallback
+
+    const obj = {
+        command: replacePlaceholders(button_data.command),
+        column,
+        row,
+        endcolumn: column + 1,
+        endrow: row + 1,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+        toggleable: button_data.toggleable ?? false,
+    };
+
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+
+        // Si es una imagen del mismo servidor, recortar el origen
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+
+    if (button_data.command === "#monitor") {
+        obj.track = button_data.track;
+        obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+    }
+
+    if (button_data.command.startsWith("!")) {
+        obj.min = button_data.min;
+        obj.max = button_data.max;
+    }
+
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            const fileData = await handleFileUpload(input.files[0]);
+            obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
+        }
+    }));
+
+    folder_data.buttons.push(obj);
+
+    try {
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    } catch (error) {
+        console.error("Error processing inputs:", error);
+    }
+}
+
+// ========================================
+// BUILD ACTIONS
+// ========================================
+async function buildActions(button_data, folder_name, folder_data, column, row) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+
+    //PRINT ALL INPUTS NAMES
+    Object.values(inputs).forEach(input => console.log(input.name, input.value));
+
+    //check if on inputs are required buttons without vallues
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return
+    }
+
+    const replacePlaceholders = createReplacer(inputs, true); // Enable global fallback
+
+    const obj = {
+        column,
+        row,
+        endcolumn: column + 1,
+        endrow: row + 1,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+    };
+
+    // Add image handling similar to buildButton
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+
+        // Si es una imagen del mismo servidor, recortar el origen
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+
+    // Check if any actions are configured
+    let hasConfiguredAction = false;
+
+    // Iterate over each action in button_data
+    button_data.actions.forEach(action => {
+        if (!inputs[action] || inputs[action].value === "None") {
+            return;
+        }
+
+        hasConfiguredAction = true;
+
+        let command = replacePlaceholders(inputs[action].value); // Replace placeholders
+        console.log("action:", action, "command:", command);
+
+        let variables = command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+        console.log("variables:", variables);
+
+        // Find the parent action container with the inputs_container
+        let parent = inputs[action].closest('.action-container');
+        let inputs_container = parent.querySelector(".inputs_container");
+
+        variables.forEach(variable => {
+            // Look for inputs by name, considering our new structure
+            let input = inputs_container.querySelector(`[name="${variable}"]`);
+            if (!input) {
+                // Also try with action prefix since we're now using IDs with prefixes
+                input = inputs_container.querySelector(`#${action}_${variable}`);
+            }
+
+            // If not found in action-specific inputs, check global inputs
+            if (!input && inputs[`global_${variable}`]) {
+                input = inputs[`global_${variable}`];
+            }
+
+            if (input) {
+                command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
+            }
+        });
+
+        obj[action] = command;
+    });
+
+    // If no actions are configured, alert and return early
+    if (!hasConfiguredAction) {
+        alert("Cannot save an empty button. Please configure at least one action.");
+        return; // Exit the function early
+    }
+
+    // Process all file inputs
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            try {
+                const fileData = await handleFileUpload(input.files[0]);
+                if (fileData && fileData.file_path) {
+                    // Replace placeholders in all commands
+                    Object.keys(obj).forEach(key => {
+                        if (typeof obj[key] === 'string') {
+                            obj[key] = obj[key].replace(new RegExp(`{${input.name.replace('global_', '')}}`, 'g'), fileData.file_path);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error(`Error uploading file for ${input.name}:`, error);
+            }
+        }
+    }));
+
+    // Add special handling for specific commands if needed
+    // Example: if there are special cases like in buildButton
+    button_data.actions.forEach(action => {
+        if (obj[action] && obj[action].startsWith("!")) {
+            obj.min = button_data.min;
+            obj.max = button_data.max;
+        }
+
+        if (obj[action] && obj[action] === "#monitor") {
+            obj.track = button_data.track;
+            if (button_data.collect_data_from) {
+                obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+            }
+        }
+    });
+
+    // Add the action object to folder_data
+    folder_data.buttons.push(obj);
+
+    try {
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+        console.log("Button created successfully with actions:", obj);
+    } catch (error) {
+        console.error("Error processing inputs:", error);
+    }
+}
+
+//* when a button have more than one possible command
+function setup_actions(button_data) {
+    const createElement = (type, className = '', text = '') => {
+        const elem = document.createElement(type);
+        if (className) elem.classList.add(className);
+        if (text) elem.textContent = text;
+        return elem;
+    };
+
+    const actions = createElement("div");
+    const global_inputs_container = createElement("div", "global-inputs-container");
+
+    // Create base select options
+    const select_options = document.createDocumentFragment();
+    const noneOption = createElement("option", "", getTranslation("NONE"));
+    noneOption.value = "None";
+    noneOption.selected = true;
+    select_options.appendChild(noneOption);
+
+    // Ensure commands exist before iterating
+    if (button_data.commands) {
+        Object.entries(button_data.commands).forEach(([key, value]) => {
+            const option = createElement("option", "", key);
+            option.value = value;
+            option.textContent = getTranslation("option_verbose_" + key);
+            select_options.appendChild(option);
+        });
+    }
+
+    // Global inputs - handle the case where inputs may not exist
+    if (button_data.inputs && button_data.inputs.length > 0) {
+        button_data.inputs
+            .filter(input => input.shared === true)
+            .forEach(input => {
+                // Add an id prefix to distinguish global inputs
+                const globalInput = { ...input, name: "global_" + input.name };
+                const inputContainer = createInputField(globalInput);
+                global_inputs_container.appendChild(inputContainer);
+            });
+    }
+
+    // Action containers
+    const actions_fragment = document.createDocumentFragment();
+
+    // Ensure actions exist before iterating
+    if (button_data.actions && button_data.actions.length > 0) {
+        button_data.actions.forEach(action => {
+            const action_container = createElement("div", "action-container");
+            const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+            const action_select = createElement("select", "command-select");
+            action_select.name = action;
+            action_select.appendChild(select_options.cloneNode(true));
+            action_select.id = "command-select-" + action;
+            action_select.addEventListener("change", function () { update_inputs(this); });
+
+            // Container for action inputs
+            const inputs_container = createElement("div", "inputs_container");
+
+            // Creating action inputs only if inputs exist
+            if (button_data.inputs && button_data.inputs.length > 0) {
+                button_data.inputs
+                    .filter(input => input.shared !== true)
+                    .forEach(input => {
+                        // Create a modified input object with action-specific properties
+                        const actionInput = {
+                            ...input,
+                            name: input.name,
+                            label: getTranslation("ACTION_" + input.name),
+                            // Add an ID prefix to make it unique for this action
+                            id: action + "_" + input.name
+                        };
+
+                        const inputContainer = createInputField(actionInput);
+
+                        // Apply action-specific styling and behavior
+                        inputContainer.style.display = "none";
+                        inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                            elem.disabled = true;
+                            elem.id = action + "_" + input.name;
+                            elem.style.display = "block";
+                        });
+
+                        inputs_container.appendChild(inputContainer);
+                    });
+            }
+
+            action_container.append(label, action_select, inputs_container);
+            actions_fragment.appendChild(action_container);
+        });
+    }
+
+    actions.appendChild(actions_fragment);
+    actions.appendChild(global_inputs_container);
+
+    return actions;
+}
+
+function update_inputs(selectElement) {
+    const parent = selectElement.parentElement;
+    const selected_option = selectElement.options[selectElement.selectedIndex];
+    const variables = selected_option.value.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+
+    parent.querySelectorAll(':scope > .inputs_container > div').forEach(container => {
+        // Get the input element in this container
+        const inputElements = container.querySelectorAll('input, select, textarea');
+
+        if (inputElements.length > 0) {
+            const inputElement = inputElements[0];
+            const inputName = inputElement.name;
+            const shouldShow = variables.includes(inputName);
+
+            // Show/hide the entire container
+            container.style.display = shouldShow ? "block" : "none";
+
+            // Enable/disable the input
+            inputElement.disabled = !shouldShow;
+
+            // Clear values if hiding
+            if (!shouldShow) {
+                if (inputElement.tagName === "INPUT" || inputElement.tagName === "TEXTAREA") {
+                    inputElement.value = "";
+                } else if (inputElement.tagName === "SELECT" && inputElement.options.length > 0) {
+                    inputElement.selectedIndex = 0;
+                }
+            }
+        }
+    });
+}
+
 
 const createInputField = (input) => {
     let element, type;
@@ -612,338 +1226,3 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 }
 
 
-async function buildButton(button_data, folder_name, folder_data, column, row) {
-    const dialog = document.getElementById("button_creator_dialog");
-    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]))
-
-    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
-    if (requiredInputs.length > 0) {
-        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
-        alert(`Please fill in the following required inputs: ${missingInputs}`);
-        return
-    }
-
-    const replacePlaceholders = (str) =>
-        str.replace(/\{(.*?)\}/g, (match, v) => {
-            const input = inputs[v];
-            if (!input) return "";
-
-            if (input.type === "checkbox") {
-                return input.checked; // true si está marcado, false si no
-            }
-
-            const val = input.value;
-            return (val && val !== match) ? val : "";
-        });
-
-
-
-    const obj = {
-        command: replacePlaceholders(button_data.command),
-        column,
-        row,
-        background_color: inputs.background_color?.value || "#1e1e1e",
-        text_color: inputs.text_color?.value || "#ffffff",
-        btn_text: inputs.button_text?.value,
-        toggleable: button_data.toggleable ?? false,
-    };
-
-    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
-        const src = document.querySelector(".button_image").src;
-
-        // Si es una imagen del mismo servidor, recortar el origen
-        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
-        obj.image_size = inputs.img_size?.value || "80";
-    }
-
-    if (button_data.command === "#monitor") {
-        obj.track = button_data.track;
-        obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
-    }
-
-    if (button_data.command.startsWith("!")) {
-        obj.min = button_data.min;
-        obj.max = button_data.max;
-    }
-
-    await Promise.all(Object.values(inputs).map(async (input) => {
-        if (input.type === "file" && input.files.length > 0) {
-            const fileData = await handleFileUpload(input.files[0]);
-            obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
-        }
-    }));
-
-    folder_data.buttons.push(obj);
-
-    try {
-        const result = await uploadFolderData(folder_name, folder_data);
-        updateGrid(result.folder);
-    } catch (error) {
-        console.error("Error processing inputs:", error);
-    }
-}
-
-async function buildActions(button_data, folder_name, folder_data, column, row) {
-    const dialog = document.getElementById("button_creator_dialog");
-    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
-
-    //PRINT ALL INPUTS NAMES
-    Object.values(inputs).forEach(input => console.log(input.name, input.value));
-
-
-    //check if on inputs are required buttons without vallues
-    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
-    if (requiredInputs.length > 0) {
-        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
-        alert(`Please fill in the following required inputs: ${missingInputs}`);
-        return
-    }
-
-    const replacePlaceholders = (str) =>
-        str.replace(/\{(.*?)\}/g, (match, v) => {
-            // si existe inputs[v], lo usamos; si no, probamos con inputs['global_'+v]
-            const key = inputs[v] ? v : `global_${v}`;
-            const val = inputs[key]?.value;
-            return (val && val !== match) ? val : "";
-        });
-
-    const obj = {
-        column,
-        row,
-        background_color: inputs.background_color?.value || "#1e1e1e",
-        text_color: inputs.text_color?.value || "#ffffff",
-        btn_text: inputs.button_text?.value,
-    };
-
-    // Add image handling similar to buildButton
-    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
-        const src = document.querySelector(".button_image").src;
-
-        // Si es una imagen del mismo servidor, recortar el origen
-        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
-        obj.image_size = inputs.img_size?.value || "80";
-    }
-
-    // Check if any actions are configured
-    let hasConfiguredAction = false;
-
-    // Iterate over each action in button_data
-    button_data.actions.forEach(action => {
-        if (!inputs[action] || inputs[action].value === "None") {
-            return;
-        }
-
-        hasConfiguredAction = true;
-
-        let command = replacePlaceholders(inputs[action].value); // Replace placeholders
-        console.log("action:", action, "command:", command);
-
-        let variables = command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
-        console.log("variables:", variables);
-
-        // Find the parent action container with the inputs_container
-        let parent = inputs[action].closest('.action-container');
-        let inputs_container = parent.querySelector(".inputs_container");
-
-        variables.forEach(variable => {
-            // Look for inputs by name, considering our new structure
-            let input = inputs_container.querySelector(`[name="${variable}"]`);
-            if (!input) {
-                // Also try with action prefix since we're now using IDs with prefixes
-                input = inputs_container.querySelector(`#${action}_${variable}`);
-            }
-
-            // If not found in action-specific inputs, check global inputs
-            if (!input && inputs[`global_${variable}`]) {
-                input = inputs[`global_${variable}`];
-            }
-
-            if (input) {
-                command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
-            }
-        });
-
-        obj[action] = command;
-    });
-
-    // If no actions are configured, alert and return early
-    if (!hasConfiguredAction) {
-        alert("Cannot save an empty button. Please configure at least one action.");
-        return; // Exit the function early
-    }
-
-    // Process all file inputs
-    await Promise.all(Object.values(inputs).map(async (input) => {
-        if (input.type === "file" && input.files.length > 0) {
-            try {
-                const fileData = await handleFileUpload(input.files[0]);
-                if (fileData && fileData.file_path) {
-                    // Replace placeholders in all commands
-                    Object.keys(obj).forEach(key => {
-                        if (typeof obj[key] === 'string') {
-                            obj[key] = obj[key].replace(new RegExp(`{${input.name.replace('global_', '')}}`, 'g'), fileData.file_path);
-                        }
-                    });
-                }
-            } catch (error) {
-                console.error(`Error uploading file for ${input.name}:`, error);
-            }
-        }
-    }));
-
-    // Add special handling for specific commands if needed
-    // Example: if there are special cases like in buildButton
-    button_data.actions.forEach(action => {
-        if (obj[action] && obj[action].startsWith("!")) {
-            obj.min = button_data.min;
-            obj.max = button_data.max;
-        }
-
-        if (obj[action] && obj[action] === "#monitor") {
-            obj.track = button_data.track;
-            if (button_data.collect_data_from) {
-                obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
-            }
-        }
-    });
-
-    // Add the action object to folder_data
-    folder_data.buttons.push(obj);
-
-    try {
-        const result = await uploadFolderData(folder_name, folder_data);
-        updateGrid(result.folder);
-        console.log("Button created successfully with actions:", obj);
-    } catch (error) {
-        console.error("Error processing inputs:", error);
-    }
-}
-
-//* when a nutton have more than one possible command
-function setup_actions(button_data) {
-    const createElement = (type, className = '', text = '') => {
-        const elem = document.createElement(type);
-        if (className) elem.classList.add(className);
-        if (text) elem.textContent = text;
-        return elem;
-    };
-
-    const actions = createElement("div");
-    const global_inputs_container = createElement("div", "global-inputs-container");
-
-    // Create base select options
-    const select_options = document.createDocumentFragment();
-    const noneOption = createElement("option", "", getTranslation("NONE"));
-    noneOption.value = "None";
-    noneOption.selected = true;
-    select_options.appendChild(noneOption);
-
-    // Ensure commands exist before iterating
-    if (button_data.commands) {
-        Object.entries(button_data.commands).forEach(([key, value]) => {
-            const option = createElement("option", "", key);
-            option.value = value;
-            option.textContent = getTranslation("option_verbose_" + key);
-            select_options.appendChild(option);
-        });
-    }
-
-    // Global inputs - handle the case where inputs may not exist
-    if (button_data.inputs && button_data.inputs.length > 0) {
-        button_data.inputs
-            .filter(input => input.shared === true)
-            .forEach(input => {
-                // Add an id prefix to distinguish global inputs
-                const globalInput = { ...input, name: "global_" + input.name };
-                const inputContainer = createInputField(globalInput);
-                global_inputs_container.appendChild(inputContainer);
-            });
-    }
-
-    // Action containers
-    const actions_fragment = document.createDocumentFragment();
-
-    // Ensure actions exist before iterating
-    if (button_data.actions && button_data.actions.length > 0) {
-        button_data.actions.forEach(action => {
-            const action_container = createElement("div", "action-container");
-            const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
-            const action_select = createElement("select", "command-select");
-            action_select.name = action;
-            action_select.appendChild(select_options.cloneNode(true));
-            action_select.id = "command-select-" + action;
-            action_select.addEventListener("change", function () { update_inputs(this); });
-
-            // Container for action inputs
-            const inputs_container = createElement("div", "inputs_container");
-
-            // Creating action inputs only if inputs exist
-            if (button_data.inputs && button_data.inputs.length > 0) {
-                button_data.inputs
-                    .filter(input => input.shared !== true)
-                    .forEach(input => {
-                        // Create a modified input object with action-specific properties
-                        const actionInput = {
-                            ...input,
-                            name: input.name,
-                            label: getTranslation("ACTION_" + input.name),
-                            // Add an ID prefix to make it unique for this action
-                            id: action + "_" + input.name
-                        };
-
-                        const inputContainer = createInputField(actionInput);
-
-                        // Apply action-specific styling and behavior
-                        inputContainer.style.display = "none";
-                        inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
-                            elem.disabled = true;
-                            elem.id = action + "_" + input.name;
-                            elem.style.display = "block";
-                        });
-
-                        inputs_container.appendChild(inputContainer);
-                    });
-            }
-
-            action_container.append(label, action_select, inputs_container);
-            actions_fragment.appendChild(action_container);
-        });
-    }
-
-    actions.appendChild(actions_fragment);
-    actions.appendChild(global_inputs_container);
-
-    return actions;
-}
-
-function update_inputs(selectElement) {
-    const parent = selectElement.parentElement;
-    const selected_option = selectElement.options[selectElement.selectedIndex];
-    const variables = selected_option.value.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
-
-    parent.querySelectorAll(':scope > .inputs_container > div').forEach(container => {
-        // Get the input element in this container
-        const inputElements = container.querySelectorAll('input, select, textarea');
-
-        if (inputElements.length > 0) {
-            const inputElement = inputElements[0];
-            const inputName = inputElement.name;
-            const shouldShow = variables.includes(inputName);
-
-            // Show/hide the entire container
-            container.style.display = shouldShow ? "block" : "none";
-
-            // Enable/disable the input
-            inputElement.disabled = !shouldShow;
-
-            // Clear values if hiding
-            if (!shouldShow) {
-                if (inputElement.tagName === "INPUT" || inputElement.tagName === "TEXTAREA") {
-                    inputElement.value = "";
-                } else if (inputElement.tagName === "SELECT" && inputElement.options.length > 0) {
-                    inputElement.selectedIndex = 0;
-                }
-            }
-        }
-    });
-}

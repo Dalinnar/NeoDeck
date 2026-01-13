@@ -288,6 +288,10 @@ class ButtonFactory {
       return new CustomButton(buttonData, index);
     }
 
+    if (buttonData.command === "__multiaction__") {
+      return new MultiActionButton(buttonData, index);
+    }
+
     if (buttonData.command === "#monitor") {
       return new MonitorButton(buttonData, index);
     }
@@ -307,7 +311,7 @@ class ButtonFactory {
 window.ButtonFactory = ButtonFactory; // importante para plugins
 
 class ScrollPadButton extends BaseButton {
-  setupInteractions() {} // Deshabilita BaseButton
+  setupInteractions() { } // Deshabilita BaseButton
 
   createElement() {
     const pad = document.createElement("div");
@@ -479,7 +483,7 @@ class ScrollPadButton extends BaseButton {
 
       if (activeTouches.size === 0) endInteraction();
 
-      try { pad.releasePointerCapture(ev.pointerId); } catch {}
+      try { pad.releasePointerCapture(ev.pointerId); } catch { }
     });
 
     pad.addEventListener("pointercancel", ev => {
@@ -532,7 +536,39 @@ class ScrollPadButton extends BaseButton {
     ScrollPadButton.socket.emit("scrollpad_move", data);
   }
 }
+class MultiActionButton extends BaseButton {
+  constructor(buttonData, index) {
+    super(buttonData, index);
+  }
 
+  setupCommandExecution() {
+    // IMPORTANT: override BaseButton behavior
+    const actions = this.data.actions;
+    if (!Array.isArray(actions) || actions.length === 0) return;
+
+    this.element.addEventListener("click", () => {
+      if (window.menu_open) return;
+
+      actions.forEach(action => {
+        if (!action.command) return;
+
+        const cmd = action.command;
+
+        if (cmd.startsWith("$")) {
+          try {
+            eval(cmd.slice(1));
+          } catch (e) {
+            console.error("MultiAction eval error:", e);
+          }
+        }
+
+        if (cmd.startsWith("/")) {
+          request_data(cmd);
+        }
+      });
+    });
+  }
+}
 
 // Grid Manager class
 class GridManager {
