@@ -1,4 +1,7 @@
-#setup.py
+# setup.py
+import os
+import shutil
+import zipfile
 from cx_Freeze import setup, Executable
 
 gui_base = "Win32GUI"
@@ -6,7 +9,6 @@ console_base = None
 
 build_exe_options = {
     "excludes": [
-        # Standard library
         "unittest", "test", "pydoc", "doctest",
         "distutils", "setuptools", "pkg_resources",
         "email", "mailbox", "imaplib", "poplib", "smtplib",
@@ -20,7 +22,6 @@ build_exe_options = {
         "ensurepip", "venv", "zipimport",
     ],
     "include_files": [
-        "satisfied_installs.txt",
         "requirements.txt",
         "run.py",
         "static",
@@ -35,6 +36,7 @@ build_exe_options = {
     "zip_exclude_packages": ["*"],
     "optimize": 2,
     "include_msvcr": True,
+    "build_exe": "build/NeodeckLauncher",  # named output folder
 }
 
 executables = [
@@ -59,3 +61,29 @@ setup(
     options={"build_exe": build_exe_options},
     executables=executables,
 )
+
+
+def zip_build():
+    build_dir = "build/NeodeckLauncher"
+    zip_path = "build/NeodeckLauncher.zip"
+
+    if not os.path.exists(build_dir):
+        print("Build directory not found, skipping zip.")
+        return
+
+    print(f"Zipping {build_dir} -> {zip_path} ...")
+    with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(build_dir):
+            for file in files:
+                abs_path = os.path.join(root, file)
+                arcname = os.path.relpath(abs_path, "build")  # keeps NeodeckLauncher/ as root inside zip
+                zf.write(abs_path, arcname)
+
+    print(f"Created: {zip_path}")
+
+
+# Auto-zip after build when run directly
+if __name__ == "__main__":
+    zip_build()
+
+#command: python setup.py build_exe && python setup.py
