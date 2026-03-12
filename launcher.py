@@ -77,8 +77,9 @@ def ask_update(version):
     return result == IDYES
 
 # =========================
-# PYTHON + DEPS
+# PYTHON FINDER
 # =========================
+
 def install_python_311(base_dir):
     url = "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe"
     installer = os.path.join(base_dir, "python_installer.exe")
@@ -94,8 +95,9 @@ def install_python_311(base_dir):
 
 
 def find_python(is_console=False, base_dir=""):
+    """Find a system-level Python 3.11 to use for creating the venv."""
     log_error("[FIND_PYTHON] Starting Python 3.11 search...", base_dir)
-    
+
     try:
         log_error("[FIND_PYTHON] Attempting: py -3.11 --version", base_dir)
         subprocess.run(
@@ -130,6 +132,51 @@ def find_python(is_console=False, base_dir=""):
         log_error(f"[FIND_PYTHON] ✗ Verification failed: {e}", base_dir)
         raise RuntimeError("Python 3.11 installation failed")
 
+# =========================
+# VENV
+# =========================
+
+def get_venv_python(base_dir):
+    """Returns the path to the venv Python executable."""
+    if sys.platform == "win32":
+        return os.path.join(base_dir, ".venv", "Scripts", "python.exe")
+    return os.path.join(base_dir, ".venv", "bin", "python")
+
+
+def ensure_venv(base_dir, is_console, status):
+    """
+    Ensures a .venv exists in base_dir, creating it if necessary.
+    Returns a list suitable for use as the python prefix in subprocess calls,
+    e.g. ['/path/to/.venv/Scripts/python.exe'].
+    """
+    venv_python = get_venv_python(base_dir)
+    venv_dir = os.path.join(base_dir, ".venv")
+
+    if not os.path.exists(venv_python):
+        log_error("[VENV] No venv found, creating one...", base_dir)
+        status("Creating virtual environment...")
+
+        base_python = find_python(is_console=is_console, base_dir=base_dir)
+
+        try:
+            subprocess.run(
+                base_python + ["-m", "venv", venv_dir],
+                check=True,
+                creationflags=0 if is_console else NO_WIN,
+            )
+            log_error(f"[VENV] ✓ Created venv at: {venv_dir}", base_dir)
+        except subprocess.CalledProcessError as e:
+            log_error(f"[VENV] ✗ Failed to create venv: {e}", base_dir)
+            raise RuntimeError(f"Failed to create virtual environment: {e}")
+    else:
+        log_error(f"[VENV] ✓ Existing venv found at: {venv_dir}", base_dir)
+
+    return [venv_python]
+
+# =========================
+# DEPS
+# =========================
+
 def hash_file(p):
     h = hashlib.sha256()
     h.update(open(p, "rb").read())
@@ -139,7 +186,7 @@ def install_deps(python, base_dir, is_console, status):
     log_error("[INSTALL_DEPS] Starting dependency installation...", base_dir)
     log_error(f"[INSTALL_DEPS] Python executable: {python}", base_dir)
     log_error(f"[INSTALL_DEPS] Working directory: {base_dir}", base_dir)
-    
+
     req = os.path.join(base_dir, "requirements.txt")
     if not os.path.exists(req):
         log_error("[INSTALL_DEPS] ✓ requirements.txt not found, skipping", base_dir)
@@ -162,7 +209,7 @@ def install_deps(python, base_dir, is_console, status):
         log_error("[INSTALL_DEPS] No hash file found, installing fresh...", base_dir)
 
     status("Installing dependencies...")
-    
+
     try:
         log_error("[INSTALL_DEPS] Running: pip install -r requirements.txt", base_dir)
         result = subprocess.run(
@@ -173,7 +220,7 @@ def install_deps(python, base_dir, is_console, status):
             capture_output=True,
             text=True
         )
-        
+
         if result.returncode != 0:
             error_output = result.stderr + result.stdout
             log_error(f"[INSTALL_DEPS] ✗ Pip install failed (code {result.returncode})", base_dir)
@@ -181,11 +228,11 @@ def install_deps(python, base_dir, is_console, status):
             log_error(f"[INSTALL_DEPS] STDERR: {result.stderr}", base_dir)
             status(f"Pip error: {error_output[:200]}")
             raise subprocess.CalledProcessError(result.returncode, result.args, output=error_output)
-        
+
         log_error("[INSTALL_DEPS] ✓ All dependencies installed successfully", base_dir)
         open(hfile, "w").write(h)
         log_error(f"[INSTALL_DEPS] ✓ Hash file saved: {hfile}", base_dir)
-        
+
     except subprocess.CalledProcessError as e:
         log_error(f"[INSTALL_DEPS] ✗ Failed to install dependencies: {str(e)}", base_dir)
         status(f"Failed to install dependencies: {str(e)}")
@@ -208,7 +255,7 @@ def main():
     is_console = is_frozen and "Console" in sys.executable
 
     args = parse_args()
-    
+
     ensure_single_instance("NeoDeckLauncherConsole" if is_console else "NeoDeckLauncherGUI")
     ui = None if is_console else StatusWindow()
 
@@ -222,7 +269,7 @@ def main():
             log_error(f"[WORKER] base_dir: {base_dir}", base_dir)
             log_error(f"[WORKER] is_console: {is_console}", base_dir)
             log_error(f"[WORKER] skip_update: {args.skip_update}", base_dir)
-            
+
             if not args.skip_update:
                 try:
                     status("Checking updates...")
@@ -241,10 +288,12 @@ def main():
                             log_error("[WORKER] User accepted update", base_dir)
                             status("Launching updater...")
 
-                            python = find_python(is_console, base_dir)
+                            # Use a bare system Python for the updater — the venv
+                            # may be wiped/replaced during the update process itself.
+                            base_python = find_python(is_console, base_dir)
 
                             subprocess.Popen(
-                                python + [os.path.join(base_dir, "updater.py")],
+                                base_python + [os.path.join(base_dir, "updater.py")],
                                 cwd=base_dir,
                                 creationflags=subprocess.CREATE_NEW_CONSOLE,
                             )
@@ -266,16 +315,16 @@ def main():
             else:
                 log_error("[WORKER] ✓ Update check skipped (--skip_update flag set)", base_dir)
 
-            log_error("[WORKER] Finding Python for main app...", base_dir)
-            python = find_python(is_console, base_dir)
-            log_error(f"[WORKER] Python found: {python}", base_dir)
-            
-            log_error("[WORKER] Installing dependencies...", base_dir)
+            log_error("[WORKER] Ensuring venv exists...", base_dir)
+            python = ensure_venv(base_dir, is_console, status)
+            log_error(f"[WORKER] ✓ Using venv Python: {python}", base_dir)
+
+            log_error("[WORKER] Installing dependencies into venv...", base_dir)
             install_deps(python, base_dir, is_console, status)
-            log_error("[WORKER] ✓ Dependencies installed", base_dir)
+            log_error("[WORKER] ✓ Dependencies ready", base_dir)
 
             status("Starting NeoDeck...")
-            log_error("[WORKER] Launching NeoDeck with: python run.py", base_dir)
+            log_error("[WORKER] Launching NeoDeck with venv Python", base_dir)
             subprocess.Popen(
                 python + ["run.py"],
                 cwd=base_dir,
@@ -299,7 +348,7 @@ def main():
 
     worker_thread = threading.Thread(target=worker, daemon=False)
     worker_thread.start()
-    
+
     if ui:
         ui.root.mainloop()
     else:
