@@ -29,11 +29,8 @@ jobs:
       - name: Install app dependencies
         run: pip install -r requirements.txt
 
-      - name: Build with cx_Freeze
+      - name: Build and zip with cx_Freeze
         run: python setup.py build_exe
-
-      - name: Zip the build
-        run: python -c "import setup; setup.zip_build()"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
