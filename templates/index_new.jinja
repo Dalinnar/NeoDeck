@@ -96,16 +96,17 @@
       window.menu_open = false;
 
       function toggleMenu() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        if (isMobile) return; // Exit early on mobile
+
         window.menu_open = !window.menu_open;
+        const menu = document.querySelector(".menuContainer");
+        const pages_container = document.getElementById("pages-container");
 
-      const menu = document.querySelector(".menuContainer");
-      const pages_container = document.getElementById("pages-container");
-
-      menu.classList.toggle("hidden");
-      pages_container.classList.toggle("hidden");
-
-      toggle_buttons_edition()
-
+        menu.classList.toggle("hidden");
+        pages_container.classList.toggle("hidden");
+        toggle_buttons_edition();
       }
       function toggle_buttons_edition(override = false) {
         const buttons = document.querySelectorAll(".button_div");
@@ -288,100 +289,106 @@
         const container = document.getElementById("menuContainer");
 
         // Add search input
-        let search = document.createElement("input");
-        search.placeholder = getTranslation("SEARCH_COMMANDS");
-        search.addEventListener("input", function () {
-          search_commands(search.value);
-        });
+        const search = createSearchInput();
         container.appendChild(search);
 
         Object.entries(jsonData).forEach(([category, data]) => {
-          const _category = clean(category).toUpperCase();
-          const Q1 = `${_category}_CATEGORY_NAME`;
-          let category_name = getTranslation(Q1);
-          if (category_name === Q1) {
-            category_name = category;
-            console.log("missing translation for " + Q1);
+          container.appendChild(createCategory(category, data));
+        });
+      }
+
+      function createSearchInput() {
+        const search = document.createElement("input");
+        search.placeholder = getTranslation("SEARCH_COMMANDS");
+        search.addEventListener("input", (e) => search_commands(e.target.value));
+        return search;
+      }
+
+      function createCategory(category, data) {
+        const _category = clean(category).toUpperCase();
+        const categoryDiv = document.createElement("div");
+        categoryDiv.id = `category_${_category}`;
+
+        const categoryName = getTranslation(`${_category}_CATEGORY_NAME`) || category;
+        categoryDiv.appendChild(createTitleBar(categoryName, categoryDiv));
+
+        const contentContainer = document.createElement("div");
+        contentContainer.id = `container_${_category}`;
+        contentContainer.classList.add("container", "hidden");
+        categoryDiv.appendChild(contentContainer);
+
+        const buttonsContainer = document.createElement("div");
+        buttonsContainer.classList.add("buttons_container");
+        contentContainer.appendChild(buttonsContainer);
+
+        const subcategoriesContainer = document.createElement("div");
+        subcategoriesContainer.classList.add("subcategories_container");
+        contentContainer.appendChild(subcategoriesContainer);
+
+        Object.entries(data).forEach(([name, subdata]) => {
+          if (subdata.TYPE === "multiple") {
+            subcategoriesContainer.appendChild(
+              createSubcategory(category, name, subdata)
+            );
+          } else {
+            addButton(buttonsContainer, name, subdata, _category);
           }
+        });
 
-          // Create category container
-          const categoryDiv = document.createElement("div");
-          categoryDiv.id = "category_" + _category;
-          container.appendChild(categoryDiv);
+        return categoryDiv;
+      }
 
-          // Title container
-          let title = document.createElement("h2");
-          title.textContent = category_name;
+      function createSubcategory(category, name, subdata) {
+        const _category = clean(category).toUpperCase();
+        const _subcategory = `${_category}_${clean(name)}`;
+        const subcategoryName =
+          getTranslation(`${_subcategory}__category_name`) || name;
 
-          let icon = document.createElement("img");
-          icon.src = "static/img/menu_icon_white.png";
-          icon.style.width = "30px";
-          icon.style.aspectRatio = "1";
+        const subcategoryDiv = document.createElement("div");
+        subcategoryDiv.appendChild(createTitleBar(subcategoryName, subcategoryDiv));
 
-          let title_container = document.createElement("div");
-          title_container.classList.add("title_container");
-          title_container.onclick = () => toggleCategory(categoryDiv);
-          title_container.appendChild(icon);
-          title_container.appendChild(title);
+        const contentContainer = document.createElement("div");
+        contentContainer.classList.add("container", "hidden");
+        subcategoryDiv.appendChild(contentContainer);
 
-          categoryDiv.prepend(title_container);
+        const buttonsContainer = document.createElement("div");
+        buttonsContainer.classList.add("buttons_container");
+        contentContainer.appendChild(buttonsContainer);
 
-          // Buttons container
-          const categ_container = document.createElement("div");
-          categ_container.id = "container_" + _category;
-          categ_container.classList.add("container", "hidden");
-          categoryDiv.appendChild(categ_container);
+        Object.entries(subdata.commands || {}).forEach(([commandName, buttonData]) => {
+          populateInputLabels(buttonData, _subcategory, commandName);
+          addButton(buttonsContainer, commandName, buttonData, _category, _subcategory);
+        });
 
-          Object.entries(data).forEach(([name, subdata]) => {
-            if (subdata.TYPE === "multiple") {
-              const _subcategory = `${_category}_${clean(name)}`;
-              const Q2 = `${_subcategory}__category_name`;
-              const _subcat_desc = `${_subcategory}__category_description`;
+        return subcategoryDiv;
+      }
 
-              let subcat_name = getTranslation(Q2);
-              if (subcat_name === Q2) subcat_name = name;
+      function createTitleBar(title, toggleTarget) {
+        const container = document.createElement("div");
+        container.classList.add("title_container");
+        container.onclick = () => {
+          toggleCategory(toggleTarget);
+          container.classList.toggle("open");
+        };
 
-              const subcategoryDiv = document.createElement("div");
-              const subcateg_container = document.createElement("div");
 
-              // Subcategory title
-              let subtitle_container = document.createElement("div");
-              subtitle_container.classList.add("title_container");
-              subtitle_container.onclick = () => toggleCategory(subcategoryDiv);
+        const icon = document.createElement("img");
+        icon.src = "static/img/menu_icon_white.png";
+        icon.style.cssText = "width: 30px; aspect-ratio: 1;";
 
-              let icon = document.createElement("img");
-              icon.src = "static/img/menu_icon_white.png";
-              icon.style.width = "30px";
-              icon.style.aspectRatio = "1";
+        const heading = document.createElement(title.level === 2 ? "h2" : "h3");
+        heading.textContent = title;
 
-              let subTitle = document.createElement("h3");
-              subTitle.textContent = subcat_name;
+        container.appendChild(icon);
+        container.appendChild(heading);
+        return container;
+      }
 
-              subtitle_container.appendChild(icon);
-              subtitle_container.appendChild(subTitle);
-
-              subcategoryDiv.prepend(subtitle_container);
-
-              subcateg_container.classList.add("container", "hidden");
-              subcategoryDiv.appendChild(subcateg_container);
-              categ_container.appendChild(subcategoryDiv);
-
-              // Iterate subcommands (now as object)
-              Object.entries(subdata.commands || {}).forEach(([command_name, button_data]) => {
-                button_data.inputs?.forEach((input, inp_index) => {
-                  input.label = getTranslation(`${_subcategory}_${clean(command_name)}_input${inp_index}`);
-                });
-                addButton(subcateg_container, command_name, button_data, _category, _subcategory);
-              });
-
-            } else {
-              // Top-level command buttons
-              subdata.inputs?.forEach((input, inp_index) => {
-                input.label = getTranslation(`${_category}_${clean(name)}_input${inp_index}`);
-              });
-              addButton(categ_container, name, subdata, _category);
-            }
-          });
+      function populateInputLabels(buttonData, category, commandName) {
+        buttonData.inputs?.forEach((input, index) => {
+          input.label = getTranslation(
+            `${category}_${clean(commandName)}_input${index}`
+          );
         });
       }
 
@@ -406,6 +413,7 @@
         }
 
         div.innerText = getTranslation(query);
+        data.ButtonTitle =  getTranslation(query);
         div.id = query;
         window.buttonData[div.id] = data;
 
@@ -419,7 +427,6 @@
         //grab the div class container on the menu div
         container = menu.querySelector(".container");
         container.classList.toggle("hidden");
-
       }
     </script>
     <script>

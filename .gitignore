@@ -34,3 +34,8 @@ tests/*
 data.json
 .temp/*
 .cache
+err.txt
+satisfied_installs.txt
+.config/pages.json
+.config/settings.json
+macros/

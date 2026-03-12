@@ -1,278 +1,263 @@
 import os
 import sys
-import json
-import win32gui, win32con
-import webbrowser
-import pystray
-import tkinter as tk
 import random
+import threading
+import webbrowser
+from io import BytesIO
+
+import pystray
 import qrcode
+import tkinter as tk
 import webview
 from PIL import Image, ImageTk
-from io import BytesIO
-import threading
-
-
+import win32gui, win32con
+import subprocess
 from .utils.exit import exit_program
-from .utils.restart import restart_program
 from .utils.firewall import fix_firewall_permission
-from settings import *
-from .functions import *
 from .utils.get_local_ip import get_local_ip
-
 from .utils.languages import text, get_languages_info, get_language, set_default_language
 from .utils.logger import log
+from settings import *
+from .functions import *
 
-SERVER_STATE = 0  # 0 = loading, 1 = online, 2 = offline
+SERVER_STATE = 0  # 0=loading, 1=online, 2=offline
 
-def toggle_console():
-    """Muestra u oculta la consola del EXE."""
-    hwnd = win32gui.GetConsoleWindow()
-
-    if not hwnd:
-        return  # No hay consola (probablemente modo GUI)
-
-    # Está visible?
-    if win32gui.IsWindowVisible(hwnd):
-        win32gui.ShowWindow(hwnd, win32con.SW_HIDE)
-    else:
-        win32gui.ShowWindow(hwnd, win32con.SW_SHOW)
-
-
+# ----------------- CONFIG -----------------
 def reload_config():
-    default_settings = get_settings()
-    settings = objetify(default_settings["neodeck"])
-    
-            
-    return (
-        settings.port,                
-        settings.language,
-        settings.open_settings_in_integrated_browser
-    )
+    cfg = objetify(get_settings()["neodeck"])
+    return cfg.port, cfg.language, cfg.open_settings_in_integrated_browser
 
-window = None
-icon = None
 port, language, open_in_integrated_browser = reload_config()
 local_ip = get_local_ip()
 
+# ----------------- CONSOLE -----------------
+def toggle_console():
+    """Toggles console visibility and restarts the entire application."""
+    try:
+        # Toggle the console setting
+        loaded_settings["neodeck"]["show_console"] = not loaded_settings["neodeck"]["show_console"]
+        save_settings(loaded_settings)
+        
+        # Choose launcher based on show_console setting
+        show_console = loaded_settings["neodeck"]["show_console"]
+        launcher_name = "NeodeckLauncherConsole.exe" if show_console else "NeodeckLauncher.exe"
+        launcher_path = os.path.join(BASE_DIR, launcher_name)
+        
+        # Launch the appropriate launcher
+        subprocess.Popen(launcher_path)
+        
+        # Exit the current application
+        exit_program()
+    except Exception as e:
+        log.exception(e, "Error while toggling console")
+
+
+def restart_program(skip_update=False):
+    show_console = loaded_settings["neodeck"]["show_console"]
+
+    launcher_name = ("NeodeckLauncherConsole.exe" if show_console else "NeodeckLauncher.exe")
+
+    launcher_path = os.path.join(BASE_DIR, launcher_name)
+    args = ["--skip_update"] if skip_update else []
+
+    subprocess.Popen(
+        [launcher_path, *args],
+        close_fds=True,
+        creationflags=subprocess.DETACHED_PROCESS
+    )
+
+    os._exit(0)  # 🔥 mata el proceso sin cleanup
+
+# ----------------- CONFIG UI -----------------
 def open_config():
-    port, dark_theme, language, open_in_integrated_browser = reload_config()
-    config_url = f"http://{local_ip}:{get_port()}?config=show"
-    
-    if open_in_integrated_browser:
-        webview.create_window('Neodeck Config', url=config_url, background_color='#141414')
+    _, _, open_browser = reload_config()
+    url = f"http://{local_ip}:{get_port()}/settings"
+    if open_browser:
+        webview.create_window('Neodeck Config', url=url, background_color='#141414')
         webview.start()
-        
-        foreground_window = win32gui.GetForegroundWindow()
-        window_title = win32gui.GetWindowText(foreground_window)
-        
-        if "neodeck" in window_title.lower():
-            win32gui.ShowWindow(foreground_window, win32con.SW_MAXIMIZE)
+        hwnd = win32gui.GetForegroundWindow()
+        if "neodeck" in win32gui.GetWindowText(hwnd).lower():
+            win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
     else:
-        webbrowser.open(config_url)
+        webbrowser.open(url)
+
+def open_plugins_folder():
+    plugins_path = os.path.join(BASE_DIR, "plugins")
+    subprocess.Popen(f'explorer "{plugins_path}"')
+# ----------------- QR CODE -----------------
 
 def generate_qr_code(dark_theme=False):
     url = f"http://{get_local_ip()}:{get_port()}/"
-    
+
     qr = qrcode.QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_L,
         box_size=10,
-        border=4,
+        border=4
     )
     qr.add_data(url)
     qr.make(fit=True)
 
-    img_stream = BytesIO()
-    
-    if dark_theme:
-        qr.make_image(fill_color="white", back_color="black").save(img_stream, format='PNG')
-    else:
-        qr.make_image(fill_color="black", back_color="white").save(img_stream, format='PNG')
-    
-    img_stream.seek(0)
+    img = qr.make_image(
+        fill_color="white" if dark_theme else "black",
+        back_color="black" if dark_theme else "white"
+    )
 
-    return Image.open(img_stream)
+    stream = BytesIO()
+    img.save(stream, format="PNG")
+    stream.seek(0)
+    return Image.open(stream)
+
 
 def show_qrcode():
-    global window
-    if window is not None:
-        window.lift()
-        window.focus_force()
+    if getattr(show_qrcode, "window", None):
+        show_qrcode.window.lift()
+        show_qrcode.window.focus_force()
         return
 
     window = tk.Tk()
+    show_qrcode.window = window
     window.title(text('qr_code'))
-
-    qr_pil_image = generate_qr_code()
-    image_tk = ImageTk.PhotoImage(image=qr_pil_image)
-
-    label = tk.Label(window, image=image_tk)
-    label.pack()
-
-    text_label = tk.Label(window, text=f"http://{local_ip}:{get_port()}/", font=("Helvetica", 13))
-    text_label.pack()
-
     window.iconbitmap("static/icons/icon.ico")
-    window.lift()
-    window.focus_force()
 
-    def close_window(event=None):
-        global window
-        if window:
-            window.destroy()
-            window = None
+    url = f"http://{get_local_ip()}:{get_port()}/"
 
-    window.bind("<Escape>", close_window)
-    window.bind("<Return>", close_window)
-    window.bind("<space>", close_window)
+    # QR
+    img = ImageTk.PhotoImage(generate_qr_code())
+    qr_label = tk.Label(window, image=img)
+    qr_label.image = img  # evitar garbage collection
+    qr_label.pack(pady=5)
 
-    window.resizable(width=False, height=False)
-    window.protocol("WM_DELETE_WINDOW", close_window)
+    # URL copiable
+    url_var = tk.StringVar(value=url)
+
+    entry = tk.Entry(
+        window,
+        textvariable=url_var,
+        font=("Helvetica", 13),
+        justify="center",
+        width=len(url) + 2,
+        state="readonly",
+        readonlybackground=window.cget("bg"),
+        relief="flat",
+        cursor="hand2"
+    )
+    entry.pack(pady=5)
+
+    def copy_url(event=None):
+        window.clipboard_clear()
+        window.clipboard_append(url)
+
+    # Copiar al hacer click
+    entry.bind("<Button-1>", copy_url)
+
+    def close(event=None):
+        window.destroy()
+        show_qrcode.window = None
+
+    for key in ("<Escape>", "<Return>", "<space>"):
+        window.bind(key, close)
+
+    window.resizable(False, False)
+    window.protocol("WM_DELETE_WINDOW", close)
     window.mainloop()
+# ----------------- TRAY -----------------
+def create_language_items():
+    langs = get_languages_info()
+    normal = [l for l in langs if not l.get('misc')]
+    misc = [l for l in langs if l.get('misc')]
 
-def generate_menu(language, server_status=1):
+    def mk_item(lang):
+        label = f"{lang['native_name']} ({lang['code']})" if lang['native_name'] != lang['code'] else lang['code']
+        return pystray.MenuItem(label, lambda: update_language(lang['code']),
+                                radio=True, checked=lambda item: lang['code'] == get_language(language))
+
+    items = [mk_item(l) for l in normal]
+    if misc:
+        items.append(pystray.Menu.SEPARATOR)
+        items.extend(mk_item(l) for l in misc)
+    return items
+
+
+icon = None
+def generate_tray_icon():
+    global icon
+    if icon is None:
+        icon = pystray.Icon("Neodeck", Image.open("static/icons/icon.ico"), "Neodeck", generate_menu(SERVER_STATE))
+        icon.run()
+
+def generate_menu(server_status=1):
     log.info(f"Server status updated: {server_status}")
-
-    server_status_text = {
-        0: text('server_loading'),
-        1: text('server_online'),
-        2: text('server_offline')
-    }
-
-    languages_info = get_languages_info()
-    misc_languages = [lang for lang in languages_info if lang.get('misc', False)]
-    non_misc_languages = [lang for lang in languages_info if not lang.get('misc', False)]
-
-    def create_language_menu_item(lang):
-        button_text = lang['code']
-        if lang['native_name'] != lang['code']:
-            button_text = f"{lang['native_name']} ({lang['code']})"
-        return pystray.MenuItem(
-            button_text,
-            lambda: update_language(lang['code']),
-            radio=True,
-            checked=lambda item: lang['code'] == get_language(language)
-        )
-
-    language_menu_items = [create_language_menu_item(lang) for lang in non_misc_languages]
-
-    if misc_languages:
-        language_menu_items.append(pystray.Menu.SEPARATOR)
-        language_menu_items.extend([create_language_menu_item(lang) for lang in misc_languages])
+    status_text = {0: text('server_loading'), 1: text('server_online'), 2: text('server_offline')}
+    console_enabled= loaded_settings["neodeck"]["show_console"]
 
     return pystray.Menu(
         pystray.MenuItem(text('qr_code'), show_qrcode, default=True),
         pystray.MenuItem(text('options'), pystray.Menu(
             pystray.MenuItem(text('open_config'), open_config),
-            pystray.MenuItem(text('language'), pystray.Menu(*language_menu_items)),
+            pystray.MenuItem(text('open_plugins_folder'), open_plugins_folder),
+            pystray.MenuItem(text('language'), pystray.Menu(*create_language_items())),
             pystray.MenuItem(text('restart_application'), restart_program),
-            pystray.MenuItem(text('edit_port'), change_port_prompt),
+            pystray.MenuItem(text('edit_port'), lambda: change_port_prompt()),
             pystray.MenuItem(text('fix_firewall'), fix_firewall_permission),
         )),
-        pystray.MenuItem(
-            f"{text('server_status')} {server_status_text.get(server_status, text('server_offline'))}",
-            open_config
-        ),
+        pystray.MenuItem(f"{text('server_status')} {status_text.get(server_status)}", open_config),
         pystray.Menu.SEPARATOR,
-        pystray.MenuItem(text('report_issue'), lambda: webbrowser.open('https://github.com/Lenochxd/Neodeck/issues')),
-        pystray.MenuItem(text('toggle_console'),lambda: toggle_console()),
-        pystray.MenuItem(text('exit'), lambda: exit_program()),
+        pystray.MenuItem(text('report_issue'), lambda: webbrowser.open('https://github.com/Dalinnar/Neodeck/issues')),
+
+        pystray.MenuItem(text('TOGGLE_CONSOLE_1' if console_enabled else "TOGGLE_CONSOLE_0"), toggle_console),
+        pystray.MenuItem(text('exit'), exit_program),
     )
 
-def generate_tray_icon():
-    global icon
-    image = Image.open("static/icons/icon.ico")
+# ----------------- LANGUAGE -----------------
+def update_language(new_lang):
+    set_default_language(new_lang)
+    loaded_settings["neodeck"]["language"] = new_lang
+    save_settings(loaded_settings)
+    if icon:
+        icon.menu = generate_menu(SERVER_STATE)
+        icon.update_menu()
 
-    menu = generate_menu(language, server_status=SERVER_STATE)
-
-    if getattr(sys, 'frozen', False):
-        icon = pystray.Icon("name", image, "Neodeck", menu)
-    else:
-        icon = pystray.Icon("name", image, "Neodeck DEV", menu)
-
-    return icon
-
+# ----------------- PORT CHANGE -----------------
 def change_port_prompt():
-    def save_port():
-        new_port = port_entry.get()
-        if validate_port_input(new_port) and new_port not in ['', str(get_port())]:
-            prompt_window.destroy() 
-            
-            loaded_settings["neodeck"]["port"] = int(new_port)
-            load_settings(loaded_settings)
-            restart_program()
+    prompt = tk.Tk()
+    prompt.title(text('change_server_port'))
+    prompt.geometry("300x160")
+    prompt.resizable(False, False)
+    prompt.iconbitmap("static/icons/icon_black.ico")
 
-    def validate_port_input(new_value):
-        if new_value.isdigit():
-            port = int(new_value)
-            return 1 <= port <= 65535
-        return new_value == ""
-
-    def randomize_port():
-        random_port = random.randint(1024, 65535)
-        port_entry.delete(0, tk.END)
-        port_entry.insert(0, random_port)
-
-    def close_prompt(event=None):
-        prompt_window.destroy()
-
-    prompt_window = tk.Tk()
-    prompt_window.title(text('change_server_port'))
-    prompt_window.geometry("300x160")
-    prompt_window.resizable(False, False)
-    prompt_window.iconbitmap("static/icons/icon_black.ico")
-
-    frame = tk.Frame(prompt_window, padx=10, pady=10)
+    frame = tk.Frame(prompt, padx=10, pady=10)
     frame.pack(expand=True)
 
     tk.Label(frame, text=text('enter_new_port')).grid(row=0, column=0, pady=5, sticky="w")
-    port_entry = tk.Entry(frame, validate="key", validatecommand=(frame.register(validate_port_input), "%P"))
-    port_entry.insert(0, get_port())  # Set default text field value to the current port
+    port_entry = tk.Entry(frame)
+    port_entry.insert(0, get_port())
     port_entry.grid(row=1, column=0, pady=5, sticky="ew")
 
-    randomize_button = tk.Button(frame, text=text("randomize"), command=randomize_port)
-    randomize_button.grid(row=2, column=0, pady=5, sticky="ew")
-    
-    save_button = tk.Button(frame, text=text("save"), command=save_port)
-    save_button.grid(row=3, column=0, pady=5, sticky="ew")
+    def save_port():
+        val = port_entry.get()
+        if val.isdigit() and 1 <= int(val) <= 65535 and val != str(get_port()):
+            loaded_settings["neodeck"]["port"] = int(val)
+            save_settings(loaded_settings)
+            prompt.destroy()
+            restart_program()
 
-    # Key bindings
-    prompt_window.bind("<Return>", lambda event: save_port())
-    prompt_window.bind("<Escape>", close_prompt)
+    def randomize_port():
+        port_entry.delete(0, tk.END)
+        port_entry.insert(0, str(random.randint(1024, 65535)))
 
-    # Focus the window and the text input
-    prompt_window.lift()
-    prompt_window.focus_force()
+    tk.Button(frame, text=text("randomize"), command=randomize_port).grid(row=2, column=0, pady=5, sticky="ew")
+    tk.Button(frame, text=text("save"), command=save_port).grid(row=3, column=0, pady=5, sticky="ew")
+
+    prompt.bind("<Return>", lambda e: save_port())
+    prompt.bind("<Escape>", lambda e: prompt.destroy())
     port_entry.focus()
+    prompt.mainloop()
 
-    prompt_window.mainloop()
-
-
-def change_tray_language(new_lang):
-    global icon, language
-    language = new_lang
-    if icon is not None:
-        icon.menu = generate_menu(language)
-        icon.update_menu()
-
-def update_language(new_lang):
-    set_default_language(new_lang)
-    change_tray_language(new_lang)
-
-    loaded_settings["neodeck"]["language"] = new_lang
-    load_settings(loaded_settings)
-
+# ----------------- SERVER STATE -----------------
 def change_server_state(new_state):
-    global icon, SERVER_STATE
+    global SERVER_STATE
     SERVER_STATE = new_state
-
-    if icon is not None:
-        icon.menu = generate_menu(language, server_status=SERVER_STATE)
+    if icon:
+        icon.menu = generate_menu(SERVER_STATE)
         icon.update_menu()
-
-def create_tray_icon():
-    global icon
-    if icon is None:  # Only create the icon if it doesn't already exist
-        icon = generate_tray_icon()
-        icon.run()

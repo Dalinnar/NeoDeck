@@ -2,7 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const main_container = document.querySelector(".main-container");
     main_container.innerHTML += `
         <dialog id="button_creator_dialog" class="button_creator_container">
-            <svg xmlns="http://www.w3.org/2000/svg" onclick="button_creator_dialog.close()" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" stroke-width="1">
+            <svg xmlns="http://www.w3.org/2000/svg" onclick="button_creator_dialog.close(); window.dialogopen = false;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" stroke-width="1">
                 <path d="M18 6l-12 12"></path>
                 <path d="M6 6l12 12"></path>
             </svg>
@@ -17,6 +17,9 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
     const dialog_content = document.querySelector(".dialog_content");
 
     dialog_content.innerHTML = "";
+
+    // Hacemos un clon completo de window.buttonData
+    const localButtonData = structuredClone(window.buttonData || {});
 
     // Create and setup dropzone
     const dropzone = document.createElement("DIV");
@@ -35,22 +38,73 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
         return el;
     };
 
-    // Handle dropped buttons
+    let draggedContainer = null;
+
+    function handleButtonDragStart(e) {
+        draggedContainer = e.currentTarget;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("application/x-reorder", "true");
+        draggedContainer.style.opacity = "0.5";
+    }
+
+    function handleButtonDragEnd(e) {
+        draggedContainer.style.opacity = "1";
+        draggedContainer = null;
+    }
+
+    function handleButtonDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+
+        const isReorder = e.dataTransfer.types.includes("application/x-reorder");
+        if (!isReorder || !draggedContainer) return;
+
+        const afterElement = getDragAfterElement(dropzone, e.clientY);
+
+        if (afterElement == null) {
+            dropzone.appendChild(draggedContainer);
+        } else {
+            dropzone.insertBefore(draggedContainer, afterElement);
+        }
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll(".multiaction_button_container:not(.dragging)")];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Handle dropped buttons (new buttons from outside)
     function handleDrop(e) {
         e.preventDefault();
 
-        const id = e.dataTransfer.getData("text/plain"); // ✅ FALTABA
-        const buttonData = window.buttonData?.[id];
+        // Check if this is a reorder operation
+        const isReorder = e.dataTransfer.types.includes("application/x-reorder");
+        if (isReorder) return;
+
+        const id = e.dataTransfer.getData("text/plain");
+        const buttonData = localButtonData?.[id];
         if (!buttonData) return;
 
         const buttonContainer = createElement("div", ["multiaction_button_container"]);
+        buttonContainer.draggable = true;
+        buttonContainer.addEventListener("dragstart", handleButtonDragStart);
+        buttonContainer.addEventListener("dragend", handleButtonDragEnd);
+        buttonContainer.addEventListener("dragover", handleButtonDragOver);
 
-        // ✅ AHORA SÍ
         buttonContainer.dataset.buttonId = id;
 
         const header = createElement("div", ["button_header"]);
 
-        // Left container
         const leftContainer = createElement("div", ["buttondata_container"]);
 
         const img = createElement("img", [], {
@@ -69,44 +123,52 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
         // Inputs container
         const inputsContainer = createElement("div", ["inputs_container"]);
 
+        if (buttonData.command?.startsWith("!")) {
+            buttonData.inputs ??= [];
 
+            // Solo agregamos el slider si no existe ya
+            let slide_input = buttonData.inputs.find(i => i.name === "_slider_out");
+            if (!slide_input) {
+                slide_input = {
+                    TYPE: "input number",
+                    name: "_slider_out",
+                    attributes: {
+                        min: buttonData.min ?? 0,
+                        max: buttonData.max ?? 0
+                    }
+                };
+                buttonData.inputs.push(slide_input);
+            }
+
+            // Aseguramos que el comando tenga la referencia al slider
+            const placeholder = `{${slide_input.name}}`;
+            if (!buttonData.command.includes(placeholder)) {
+                buttonData.command = buttonData.command.trim() + ` ${placeholder}`;
+            }
+        }
         if (buttonData.commands && typeof buttonData.commands === "object" && !buttonData.command && buttonData.actions) {
-
             buttonData.actions = ["trigger"];
+            inputsContainer.appendChild(setup_actions(buttonData, localButtonData));
 
-            inputsContainer.appendChild(setup_actions(buttonData));
-            const chevron = createElement("span", ["button_chevron"], {
-                text: "▼"
-            });
-
+            const chevron = createElement("span", ["button_chevron"], { text: "▼" });
             chevron.addEventListener("click", () => {
                 const isHidden = inputsContainer.classList.contains("hidden");
                 inputsContainer.classList.toggle("hidden");
                 chevron.textContent = isHidden ? "▼" : "▲";
             });
             leftContainer.appendChild(chevron);
-        }
-        // Add chevron if inputs exist
-        else if (buttonData.inputs?.length) {
+        } else if (buttonData.inputs?.length) {
             buttonData.inputs.forEach(input => inputsContainer.appendChild(createInputField(input)));
-
-            const chevron = createElement("span", ["button_chevron"], {
-                text: "▼"
-            });
-
+            const chevron = createElement("span", ["button_chevron"], { text: "▼" });
             chevron.addEventListener("click", () => {
                 const isHidden = inputsContainer.classList.contains("hidden");
                 inputsContainer.classList.toggle("hidden");
                 chevron.textContent = isHidden ? "▼" : "▲";
             });
-
             leftContainer.appendChild(chevron);
         }
 
-        // Remove button
-        const removeBtn = createElement("span", ["buttondata_cancel"], {
-            text: "✖"
-        });
+        const removeBtn = createElement("span", ["buttondata_cancel"], { text: "✖" });
         removeBtn.addEventListener("click", () => buttonContainer.remove());
 
         header.appendChild(leftContainer);
@@ -126,58 +188,272 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
     dialog_content.appendChild(personalization_div);
     dialog_content.appendChild(sizeSlider);
 
-    const submit_button = createElement("button", ["submit_button"], {
-        text: "Submit"
-    });
+    const submit_button = createElement("button", ["submit_button"], { text: "Submit" });
     submit_button.addEventListener("click", () => {
-        buildMultiactionButton(button_data, folder_name, folder_data, column, row);
+        buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData);
         dialog.close();
+        window.dialogopen = false;
     });
     dialog_content.appendChild(submit_button);
+
+    // -------------------------------
+    // FUNCIONES INTERNAS QUE USAN localButtonData
+    // -------------------------------
+    function collectMultiactionButtons(localButtonData) {
+        const actions = [];
+
+        document.querySelectorAll(".multiaction_button_container").forEach(container => {
+            const buttonData = localButtonData?.[container.dataset.buttonId];
+            if (!buttonData) return;
+
+            const inputs = Object.fromEntries(
+                [...container.querySelectorAll("[name]:not([disabled])")].map(i => [i.name, i])
+            );
+
+            const replacer = createReplacer(inputs, true);
+
+            if (buttonData.command) {
+                actions.push({ command: replacer(buttonData.command) });
+            } else if (buttonData.actions && buttonData.commands) {
+                actions.push({ command: replacer(inputs.trigger?.value || "") });
+            }
+        });
+
+        return actions;
+    }
+
+    async function buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData) {
+        const dialog = document.getElementById("button_creator_dialog");
+
+        const inputs = Object.fromEntries(
+            [...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input])
+        );
+
+        const actions = collectMultiactionButtons(localButtonData);
+
+        if (!actions.length) {
+            alert("Multiaction button must contain at least one button");
+            return;
+        }
+
+        const obj = {
+            command: "__multiaction__",
+            column,
+            row,
+            endcolumn: column + 1,
+            endrow: row + 1,
+            btn_text: inputs.button_text?.value,
+            background_color: inputs.background_color?.value || "#1e1e1e",
+            text_color: inputs.text_color?.value || "#ffffff",
+            actions
+        };
+
+        if (inputs.img_size || !document.querySelector(".button_image").src.includes("empty_img")) {
+            const src = document.querySelector(".button_image").src;
+            obj.image = src.startsWith(window.location.origin)
+                ? src.replace(window.location.origin, "")
+                : src;
+            obj.image_size = inputs.img_size?.value || "80";
+        }
+
+        folder_data.buttons.push(obj);
+
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    }
+
+    function setup_actions(button_data, localButtonData) {
+        const createElement = (type, className = '', text = '') => {
+            const elem = document.createElement(type);
+            if (className) elem.classList.add(className);
+            if (text) elem.textContent = text;
+            return elem;
+        };
+
+        const actions = createElement("div");
+        const global_inputs_container = createElement("div", "global-inputs-container");
+
+        const select_options = document.createDocumentFragment();
+        const noneOption = createElement("option", "", getTranslation("NONE"));
+        noneOption.value = "None";
+        noneOption.selected = true;
+        select_options.appendChild(noneOption);
+
+        if (button_data.commands) {
+            Object.entries(button_data.commands).forEach(([key, value]) => {
+                const option = createElement("option", "", key);
+                option.value = value;
+                option.textContent = getTranslation("option_verbose_" + key);
+                select_options.appendChild(option);
+            });
+        }
+
+        if (button_data.inputs && button_data.inputs.length > 0) {
+            button_data.inputs
+                .filter(input => input.shared === true)
+                .forEach(input => {
+                    const globalInput = { ...input, name: "global_" + input.name };
+                    const inputContainer = createInputField(globalInput);
+                    global_inputs_container.appendChild(inputContainer);
+                });
+        }
+
+        const actions_fragment = document.createDocumentFragment();
+
+        if (button_data.actions && button_data.actions.length > 0) {
+            button_data.actions.forEach(action => {
+                const action_container = createElement("div", "action-container");
+                const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+                const action_select = createElement("select", "command-select");
+                action_select.name = action;
+                action_select.appendChild(select_options.cloneNode(true));
+                action_select.id = "command-select-" + action;
+                action_select.addEventListener("change", function () { update_inputs(this); });
+
+                const inputs_container = createElement("div", "inputs_container");
+
+                if (button_data.inputs && button_data.inputs.length > 0) {
+                    button_data.inputs
+                        .filter(input => input.shared !== true)
+                        .forEach(input => {
+                            const actionInput = {
+                                ...input,
+                                name: input.name,
+                                label: getTranslation("ACTION_" + input.name),
+                                id: action + "_" + input.name
+                            };
+                            const inputContainer = createInputField(actionInput);
+                            inputContainer.style.display = "none";
+                            inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                                elem.disabled = true;
+                                elem.id = action + "_" + input.name;
+                                elem.style.display = "block";
+                            });
+                            inputs_container.appendChild(inputContainer);
+                        });
+                }
+
+                action_container.append(label, action_select, inputs_container);
+                actions_fragment.appendChild(action_container);
+            });
+        }
+
+        actions.appendChild(actions_fragment);
+        actions.appendChild(global_inputs_container);
+
+        return actions;
+    }
 };
 
 
-function collectMultiactionButtons() {
-    const actions = [];
 
-    document.querySelectorAll(".multiaction_button_container").forEach(container => {
-        const buttonData = window.buttonData?.[container.dataset.buttonId];
-        if (!buttonData) return;
+function setup_actions(button_data) {
+    const createElement = (type, className = '', text = '') => {
+        const elem = document.createElement(type);
+        if (className) elem.classList.add(className);
+        if (text) elem.textContent = text;
+        return elem;
+    };
 
-        // Obtengo los inputs dentro del container
-        const inputs = Object.fromEntries(
-            [...container.querySelectorAll("[name]:not([disabled])")].map(i => [i.name, i])
-        );
+    const actions = createElement("div");
+    const global_inputs_container = createElement("div", "global-inputs-container");
 
-        // Creo el reemplazador para todos los comandos
-        const replacer = createReplacer(inputs, true);
+    // Create base select options
+    const select_options = document.createDocumentFragment();
+    const noneOption = createElement("option", "", getTranslation("NONE"));
+    noneOption.value = "None";
+    noneOption.selected = true;
+    select_options.appendChild(noneOption);
 
-        if (buttonData.command) {
-            // Botón simple → aplico reemplazador
-            actions.push({
-                command: replacer(buttonData.command)
+    // Ensure commands exist before iterating
+    if (button_data.commands) {
+        Object.entries(button_data.commands).forEach(([key, value]) => {
+            const option = createElement("option", "", key);
+            option.value = value;
+            option.textContent = getTranslation("option_verbose_" + key);
+            select_options.appendChild(option);
+        });
+    }
+
+    // Global inputs - handle the case where inputs may not exist
+    if (button_data.inputs && button_data.inputs.length > 0) {
+        button_data.inputs
+            .filter(input => input.shared === true)
+            .forEach(input => {
+                // Add an id prefix to distinguish global inputs
+                const globalInput = { ...input, name: "global_" + input.name };
+                const inputContainer = createInputField(globalInput);
+                global_inputs_container.appendChild(inputContainer);
             });
-        } else if (buttonData.actions && buttonData.commands) {
-            // Botón múltiple → también aplico reemplazador
-            actions.push({
-                command: replacer(inputs.trigger?.value || "")
-            });
-        }
-    });
+    }
+
+    // Action containers
+    const actions_fragment = document.createDocumentFragment();
+
+    // Ensure actions exist before iterating
+    if (button_data.actions && button_data.actions.length > 0) {
+        button_data.actions.forEach(action => {
+            const action_container = createElement("div", "action-container");
+            const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+            const action_select = createElement("select", "command-select");
+            action_select.name = action;
+            action_select.appendChild(select_options.cloneNode(true));
+            action_select.id = "command-select-" + action;
+            action_select.addEventListener("change", function () { update_inputs(this); });
+
+            // Container for action inputs
+            const inputs_container = createElement("div", "inputs_container");
+
+            // Creating action inputs only if inputs exist
+            if (button_data.inputs && button_data.inputs.length > 0) {
+                button_data.inputs
+                    .filter(input => input.shared !== true)
+                    .forEach(input => {
+                        // Create a modified input object with action-specific properties
+                        const actionInput = {
+                            ...input,
+                            name: input.name,
+                            label: getTranslation("ACTION_" + input.name),
+                            // Add an ID prefix to make it unique for this action
+                            id: action + "_" + input.name
+                        };
+
+                        const inputContainer = createInputField(actionInput);
+
+                        // Apply action-specific styling and behavior
+                        inputContainer.style.display = "none";
+                        inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                            elem.disabled = true;
+                            elem.id = action + "_" + input.name;
+                            elem.style.display = "block";
+                        });
+
+                        inputs_container.appendChild(inputContainer);
+                    });
+            }
+
+            action_container.append(label, action_select, inputs_container);
+            actions_fragment.appendChild(action_container);
+        });
+    }
+
+    actions.appendChild(actions_fragment);
+    actions.appendChild(global_inputs_container);
 
     return actions;
 }
-
 
 // Función para generar el botón y mostrar el diálogo
 const generate_button = (button_data, folder_name, folder_data, column, row) => {
     const modal = document.getElementById("button_creator_dialog");
     if (button_data.command == "__multiaction__") {
         modal.show();
+        window.dialogopen = true
         setup_multiaction(button_data, folder_name, folder_data, column, row)
         return;
     }
     modal.showModal();
+    window.dialogopen = true
     const dialog_content = document.querySelector(".dialog_content");
     dialog_content.innerHTML = "";
 
@@ -235,6 +511,7 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
 
 
         modal.close();
+        window.dialogopen = false
     })
     dialog_content.appendChild(submit_button);
 };
@@ -277,48 +554,8 @@ function createReplacer(inputs, useGlobalFallback = false, maxDepth = 10) {
     };
 }
 
-// ========================================
-// BUILD MULTIACTION BUTTON
-// ========================================
-async function buildMultiactionButton(button_data, folder_name, folder_data, column, row) {
-    const dialog = document.getElementById("button_creator_dialog");
 
-    const inputs = Object.fromEntries(
-        [...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input])
-    );
 
-    const actions = collectMultiactionButtons();
-
-    if (!actions.length) {
-        alert("Multiaction button must contain at least one button");
-        return;
-    }
-
-    const obj = {
-        command: "__multiaction__",
-        column,
-        row,
-        endcolumn: column + 1,
-        endrow: row + 1,
-        btn_text: inputs.button_text?.value,
-        background_color: inputs.background_color?.value || "#1e1e1e",
-        text_color: inputs.text_color?.value || "#ffffff",
-        actions
-    };
-
-    if (inputs.img_size || !document.querySelector(".button_image").src.includes("empty_img")) {
-        const src = document.querySelector(".button_image").src;
-        obj.image = src.startsWith(window.location.origin)
-            ? src.replace(window.location.origin, "")
-            : src;
-        obj.image_size = inputs.img_size?.value || "80";
-    }
-
-    folder_data.buttons.push(obj);
-
-    const result = await uploadFolderData(folder_name, folder_data);
-    updateGrid(result.folder);
-}
 
 // ========================================
 // BUILD BUTTON
@@ -518,101 +755,6 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
 }
 
 //* when a button have more than one possible command
-function setup_actions(button_data) {
-    const createElement = (type, className = '', text = '') => {
-        const elem = document.createElement(type);
-        if (className) elem.classList.add(className);
-        if (text) elem.textContent = text;
-        return elem;
-    };
-
-    const actions = createElement("div");
-    const global_inputs_container = createElement("div", "global-inputs-container");
-
-    // Create base select options
-    const select_options = document.createDocumentFragment();
-    const noneOption = createElement("option", "", getTranslation("NONE"));
-    noneOption.value = "None";
-    noneOption.selected = true;
-    select_options.appendChild(noneOption);
-
-    // Ensure commands exist before iterating
-    if (button_data.commands) {
-        Object.entries(button_data.commands).forEach(([key, value]) => {
-            const option = createElement("option", "", key);
-            option.value = value;
-            option.textContent = getTranslation("option_verbose_" + key);
-            select_options.appendChild(option);
-        });
-    }
-
-    // Global inputs - handle the case where inputs may not exist
-    if (button_data.inputs && button_data.inputs.length > 0) {
-        button_data.inputs
-            .filter(input => input.shared === true)
-            .forEach(input => {
-                // Add an id prefix to distinguish global inputs
-                const globalInput = { ...input, name: "global_" + input.name };
-                const inputContainer = createInputField(globalInput);
-                global_inputs_container.appendChild(inputContainer);
-            });
-    }
-
-    // Action containers
-    const actions_fragment = document.createDocumentFragment();
-
-    // Ensure actions exist before iterating
-    if (button_data.actions && button_data.actions.length > 0) {
-        button_data.actions.forEach(action => {
-            const action_container = createElement("div", "action-container");
-            const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
-            const action_select = createElement("select", "command-select");
-            action_select.name = action;
-            action_select.appendChild(select_options.cloneNode(true));
-            action_select.id = "command-select-" + action;
-            action_select.addEventListener("change", function () { update_inputs(this); });
-
-            // Container for action inputs
-            const inputs_container = createElement("div", "inputs_container");
-
-            // Creating action inputs only if inputs exist
-            if (button_data.inputs && button_data.inputs.length > 0) {
-                button_data.inputs
-                    .filter(input => input.shared !== true)
-                    .forEach(input => {
-                        // Create a modified input object with action-specific properties
-                        const actionInput = {
-                            ...input,
-                            name: input.name,
-                            label: getTranslation("ACTION_" + input.name),
-                            // Add an ID prefix to make it unique for this action
-                            id: action + "_" + input.name
-                        };
-
-                        const inputContainer = createInputField(actionInput);
-
-                        // Apply action-specific styling and behavior
-                        inputContainer.style.display = "none";
-                        inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
-                            elem.disabled = true;
-                            elem.id = action + "_" + input.name;
-                            elem.style.display = "block";
-                        });
-
-                        inputs_container.appendChild(inputContainer);
-                    });
-            }
-
-            action_container.append(label, action_select, inputs_container);
-            actions_fragment.appendChild(action_container);
-        });
-    }
-
-    actions.appendChild(actions_fragment);
-    actions.appendChild(global_inputs_container);
-
-    return actions;
-}
 
 function update_inputs(selectElement) {
     const parent = selectElement.parentElement;
@@ -653,6 +795,10 @@ const createInputField = (input) => {
     if (input.TYPE === "sys folder" || input.TYPE === "sys file") {
         return createSysInputField(input);
     }
+    //macro input
+    if (input.TYPE == "macro_rec") {
+        return createMacroInput(input);
+    }
 
     [element, type] = input.TYPE.split(" ");
 
@@ -665,6 +811,9 @@ const createInputField = (input) => {
 
     const _input = document.createElement(element);
     _input.name = input.name;
+
+    //setup attributes
+    Object.entries(input.attributes ?? {}).forEach(([k, v]) => _input.setAttribute(k, v));
 
     if (input.required) {
         _input.required = true;
@@ -754,6 +903,232 @@ const createSysInputField = (input) => {
     inputWrapper.appendChild(browseButton);
     container.appendChild(label);
     container.appendChild(inputWrapper);
+
+    return container;
+};
+
+const createMacroInput = (input) => {
+    const container = document.createElement("div");
+    container.classList.add("input-container");
+
+    const label = document.createElement("label");
+    label.textContent = input.label || input.name;
+
+    const hiddenInput = document.createElement("textarea");
+    hiddenInput.name = input.name;
+    hiddenInput.classList.add("macro-hidden-input");
+    if (input.id) hiddenInput.id = input.id;
+
+    const macroDisplay = document.createElement("div");
+    macroDisplay.classList.add("macro-recorder");
+    macroDisplay.setAttribute("tabindex", "0");
+
+    const placeholder = document.createElement("span");
+    placeholder.textContent = "Click to record shortcut...";
+    placeholder.classList.add("macro-placeholder");
+    macroDisplay.appendChild(placeholder);
+
+    let isRecording = false;
+    // Each item is either { type: "combo", value: "Ctrl+a" } or { type: "delay", ms: 10 }
+    let recordedItems = [];
+    let heldKeys = new Set();
+    let currentCombo = null;
+
+    const DEFAULT_DELAY_MS = 10;
+
+    const MODIFIERS = ["Control", "Alt", "Shift", "Meta"];
+    const MODIFIER_LABELS = { Control: "Ctrl", Alt: "Alt", Shift: "Shift", Meta: "Meta" };
+
+    const updateHiddenInput = () => {
+        // Output format: ["Ctrl+a", "@wait_10ms", "Alt+d", ...]
+        const serialized = recordedItems.map(item =>
+            item.type === "combo" ? item.value : `@wait_${item.ms}ms`
+        );
+        hiddenInput.value = JSON.stringify(serialized);
+        hiddenInput.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const buildComboFromHeld = () => {
+        if (heldKeys.size === 0) return null;
+        const modifiers = MODIFIERS.filter(m => heldKeys.has(m));
+        const normal = [...heldKeys]
+            .filter(k => !MODIFIERS.includes(k))
+            .map(k => k === " " ? "Space" : k);
+        const parts = [...modifiers.map(m => MODIFIER_LABELS[m]), ...normal];
+        return parts.length > 0 ? parts.join("+") : null;
+    };
+
+    const createDelayTag = (item, index) => {
+        const tag = document.createElement("span");
+        tag.classList.add("macro-delay-tag");
+
+        const downBtn = document.createElement("button");
+        downBtn.textContent = "▾";
+        downBtn.classList.add("macro-delay-btn");
+        downBtn.type = "button";
+
+        const valueSpan = document.createElement("span");
+        valueSpan.classList.add("macro-delay-value");
+        valueSpan.textContent = `@${item.ms}ms`;
+
+        const upBtn = document.createElement("button");
+        upBtn.textContent = "▴";
+        upBtn.classList.add("macro-delay-btn");
+        upBtn.type = "button";
+
+        const removeBtn = document.createElement("span");
+        removeBtn.textContent = "×";
+        removeBtn.classList.add("macro-tag-remove");
+
+        const updateValue = (delta) => {
+            item.ms = Math.max(0, item.ms + delta);
+            valueSpan.textContent = `@${item.ms}ms`;
+            updateHiddenInput();
+        };
+
+        // Click buttons
+        downBtn.addEventListener("click", (e) => { e.stopPropagation(); updateValue(-10); });
+        upBtn.addEventListener("click",   (e) => { e.stopPropagation(); updateValue(+10); });
+
+        // Arrow keys while hovering the delay tag
+        tag.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowUp")   { e.preventDefault(); e.stopPropagation(); updateValue(+10); }
+            if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); updateValue(-10); }
+        });
+
+        // Scroll wheel
+        tag.addEventListener("wheel", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            updateValue(e.deltaY < 0 ? +10 : -10);
+        }, { passive: false });
+
+        removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            recordedItems.splice(index, 1);
+            renderKeys();
+            updateHiddenInput();
+        });
+
+        tag.setAttribute("tabindex", "0");
+        tag.appendChild(downBtn);
+        tag.appendChild(valueSpan);
+        tag.appendChild(upBtn);
+        tag.appendChild(removeBtn);
+        return tag;
+    };
+
+    const createComboTag = (item, index) => {
+        const tag = document.createElement("span");
+        tag.textContent = item.value;
+        tag.classList.add("macro-tag");
+
+        const removeBtn = document.createElement("span");
+        removeBtn.textContent = "×";
+        removeBtn.classList.add("macro-tag-remove");
+        removeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            recordedItems.splice(index, 1);
+            renderKeys();
+            updateHiddenInput();
+        });
+
+        tag.appendChild(removeBtn);
+        return tag;
+    };
+
+    const renderKeys = () => {
+        macroDisplay.innerHTML = "";
+
+        if (recordedItems.length === 0 && !currentCombo) {
+            macroDisplay.appendChild(placeholder);
+        } else {
+            recordedItems.forEach((item, i) => {
+                if (item.type === "combo") {
+                    macroDisplay.appendChild(createComboTag(item, i));
+                } else {
+                    macroDisplay.appendChild(createDelayTag(item, i));
+                }
+            });
+
+            if (currentCombo) {
+                const preview = document.createElement("span");
+                preview.textContent = currentCombo;
+                preview.classList.add("macro-preview-tag");
+                macroDisplay.appendChild(preview);
+            }
+        }
+
+        if (isRecording) {
+            const indicator = document.createElement("span");
+            indicator.textContent = "● Recording...";
+            indicator.classList.add("macro-recording-indicator");
+            macroDisplay.appendChild(indicator);
+            macroDisplay.classList.add("macro-recorder--recording");
+        } else {
+            macroDisplay.classList.remove("macro-recorder--recording");
+        }
+    };
+
+    const onKeyDown = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        heldKeys.add(e.key);
+        currentCombo = buildComboFromHeld();
+        renderKeys();
+    };
+
+    const onKeyUp = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        heldKeys.delete(e.key);
+
+        if (heldKeys.size === 0 && currentCombo) {
+            // If there's already a previous combo, insert a delay between them
+            if (recordedItems.length > 0 && recordedItems[recordedItems.length - 1].type === "combo") {
+                recordedItems.push({ type: "delay", ms: DEFAULT_DELAY_MS });
+            }
+            recordedItems.push({ type: "combo", value: currentCombo });
+            currentCombo = null;
+            renderKeys();
+            updateHiddenInput();
+        }
+    };
+
+    macroDisplay.addEventListener("click", () => {
+        isRecording = !isRecording;
+
+        if (isRecording) {
+            macroDisplay.addEventListener("keydown", onKeyDown);
+            macroDisplay.addEventListener("keyup", onKeyUp);
+            macroDisplay.focus();
+        } else {
+            macroDisplay.removeEventListener("keydown", onKeyDown);
+            macroDisplay.removeEventListener("keyup", onKeyUp);
+            heldKeys.clear();
+            currentCombo = null;
+        }
+
+        renderKeys();
+    });
+
+    macroDisplay.addEventListener("blur", (e) => {
+        // Don't stop recording if focus moved to a delay tag inside the recorder
+        if (macroDisplay.contains(e.relatedTarget)) return;
+
+        if (isRecording) {
+            isRecording = false;
+            macroDisplay.removeEventListener("keydown", onKeyDown);
+            macroDisplay.removeEventListener("keyup", onKeyUp);
+            heldKeys.clear();
+            currentCombo = null;
+            renderKeys();
+        }
+    });
+
+    container.appendChild(label);
+    container.appendChild(macroDisplay);
+    container.appendChild(hiddenInput);
 
     return container;
 };

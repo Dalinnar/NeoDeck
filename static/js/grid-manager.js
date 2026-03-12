@@ -1,3 +1,157 @@
+
+// Button Factory
+class ButtonFactory {
+  static registry = {};
+
+  static register(type, classRef) {
+    this.registry[type] = classRef;
+  }
+
+  static createButton(buttonData, index) {
+
+    // 1) Si el plugin registró un botón personalizado:
+    if (buttonData.type && this.registry[buttonData.type]) {
+      return new this.registry[buttonData.type](buttonData, index);
+    }
+
+    // 2) Botones internos del sistema:
+    if (buttonData.custom_generator) {
+      return new CustomButton(buttonData, index);
+    }
+
+    if (buttonData.command === "__multiaction__") {
+      return new MultiActionButton(buttonData, index);
+    }
+
+    if (buttonData.command === "#monitor") {
+      return new MonitorButton(buttonData, index);
+    }
+
+    if (buttonData.command === "#scrollpad" || buttonData.type === "scrollpad") {
+      return new ScrollPadButton(buttonData, index);
+    }
+
+    if (buttonData.command && buttonData.command.startsWith("!")) {
+      return new SliderButton(buttonData, index);
+    }
+
+    // 3) Botón por defecto:
+    return new BaseButton(buttonData, index);
+  }
+}
+window.ButtonFactory = ButtonFactory; // importante para plugins
+
+// Grid Manager class
+class GridManager {
+  constructor() {
+    this.occupiedPositions = new Set();
+  }
+
+  updateGrid(pageData) {
+    this.setupBackground(pageData);
+    this.setupGridContainer(pageData);
+    this.createButtons(pageData);
+    this.fillEmptyGridCells(pageData.rows, pageData.columns);
+    this.setupAdditionalFeatures();
+  }
+
+  setupBackground(pageData) {
+    const main_container = document.querySelector(".main-container");
+    if (pageData.background) {
+      main_container.style.background = pageData.background;
+    }
+    if (pageData.background_img) {
+      Object.assign(main_container.style, {
+        backgroundImage: `url(${pageData.background_img})`,
+        backgroundRepeat: "no-repeat",
+        backgroundSize: "cover",
+        backgroundPosition: "center"
+      });
+    }
+  }
+
+  setupGridContainer(pageData) {
+    const container = document.querySelector(".buttons-container");
+    if (!container) return;
+
+    container.innerHTML = "";
+    this.occupiedPositions.clear();
+
+    const rows = Number(pageData.rows);
+    const cols = Number(pageData.columns);
+    if (!rows || !cols) return;
+
+    Object.assign(container.style, {
+      display: "grid",
+      gridTemplateRows: `repeat(${rows}, 1fr)`,
+      gridTemplateColumns: `repeat(${cols}, 1fr)`,
+      aspectRatio: `${cols} / ${rows}`
+    });
+  }
+
+  createButtons(pageData) {
+    const container = document.querySelector(".buttons-container");
+    if (!container) return;
+    console.log("buttonData:")
+    console.log(pageData.buttons)
+
+    if (pageData.buttons.length === 0) {
+      const hint = document.createElement("div");
+      hint.className = "empty-grid-hint";
+      hint.innerHTML = "Press <strong>Q</strong> to start making buttons";
+      Object.assign(hint.style, {
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        
+        transform: "translate(-50%, -50%)",
+        color: "rgba(255,255,255,0.5)",
+        fontSize: "1.5rem",
+        textAlign: "center",
+        pointerEvents: "none",
+        background:"none",
+        zIndex: "1"
+      });
+      container.appendChild(hint);
+    }
+
+    pageData.buttons.forEach((buttonData, index) => {
+      const button = ButtonFactory.createButton(buttonData, index);
+      const element = button.createElement();
+
+      if (element) {
+        container.appendChild(element);
+        this.occupiedPositions.add(`${buttonData.row}-${buttonData.column}`);
+      }
+    });
+  }
+
+  fillEmptyGridCells(rows, cols) {
+    const container = document.querySelector(".buttons-container");
+    if (!container) return;
+
+    for (let r = 1; r <= rows; r++) {
+      for (let c = 1; c <= cols; c++) {
+        // Skip if this position already has a button
+        if (this.occupiedPositions.has(`${r}-${c}`)) {
+          continue;
+        }
+
+        const element = document.createElement("div");
+        element.style.gridArea = `${r} / ${c}`;
+        element.classList.add("grid-item");
+        container.appendChild(element);
+      }
+    }
+  }
+
+  setupAdditionalFeatures() {
+    setupDragAndDrop();
+    toggle_buttons_edition();
+  }
+}
+
+
 // Base Button class
 class BaseButton {
   constructor(buttonData, index) {
@@ -188,10 +342,8 @@ class MonitorButton extends BaseButton {
 // Slider Button class
 class SliderButton extends BaseButton {
   setupInteractions() {
-    // Ejecuta toda la lógica original
     super.setupInteractions();
 
-    // Si es un slider, lo crea
     if (this.data.command && this.data.command.startsWith("!")) {
       this.createSlider();
     }
@@ -203,6 +355,7 @@ class SliderButton extends BaseButton {
     request_data(this.data.command, "get").then((data) => {
       if (data) {
         range.value = data;
+        if (this.knob) this.updateKnobRotation(this.knob, data);
       }
     });
 
@@ -212,10 +365,151 @@ class SliderButton extends BaseButton {
       max: this.data.max
     });
 
-    this.applySliderOrientation(range);
-    this.setupSliderEvents(range);
+    const rowSpan = (this.data.endrow || this.data.row) - this.data.row;
+    const colSpan = (this.data.endcolumn || this.data.column) - this.data.column;
+    const isSquare = rowSpan === colSpan;
 
+    if (isSquare) {
+      this.createKnob(range);
+    } else {
+      this.applySliderOrientation(range);
+      this.setupSliderEvents(range);
+      this.element.appendChild(range);
+    }
+  }
+
+  createKnob(range) {
+    range.style.display = "none";
     this.element.appendChild(range);
+
+    const knob = document.createElement("div");
+    this.knob = knob;
+    knob.classList.add("knob");
+
+    const knobInner = document.createElement("div");
+    knobInner.classList.add("knob-inner");
+
+    const knobDot = document.createElement("div");
+    knobDot.classList.add("knob-dot");
+
+    knobInner.appendChild(knobDot);
+    knob.appendChild(knobInner);
+
+    const knobLabel = document.createElement("div");
+    knobLabel.classList.add("knob-label");
+    knobLabel.textContent = range.value || range.min || 0;
+    this.knobLabel = knobLabel;
+
+    this.element.appendChild(knob);
+    this.element.appendChild(knobLabel);
+
+    this.setupKnobEvents(knob, range);
+  }
+
+  updateKnobRotation(knob, value) {
+    const min = parseFloat(this.data.min) || 0;
+    const max = parseFloat(this.data.max) || 100;
+    const angle = ((value - min) / (max - min)) * 270 - 135;
+    knob.querySelector(".knob-inner").style.transform = `rotate(${angle}deg)`;
+
+    if (this.knobLabel) {
+      this.knobLabel.textContent = Math.round(value);
+    }
+  }
+
+  setupKnobEvents(knob, range) {
+    let startY, startX, startValue, didDrag;
+    const DRAG_THRESHOLD = 5;
+
+    this.isMuted = false;
+    this.premuteValue = null;
+
+    const toggleMute = () => {
+      if (!this.isMuted) {
+        this.premuteValue = parseFloat(range.value);
+        this.isMuted = true;
+        range.value = 0;
+        this.updateKnobRotation(knob, 0);
+        request_data(this.data.command + " 0");
+        knob.classList.add("knob--muted");
+      } else {
+        const restore = this.premuteValue ?? parseFloat(this.data.max) / 2;
+        this.isMuted = false;
+        range.value = restore;
+        this.updateKnobRotation(knob, restore);
+        request_data(this.data.command + " " + restore);
+        knob.classList.remove("knob--muted");
+      }
+    };
+
+    const onMove = (clientX, clientY) => {
+      if (!didDrag) return;
+      const deltaY = startY - clientY;
+      const deltaX = clientX - startX;
+      const delta = deltaY + deltaX;
+
+      const min = parseFloat(this.data.min) || 0;
+      const max = parseFloat(this.data.max) || 100;
+      const sensitivity = (max - min) / 200;
+
+      const newValue = Math.min(max, Math.max(min, startValue + delta * sensitivity));
+      range.value = newValue;
+      this.updateKnobRotation(knob, newValue);
+    };
+
+    // Mouse
+    knob.addEventListener("mousedown", (e) => {
+      didDrag = false;
+      startY = e.clientY;
+      startX = e.clientX;
+      startValue = parseFloat(range.value) || 0;
+      knob.classList.add("knob--dragging");
+
+      const onMouseMove = (e) => {
+        const dx = Math.abs(e.clientX - startX);
+        const dy = Math.abs(e.clientY - startY);
+        if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) didDrag = true;
+        onMove(e.clientX, e.clientY);
+      };
+      const onMouseUp = () => {
+        if (!didDrag) toggleMute();
+        else request_data(this.data.command + " " + range.value);
+        knob.classList.remove("knob--dragging");
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
+      };
+
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
+      e.preventDefault();
+    });
+
+    // Touch
+    knob.addEventListener("touchstart", (e) => {
+      didDrag = false;
+      const touch = e.touches[0];
+      startY = touch.clientY;
+      startX = touch.clientX;
+      startValue = parseFloat(range.value) || 0;
+
+      const onTouchMove = (e) => {
+        const t = e.touches[0];
+        const dx = Math.abs(t.clientX - startX);
+        const dy = Math.abs(t.clientY - startY);
+        if (dx > DRAG_THRESHOLD || dy > DRAG_THRESHOLD) didDrag = true;
+        onMove(t.clientX, t.clientY);
+      };
+      const onTouchEnd = () => {
+        if (!didDrag) toggleMute();
+        else request_data(this.data.command + " " + range.value);
+        knob.removeEventListener("touchmove", onTouchMove);
+        knob.removeEventListener("touchend", onTouchEnd);
+      };
+
+      knob.addEventListener("touchmove", onTouchMove, { passive: true });
+      knob.addEventListener("touchend", onTouchEnd);
+      e.preventDefault();
+    }, { passive: false });
   }
 
   applySliderOrientation(range) {
@@ -268,50 +562,10 @@ class CustomButton extends BaseButton {
   }
 }
 
-// Button Factory
-class ButtonFactory {
-  static registry = {};
 
-  static register(type, classRef) {
-    this.registry[type] = classRef;
-  }
-
-  static createButton(buttonData, index) {
-
-    // 1) Si el plugin registró un botón personalizado:
-    if (buttonData.type && this.registry[buttonData.type]) {
-      return new this.registry[buttonData.type](buttonData, index);
-    }
-
-    // 2) Botones internos del sistema:
-    if (buttonData.custom_generator) {
-      return new CustomButton(buttonData, index);
-    }
-
-    if (buttonData.command === "__multiaction__") {
-      return new MultiActionButton(buttonData, index);
-    }
-
-    if (buttonData.command === "#monitor") {
-      return new MonitorButton(buttonData, index);
-    }
-
-    if (buttonData.command === "#scrollpad" || buttonData.type === "scrollpad") {
-      return new ScrollPadButton(buttonData, index);
-    }
-
-    if (buttonData.command && buttonData.command.startsWith("!")) {
-      return new SliderButton(buttonData, index);
-    }
-
-    // 3) Botón por defecto:
-    return new BaseButton(buttonData, index);
-  }
-}
-window.ButtonFactory = ButtonFactory; // importante para plugins
 
 class ScrollPadButton extends BaseButton {
-  setupInteractions() { } // Deshabilita BaseButton
+  setupInteractions() { } // Disables BaseButton
 
   createElement() {
     const pad = document.createElement("div");
@@ -347,11 +601,22 @@ class ScrollPadButton extends BaseButton {
       id: this.data.id || "scrollpad_" + Math.random().toString(36).slice(2, 9),
       collect_from: this.data.collect_data_from ?? null,
       rect: null,
+      // Two-finger scroll state
       wheelMode: false,
-      lastDistance: null
+      // Tracks each finger's last Y independently to get stable per-finger delta
+      fingerLastY: new Map(),
+      // Hold-for-right-click state
+      holdTimer: null,
+      holdFired: false,
+      hasMoved: false,
+      // Double-tap-and-drag (click & drag / selection)
+      lastTapTime: 0,       // timestamp of last clean tap release
+      dragLockTimer: null,  // waits to confirm the finger stayed down
+      dragLocked: false,    // true while mouse button is held for drag
     };
 
-    const activeTouches = new Map(); // ⬅️ controles multi-touch
+    // All active pointer positions (used only to detect finger count)
+    const activeTouches = new Map();
 
     const sendMove = payload =>
       ScrollPadButton.socketIOSend({
@@ -361,8 +626,68 @@ class ScrollPadButton extends BaseButton {
         payload
       });
 
+    // ─────────────────────────────────────────────
+    // HOLD TIMER  (right-click after 2 s, no movement)
+    // ─────────────────────────────────────────────
+    const startHoldTimer = () => {
+      clearHoldTimer();
+      state.holdFired = false;
+      state.hasMoved = false;
+      state.holdTimer = setTimeout(() => {
+        if (!state.hasMoved && activeTouches.size === 1) {
+          state.holdFired = true;
+          sendMove({ mode: "hold", ts: Date.now() });
+          // Visual feedback: brief flash
+          pad.style.transition = "background-color 0.1s";
+          pad.style.backgroundColor = "rgba(255,80,80,0.35)";
+          setTimeout(() => {
+            pad.style.backgroundColor = this.data.background_color || "transparent";
+          }, 200);
+        }
+      }, 2000);
+    };
+
+    const clearHoldTimer = () => {
+      if (state.holdTimer !== null) {
+        clearTimeout(state.holdTimer);
+        state.holdTimer = null;
+      }
+    };
+
+    // ─────────────────────────────────────────────
+    // DRAG-LOCK HELPERS  (double-tap + hold → click & drag)
+    // ─────────────────────────────────────────────
+    const DOUBLE_TAP_MS  = 300; // max ms between tap and second touch
+    const DRAG_LOCK_MS   = 150; // finger must stay down this long after double-tap
+
+    const enterDragLock = () => {
+      state.dragLocked = true;
+      state.dragLockTimer = null;
+      sendMove({ mode: "drag_start", ts: Date.now() });
+      // Visual feedback: blue tint while dragging
+      pad.style.transition = "background-color 0.1s";
+      pad.style.backgroundColor = "rgba(80,140,255,0.35)";
+    };
+
+    const exitDragLock = () => {
+      if (!state.dragLocked) return;
+      state.dragLocked = false;
+      sendMove({ mode: "drag_end", ts: Date.now() });
+      pad.style.backgroundColor = this.data.background_color || "transparent";
+    };
+
+    const clearDragLockTimer = () => {
+      if (state.dragLockTimer !== null) {
+        clearTimeout(state.dragLockTimer);
+        state.dragLockTimer = null;
+      }
+    };
+
+    // ─────────────────────────────────────────────
+    // MOUSE MOVEMENT  (single finger / pointer)
+    // ─────────────────────────────────────────────
     const handleMove = (x, y) => {
-      if (state.wheelMode) return; // ⬅️ NO mover mouse en wheel mode
+      if (state.wheelMode) return;
 
       if (!state.lastPos) {
         state.lastPos = { x, y };
@@ -390,52 +715,69 @@ class ScrollPadButton extends BaseButton {
       state.lastPos = { x, y };
     };
 
-    const detectTwoFingerScroll = () => {
-      if (activeTouches.size !== 2) {
-        state.wheelMode = false;
-        state.lastDistance = null;
-        return;
-      }
+    // ─────────────────────────────────────────────
+    // TWO-FINGER SCROLL
+    //
+    // FIX: instead of comparing finger positions to each other
+    // (unstable — Map order can vary), we track each finger's own
+    // previous Y and accumulate the average delta across both fingers.
+    // This means the sign is always correct and there's no flip.
+    // ─────────────────────────────────────────────
+    const processTwoFingerScroll = (pointerId, currentY) => {
+      if (activeTouches.size !== 2) return;
 
-      const pts = [...activeTouches.values()];
-      const dy = pts[0].y - pts[1].y;
-      const absDy = Math.abs(dy);
+      const prevY = state.fingerLastY.get(pointerId);
+      state.fingerLastY.set(pointerId, currentY);
 
-      const distance = absDy;
+      if (prevY === undefined) return; // first sample for this finger
 
-      // primera medición
-      if (state.lastDistance === null) {
-        state.lastDistance = distance;
-        state.wheelMode = true;
-        return;
-      }
+      const dy = currentY - prevY; // positive = finger moved down = scroll up (natural)
 
-      const diff = distance - state.lastDistance;
-      state.lastDistance = distance;
-
-      if (Math.abs(diff) > 2) {
+      if (Math.abs(dy) > 1) {
         sendMove({
           mode: "wheel",
-          dy: diff * 0.5,
+          // Negate so "fingers move down → content scrolls down" (matches natural scroll)
+          dy: -(dy * 0.5 * state.sensitivity),
           ts: Date.now()
         });
       }
     };
 
+    // ─────────────────────────────────────────────
+    // END INTERACTION
+    // ─────────────────────────────────────────────
     const endInteraction = () => {
+      clearHoldTimer();
+      clearDragLockTimer();
+
+      if (state.dragLocked) {
+        // Finger lifted while drag-locked → release mouse button
+        exitDragLock();
+        state.dragging = false;
+        state.lastPos = null;
+        state.wheelMode = false;
+        state.fingerLastY.clear();
+        setTimeout(() => (window.isUsingScrollPad = false), 250);
+        return;
+      }
+
       if (!state.dragging) return;
 
       state.dragging = false;
       state.lastPos = null;
+      state.wheelMode = false;
+      state.fingerLastY.clear();
 
-      sendMove({ mode: "stop", ts: Date.now() });
+      if (!state.holdFired) {
+        sendMove({ mode: "stop", ts: Date.now() });
+      }
 
       setTimeout(() => (window.isUsingScrollPad = false), 250);
     };
 
-    // -------------------------------
+    // ─────────────────────────────────────────────
     // POINTER EVENTS
-    // -------------------------------
+    // ─────────────────────────────────────────────
     pad.addEventListener("pointerdown", ev => {
       if (window.menu_open) return;
       ev.preventDefault();
@@ -443,17 +785,40 @@ class ScrollPadButton extends BaseButton {
       window.isUsingScrollPad = true;
 
       activeTouches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      state.fingerLastY.set(ev.pointerId, ev.clientY);
 
       pad.setPointerCapture(ev.pointerId);
 
       if (activeTouches.size === 1) {
         state.dragging = true;
+        state.wheelMode = false;
         state.rect = pad.getBoundingClientRect();
         state.lastPos = { x: ev.clientX, y: ev.clientY };
+
+        const now = Date.now();
+        const timeSinceLastTap = now - state.lastTapTime;
+
+        if (timeSinceLastTap < DOUBLE_TAP_MS && !state.dragLocked) {
+          // Second tap arrived quickly — wait DRAG_LOCK_MS to see if finger stays down
+          clearDragLockTimer();
+          state.dragLockTimer = setTimeout(() => {
+            // Finger is still down → enter drag lock (mouse button held)
+            enterDragLock();
+            // Don't start hold-for-right-click during a drag
+            clearHoldTimer();
+          }, DRAG_LOCK_MS);
+          // Don't start hold timer yet — we're in double-tap detection window
+        } else {
+          // Normal first tap
+          startHoldTimer();
+        }
       }
 
       if (activeTouches.size === 2) {
         state.wheelMode = true;
+        state.hasMoved = true;
+        clearHoldTimer();
+        clearDragLockTimer();
       }
     });
 
@@ -461,42 +826,70 @@ class ScrollPadButton extends BaseButton {
       if (window.menu_open) return;
       ev.preventDefault();
 
-      if (activeTouches.has(ev.pointerId)) {
-        activeTouches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+      if (!activeTouches.has(ev.pointerId)) return;
+
+      activeTouches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+
+      if (state.wheelMode) {
+        // Two-finger scroll: process per-finger delta
+        processTwoFingerScroll(ev.pointerId, ev.clientY);
+        return;
       }
 
-      detectTwoFingerScroll();
-
-      if (!state.dragging || state.wheelMode) return;
-
+      // Single-finger move
       handleMove(ev.clientX, ev.clientY);
+
+      // If moved significantly, cancel the hold timer
+      if (!state.hasMoved && state.lastPos) {
+        const dx = ev.clientX - state.lastPos.x;
+        const dy = ev.clientY - state.lastPos.y;
+        if (Math.sqrt(dx * dx + dy * dy) > 8) {
+          state.hasMoved = true;
+          clearHoldTimer();
+        }
+      }
     });
 
     pad.addEventListener("pointerup", ev => {
       ev.preventDefault();
       activeTouches.delete(ev.pointerId);
+      state.fingerLastY.delete(ev.pointerId);
 
       if (activeTouches.size < 2) {
         state.wheelMode = false;
-        state.lastDistance = null;
       }
 
-      if (activeTouches.size === 0) endInteraction();
+      if (activeTouches.size === 0) {
+        // If the drag-lock timer is still pending, this was a quick lift —
+        // treat as a normal tap (record time) and cancel the drag-lock attempt
+        if (state.dragLockTimer !== null) {
+          clearDragLockTimer();
+          // Record this as a valid tap time so a future quick tap can trigger drag-lock
+          if (!state.hasMoved) state.lastTapTime = Date.now();
+        } else if (!state.dragLocked && !state.hasMoved && !state.holdFired) {
+          // Clean tap — record time for double-tap detection
+          state.lastTapTime = Date.now();
+        }
+
+        endInteraction();
+      }
 
       try { pad.releasePointerCapture(ev.pointerId); } catch { }
     });
 
     pad.addEventListener("pointercancel", ev => {
       activeTouches.delete(ev.pointerId);
+      state.fingerLastY.delete(ev.pointerId);
       endInteraction();
     });
 
     pad.addEventListener("pointerleave", ev => {
       activeTouches.delete(ev.pointerId);
+      state.fingerLastY.delete(ev.pointerId);
       endInteraction();
     });
 
-    // PC Wheel
+    // PC mouse wheel
     pad.addEventListener("wheel", ev => {
       if (window.menu_open) return;
       ev.preventDefault();
@@ -511,7 +904,7 @@ class ScrollPadButton extends BaseButton {
     return pad;
   }
 
-  // SOCKET.IO
+  // ── SOCKET.IO ──────────────────────────────────
   static socket = null;
 
   static ensureSocketIO() {
@@ -536,6 +929,9 @@ class ScrollPadButton extends BaseButton {
     ScrollPadButton.socket.emit("scrollpad_move", data);
   }
 }
+
+
+
 class MultiActionButton extends BaseButton {
   constructor(buttonData, index) {
     super(buttonData, index);
@@ -562,7 +958,7 @@ class MultiActionButton extends BaseButton {
           }
         }
 
-        if (cmd.startsWith("/")) {
+        if (cmd.startsWith("/") || cmd.startsWith("!")) {
           request_data(cmd);
         }
       });
@@ -570,92 +966,7 @@ class MultiActionButton extends BaseButton {
   }
 }
 
-// Grid Manager class
-class GridManager {
-  constructor() {
-    this.occupiedPositions = new Set();
-  }
 
-  updateGrid(pageData) {
-    this.setupBackground(pageData);
-    this.setupGridContainer(pageData);
-    this.createButtons(pageData);
-    this.fillEmptyGridCells(pageData.rows, pageData.columns);
-    this.setupAdditionalFeatures();
-  }
-
-  setupBackground(pageData) {
-    const main_container = document.querySelector(".main-container");
-    if (pageData.background) {
-      main_container.style.background = pageData.background;
-    }
-    if (pageData.background_img) {
-      Object.assign(main_container.style, {
-        backgroundImage: `url(${pageData.background_img})`,
-        backgroundRepeat: "no-repeat",
-        backgroundSize: "cover",
-        backgroundPosition: "center"
-      });
-    }
-  }
-
-  setupGridContainer(pageData) {
-    const container = document.querySelector(".buttons-container");
-    if (!container) return;
-
-    container.innerHTML = "";
-    this.occupiedPositions.clear();
-
-    const rows = Number(pageData.rows);
-    const cols = Number(pageData.columns);
-    if (!rows || !cols) return;
-
-    Object.assign(container.style, {
-      display: "grid",
-      gridTemplateRows: `repeat(${rows}, 1fr)`,
-      gridTemplateColumns: `repeat(${cols}, 1fr)`,
-      aspectRatio: `${cols} / ${rows}`
-    });
-  }
-
-  createButtons(pageData) {
-    const container = document.querySelector(".buttons-container");
-    if (!container) return;
-
-    pageData.buttons.forEach((buttonData, index) => {
-      const button = ButtonFactory.createButton(buttonData, index);
-      const element = button.createElement();
-
-      if (element) {
-        container.appendChild(element);
-        this.occupiedPositions.add(`${buttonData.row}-${buttonData.column}`);
-      }
-    });
-  }
-
-  fillEmptyGridCells(rows, cols) {
-    const container = document.querySelector(".buttons-container");
-    if (!container) return;
-
-    for (let r = 1; r <= rows; r++) {
-      for (let c = 1; c <= cols; c++) {
-        // Skip if this position already has a button
-        if (this.occupiedPositions.has(`${r}-${c}`)) {
-          continue;
-        }
-
-        const element = document.createElement("div");
-        element.style.gridArea = `${r} / ${c}`;
-        element.classList.add("grid-item");
-        container.appendChild(element);
-      }
-    }
-  }
-
-  setupAdditionalFeatures() {
-    setupDragAndDrop();
-    toggle_buttons_edition();
-  }
-}
 
 const gridManager = new GridManager();
+

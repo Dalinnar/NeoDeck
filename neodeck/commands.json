@@ -8,6 +8,15 @@
         "image_size": "50%"
       }
     },
+
+    "multi action button":{
+      "command" :"__multiaction__",
+      "inputs": [],
+      "style": {
+        "image": "multiaction.png",
+        "image_size": "50%"
+      }
+    },
     "Reload page": {
       "command": "$reload()",
       "inputs": [],
@@ -39,7 +48,7 @@
       }
     }
   },
-  "trackpad":{
+  "remote_inputs":{
     "trackpad":{
       "command": "#scrollpad",
       "inputs": [],
@@ -48,8 +57,18 @@
         "image": "",
         "image_size": ""
       }
-    }
-  },
+    },
+    "virtual_keyboard":{
+      "command": "$vt_keyboard()",
+      "inputs": [],
+
+      "style":{
+        "image": "keyboard.svg",
+        "image_size": "75%"
+        
+      }
+  }
+},
   "Display": {
     "CPU": {
       "command": "#monitor",
@@ -225,6 +244,14 @@
           "inputs": [],
           "min": "0",
           "max": "100"
+        },
+        "volume_mixer": {
+          "command" : "$vol_mixer()",
+          "inputs": [],
+          "style" :{
+            "image": "vol_mixer.png",
+            "image_size": "75%"
+          }
         },
         "mute_toggle": {
           "command": "/soundcontrol_mute",
@@ -532,10 +559,16 @@
       "command": "/macro {macro}",
       "inputs": [
         {
-          "TYPE": "textarea",
+          "TYPE": "macro_rec",
           "name": "macro"
+          
         }
-      ]
+        
+      ],
+      "style":{
+        "image": "key.png",
+        "image_size": "75%"
+      }
     }
   },
   "Utilities": {

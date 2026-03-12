@@ -10,7 +10,7 @@ from flask import jsonify
 
 
 
-from app.buttons.audio.volume import set_volume,get_volume,get_mute
+from app.buttons.audio.volume import set_volume,get_volume,get_mute,set_mixer_volume,get_app_volume
 from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
@@ -68,6 +68,7 @@ monitors_map = {
 getter_map = {
     "!volume":                 lambda: get_volume(),
     "/soundcontrol_mute":     lambda: get_mute(),
+    "!app_volume":              lambda message: get_app_volume(message),
 }
 
 command_map ={
@@ -91,7 +92,10 @@ command_map ={
         "/clipboard":               lambda: pyautogui.hotkey("win", "v"),
         "/restartexplorer":         lambda: actions.restart_explorer(),
 
-        "/key":                     lambda message: pyautogui.press(message.replace("/key", "", 1).strip()),
+        "/key": lambda message: (
+    print(repr(message.replace("/key", "", 1).strip())),
+    pyautogui.press(message.replace("/key", "", 1).strip().lower())
+),
         "/delete_folder":           lambda message: actions.delete_folder(message.replace("/delete_folder ", "")),
         "/writeandsend":            lambda message: (keyboard.write(message.replace("/writeandsend ","")) or keyboard.press("ENTER")),
         "/write":                   lambda message: keyboard.write(message.replace("/write ", "")),
@@ -99,6 +103,7 @@ command_map ={
         "/setoutputdevice":         lambda message: audio.set_speakers_by_name(message.replace("/setoutputdevice", "").strip()),
         "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
+        "!app_volume":              lambda message: set_mixer_volume(message),
 
         "/colorpicker":             lambda : actions.get_color_under_cursor(),
         "/exec":                    lambda message: exec.python(message),

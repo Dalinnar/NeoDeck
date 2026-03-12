@@ -1,142 +1,175 @@
 import os
 import json
 from app.utils.working_dir import get_base_dir
+
 BASE_DIR = get_base_dir()
+CONFIG_DIR = os.path.join(BASE_DIR, ".config")
+SETTINGS_PATH = os.path.join(CONFIG_DIR, "settings.json")
 
 
+# =========================
+# Helpers
+# =========================
 
-def get_availeable_languages():
+def get_available_languages():
+    """
+    Returns available languages as a dict:
+    { "en_US": "en_US.lang", ... }
+    """
+    translations_path = os.path.join(BASE_DIR, "neodeck", "translations")
     languages = {}
 
-    for root, dirs, files in os.walk(os.path.join(BASE_DIR, "neodeck", "translations")):
-        for index, file in enumerate(files):
-            if file.endswith(".lang"):
-                languages[index] = file.split(".")[0]
-    
+    if not os.path.exists(translations_path):
+        return languages
+
+    for file in os.listdir(translations_path):
+        if file.endswith(".lang"):
+            lang = file.rsplit(".", 1)[0]
+            languages[lang] = file
+
     return languages
 
-def get_port():
-    return loaded_settings["neodeck"].get("port", 5000)
+
+def merge_defaults(defaults, current):
+    """
+    Recursively merge defaults into current settings.
+    User values always win.
+    """
+    if not isinstance(defaults, dict):
+        return current
+
+    result = dict(defaults)
+
+    for key, value in current.items():
+        if (
+            key in result
+            and isinstance(result[key], dict)
+            and isinstance(value, dict)
+        ):
+            result[key] = merge_defaults(result[key], value)
+        else:
+            result[key] = value
+
+    return result
 
 
+# =========================
+# DEFAULT SETTINGS
+# =========================
+
+DEFAULT_SETTINGS = {
+    "neodeck": {
+        "server": "flask",
+        "plugins_repo": "Dalinnar/NeoDeck-plugins",
+        "update_repo": "Dalinnar/NeoDeck",
+        "update_channel": "stable",
+
+        "ip": "0.0.0.0",
+        "port": 59997,
+
+        "language": "en_US",
+
+        "data_transfer_method": "http",
+        "allowed_networks": [],
+        "netmask": "16",
+
+        "auto_updates": True,
+        "dev_mode": False,
+
+        "windows_startup": True,
+        "windows_start_menu_shortcut": False,
+        "open_settings_in_integrated_browser": False,
+
+        "show_popup": True,
+        "show_console": False,
+        "optimized_usage_display": False,
+
+        "ear_soundboard": True,
+        "fix_stop_soundboard": False,
+
+        "gpu_method": "nvidia (pynvml)",
+
+        "automatic_firewall_bypass": False,
+        "sort_colors_on_startup": False,
+
+        "flask_debug": False,
+        "flask_reloader": False,
+        "flask_secret_key": "secret",
+        "use_root_plugins": False,
+        "app_admin": False,
+    }
+}
+
+
+# =========================
+# IO FUNCTIONS
+# =========================
 
 def write_default_settings():
-    config_dir = os.path.join(BASE_DIR, ".config")
-    settings_path = os.path.join(config_dir, "settings.json")
+    """Write default settings to disk"""
+    os.makedirs(CONFIG_DIR, exist_ok=True)
 
-    # Crear carpeta .config si no existe
-    os.makedirs(config_dir, exist_ok=True)
-
-    def_settings = {
-        "neodeck": {
-            "server": "flask",
-            "plugins_repo": "Dalinnar/NeoDeck-plugins",
-            "open_settings_in_integrated_browser": False,
-            "ear_soundboard": True,
-            "allowed_networks": [],
-            "data_transfer_method": "http",
-            "ip": "0.0.0.0",
-            "dev_mode": False,
-            "windows_start_menu_shortcut": False,
-            "show_popup": True,
-            "auto_updates": True,
-            "gpu_method": "nvidia (pynvml)",
-            "update_channel": "stable",
-            "windows_startup": True,
-            "flask_debug": False,
-            "flask_secret_key": "secret",
-            "update_repo": "dalinnar",
-            "show_console": False,
-            "optimized_usage_display": False,
-            "flask_reloader": False,
-            "fix_stop_soundboard": False,
-            "app_admin": False,
-            "port": "59997",
-            "sort_colors_on_startup": False,
-            "automatic_firewall_bypass": False,
-            "language": "en_US",
-            "netmask": "16"
-        }
-    }
-
-    with open(settings_path, "w", encoding="utf-8") as f:
-        json.dump(def_settings, f, indent=4)
-           
+    with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(DEFAULT_SETTINGS, f, indent=4)
 
 
 def get_settings(category=None, specific_setting=None):
-    settings_path = os.path.join(BASE_DIR, ".config", "settings.json")
-
-    # Si no existe, crear settings por defecto
-    if not os.path.exists(settings_path):
+    """
+    Load settings from disk and merge with defaults.
+    """
+    if not os.path.exists(SETTINGS_PATH):
         write_default_settings()
 
     try:
-        with open(settings_path, "r", encoding="utf-8") as f:
-            settings = json.load(f)
-
-        if category is not None:
-            settings = settings.get(category, {})
-            if specific_setting is not None:
-                return settings.get(specific_setting)
-
-        return settings
-
+        with open(SETTINGS_PATH, "r", encoding="utf-8") as f:
+            user_settings = json.load(f)
     except json.JSONDecodeError:
-        # Archivo corrupto → regenerar
         write_default_settings()
-        return get_settings(category, specific_setting)
-    
-def get_default_settings():
-    """returns a python type dyct with the sum of all settings"""
-    return default_settings
-    
+        user_settings = {}
+
+    merged_settings = merge_defaults(DEFAULT_SETTINGS, user_settings)
+
+    if category:
+        merged_settings = merged_settings.get(category, {})
+        if specific_setting:
+            return merged_settings.get(specific_setting)
+
+    return merged_settings
+
+
+def save_settings(settings):
+    """
+    Save settings to disk.
+    Assumes settings are already validated/merged.
+    """
+    os.makedirs(CONFIG_DIR, exist_ok=True)
+
+    with open(SETTINGS_PATH, "w", encoding="utf-8") as f:
+        json.dump(settings, f, indent=4)
+
+    return settings
+
+
+# =========================
+# CONVENIENCE ACCESSORS
+# =========================
+
 def get_base_settings():
-    """returns only the base settings"""
-    return get_settings()["neodeck"]
-
-def load_settings(settings):
-    if not settings:
-        return
-    # Elimina claves con valor vacío
-    cleaned_settings = {k: v for k, v in settings.items() if v != ""}
-
-    with open(os.path.join(BASE_DIR, ".config", "settings.json"), "w") as f:
-        json.dump(cleaned_settings, f, indent=4)
-    return cleaned_settings
-base_settings = {
-        "ip": "0.0.0.0",
-        "port": 59997,
-        "language": get_availeable_languages(),
-        "show_popup": False,
-        "windows_startup": True,
-        "windows_start_menu_shortcut": False,
-        "auto_updates": True,
-        "update_channel": "stable",
-        "update_repo": "Lenochxd/Neodeck",
-        "plugins_repo" : "Dalinnar/NeoDeck-plugins",
-        "dev_mode": False,
-        "server": "flask",
-        "flask_debug": True,
-        "flask_reloader": False,
-        "flask_secret_key": "secret",
-        "app_admin": True,
-        "optimized_usage_display": False,
-        "gpu_method": "nvidia (pynvml)",
-        "show_console": False,
-        "open_settings_in_integrated_browser": False,
-        "data_transfer_method": "http",
-        "automatic_firewall_bypass": False,
-        "sort_colors_on_startup": False,
-        "fix_stop_soundboard": False,
-        "ear_soundboard": True,
-        "allowed_networks": [],
-        "netmask": "16"
-    }
+    """Returns neodeck settings only"""
+    return get_settings("neodeck")
 
 
-#append the default settings 
+def get_port():
+    return get_settings("neodeck", "port") or 5000
+
+
+def get_default_settings():
+    """Returns DEFAULT_SETTINGS (single source of truth)"""
+    return DEFAULT_SETTINGS
+
+
+# =========================
+# INITIAL LOAD
+# =========================
+
 loaded_settings = get_settings()
-
-default_settings = {}
-default_settings["neodeck"] = base_settings

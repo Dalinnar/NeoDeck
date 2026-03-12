@@ -1,5 +1,6 @@
 import subprocess
-import re
+import ast
+
 from pynput.keyboard import Key, Controller
 import ctypes
 import os
@@ -7,7 +8,6 @@ import time
 import psutil
 from PIL import ImageGrab
 import pyperclip
-from GPUtil import getGPUs
 import win32api
 
 import comtypes
@@ -171,27 +171,6 @@ def get_color_under_cursor():
     }
 
 
-def get_gpus_info():
-    try:
-        gpus = {}
-        for gpu in getGPUs():
-            name = gpu.name
-            used_mb = gpu.memoryUsed
-            total_mb = gpu.memoryTotal
-            usage_percent = round((gpu.load * 100), 1)
-            
-            key = name if name not in gpus else f"{name} #{len([k for k in gpus if k.startswith(name)]) + 1}"
-
-            gpus[key] = {
-                "used_mb": used_mb,
-                "total_mb": total_mb,
-                "usage_percent": f"{usage_percent:.1f}%"
-            }
-        return gpus
-    except Exception as e:
-        print("GPU detection error:", e)
-        return {}
-    
 
 def open_file(message):
     try:
@@ -219,57 +198,79 @@ def open_file(message):
 keyboard = Controller()
 
 # Mapa de teclas especiales
-SPECIAL_KEYS = {
-    f"@{key}": value
-    for key, value in Key.__dict__.items()
-    if not key.startswith('_') and not callable(value)
+KEY_NAME_MAP = {
+    "ctrl":      Key.ctrl,
+    "shift":     Key.shift,
+    "alt":       Key.alt,
+    "meta":      Key.cmd,
+    "enter":     Key.enter,
+    "space":     Key.space,
+    "tab":       Key.tab,
+    "esc":       Key.esc,
+    "escape":    Key.esc,
+    "backspace": Key.backspace,
+    "delete":    Key.delete,
+    "up":        Key.up,
+    "down":      Key.down,
+    "left":      Key.left,
+    "right":     Key.right,
 }
 
-def parse_macro_and_execute(macro_text):
-    tokens = parse_macro(macro_text)
-    execute_macro(tokens)
+# F1–F12
+for i in range(1, 13):
+    KEY_NAME_MAP[f"f{i}"] = getattr(Key, f"f{i}")
 
-def parse_macro(macro_text):
-    print(f"Parsing macro: {macro_text}")
-    # Divide por partes (simultáneas, comandos o texto normal)
-    tokens = re.findall(r'\{.*?\}|@\w+(?:_\d+ms)?|[^\{@]+', macro_text)
-    return tokens
 
-def execute_macro(tokens):
-    for token in tokens:
-        token = token.strip()
-        if not token:
-            continue
-        if token.startswith("{") and token.endswith("}"):
-            # Teclas simultáneas
-            keys = re.findall(r'@[\w\d_]+|.', token[1:-1])
-            _press_simultaneously(keys)
-        elif token.startswith("@wait_"):
-            delay = int(re.findall(r'\d+', token)[0]) / 1000
-            time.sleep(delay)
-        elif token.startswith("@"):
-            key = SPECIAL_KEYS.get(token)
-            if key:
-                keyboard.press(key)
-                keyboard.release(key)
-            else:
-                print(f"Unknown special key: {token}")
-        else:
-            for char in token:
-                keyboard.press(char)
-                keyboard.release(char)
+def resolve_key(part: str):
+    """
+    Convierte un string como 'Ctrl', 'a', 'F1', 'Space' en el objeto key de pynput.
+    """
+    lower = part.lower().strip()
+    if lower in KEY_NAME_MAP:
+        return KEY_NAME_MAP[lower]
+    # Caracter normal (letra, número, símbolo)
+    if len(part) == 1:
+        return part
+    print(f"[macro] Unknown key part: '{part}'")
+    return None
 
-def _press_simultaneously(keys):
-    key_objs = []
+
+def execute_combo(combo: str):
+    """
+    Ejecuta una combo tipo 'Ctrl+Alt+a+d':
+    presiona todas las teclas en orden y las suelta en orden inverso.
+    """
+    parts = combo.split("+")
+    keys = [resolve_key(p) for p in parts]
+    keys = [k for k in keys if k is not None]
+
     for k in keys:
-        if k.startswith("@"):
-            key_objs.append(SPECIAL_KEYS.get(k))
-        else:
-            key_objs.append(k)
-
-    # Press all
-    for k in key_objs:
         keyboard.press(k)
-    # Release all
-    for k in reversed(key_objs):
+    for k in reversed(keys):
         keyboard.release(k)
+
+def parse_macro_and_execute(macro_text: str):
+    macro_text = macro_text.strip()
+
+    try:
+        combos = ast.literal_eval(macro_text)
+    except (ValueError, SyntaxError):
+        print(f"[macro] Invalid macro format: {macro_text}")
+        return
+
+    for combo in combos:
+        combo = combo.strip()
+        if not combo:
+            continue
+
+        if combo.startswith("@wait_") and combo.endswith("ms"):
+            try:
+                ms = int(combo[6:-2])
+                if ms > 0:
+                    time.sleep(ms / 1000)
+            except ValueError:
+                print(f"[macro] Invalid wait format: '{combo}'")
+            continue
+
+        print(f"[macro] Executing combo: {combo}")
+        execute_combo(combo)

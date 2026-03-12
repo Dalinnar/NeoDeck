@@ -4,7 +4,7 @@ from PIL import Image
 #from .settings.get_config import get_config, save_config
 from .logger import log
 from .languages import text
-from settings import loaded_settings,load_settings
+from settings import loaded_settings,save_settings
 
 
 def show_popup():
@@ -44,7 +44,7 @@ def show_popup():
     def disable_message():
         log.info("Disabling popup message")
         loaded_settings["neodeck"]["show_popup"] = False
-        load_settings(loaded_settings)
+        save_settings(loaded_settings)
         popup.destroy()
 
     def ok():

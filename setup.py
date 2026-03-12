@@ -6,17 +6,27 @@ console_base = None
 
 build_exe_options = {
     "excludes": [
-        "unittest", "xml", "distutils", "setuptools", "pkg_resources"
+        # Standard library
+        "unittest", "test", "pydoc", "doctest",
+        "distutils", "setuptools", "pkg_resources",
+        "email", "mailbox", "imaplib", "poplib", "smtplib",
+        "ftplib", "socketserver",
+        "sqlite3", "dbm", "pickle", "shelve",
+        "xml", "html", "csv",
+        "asyncio", "concurrent",
+        "turtle", "curses", "pty", "tty",
+        "multiprocessing", "queue",
+        "mimetypes", "uu",
+        "ensurepip", "venv", "zipimport",
     ],
     "include_files": [
         "satisfied_installs.txt",
         "requirements.txt",
         "run.py",
-        "plugins",
-        ".temp",
         "static",
         "app",
         "settings.py",
+        "updater.py",
         "neodeck",
         "version.txt",
         "templates",
@@ -39,12 +49,7 @@ executables = [
         base=console_base,
         target_name="NeodeckLauncherConsole.exe",
         icon="static/icons/icon.ico",
-    ),
-    Executable(
-        script="updater.py",
-        base="Console",
-        target_name="NeodeckUpdater.exe",
-    ),
+    )
 ]
 
 setup(

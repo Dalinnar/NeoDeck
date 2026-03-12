@@ -1,100 +1,69 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>plugins Store</title>
-
-    <link rel="stylesheet" href="/static/css/plugins.css">
-    <script src="/static/js/default_functions.js"></script>
-
+    <title>Plugin Store</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC&family=Noto+Sans:ital,wght@0,100..900;1,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap"
-        rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/plugins.css">
+    <script defer src="/static/js/default_functions.js"></script>
+    <script src="/static/js/load_plugins.js"></script>
+    <style></style>
 </head>
-
 <body>
-    <div class=""></div>
-    <div class="plugin-store">
-        <div class="plugin-grid" id="plugin-grid"></div>
-    </div>
 
-<script>
-const domain = "http://localhost/plugins"; // base fija de los plugins
+    <nav>
+        <a class="nav-back" onclick="history.back()" href="#">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7"/>
+            </svg>
+            Back
+        </a>
+        <div class="nav-divider"></div>
+        <span class="nav-title">Plugin Store</span>
+        <span class="nav-badge" id="plugin-count">— plugins</span>
+        <div class="nav-spacer"></div>
+        <div class="nav-search">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input type="text" placeholder="Search plugins…" id="search-input">
+        </div>
+    </nav>
 
-fetch(`${domain}/manifest.json`)
-  .then(response => {
-    if (!response.ok) throw new Error("Error al obtener el JSON");
-    return response.json();
-  })
-  .then(plugins => {   // AHORA plugins ES LA LISTA DIRECTA
-    const grid = document.getElementById("plugin-grid");
+    <main>
+        <div class="store-header">
+            <h1>Available Plugins</h1>
+            <p>Extend your experience</p>
+        </div>
+        <div class="plugin-store">
+            <div class="plugin-grid" id="plugin-grid"></div>
+        </div>
+    </main>
 
-    plugins.forEach(plugin => {
-        const pluginDiv = document.createElement("div");
-        pluginDiv.classList.add("plugin-item");
-        pluginDiv.style.cursor = "pointer";
-
-        // Navegar al plugin
-        pluginDiv.addEventListener("click", () => {
-            window.location.href = `/plugin/${plugin.slug}`;
-        });
-
-        // Icono
-        const icon = document.createElement("img");
-        icon.src = `${domain}/${plugin.slug}/icon.jpg`;
-        icon.alt = plugin.name;
-        icon.classList.add("plugin-icon");
-
-        // Nombre
-        const name = document.createElement("h3");
-        name.textContent = plugin.name;
-        name.classList.add("plugin-name");
-
-        // Descripción
-        const desc = document.createElement("p");
-        desc.textContent = plugin.description;
-        desc.classList.add("plugin-desc");
-
-        // Versión y autor
-        const meta = document.createElement("small");
-        const authors = Array.isArray(plugin.author) ? plugin.author.join(", ") : plugin.author;
-        meta.textContent = `v${plugin.version} • ${authors}`;
-        meta.classList.add("plugin-meta");
-
-        // Agregar elementos al DIV ANTES del botón
-        pluginDiv.appendChild(icon);
-        pluginDiv.appendChild(name);
-        pluginDiv.appendChild(desc);
-        pluginDiv.appendChild(meta);
-
-        // Botón al repo (si existe)
-        if (plugin.repository) {
-            const repoBtn = document.createElement("button");
-            repoBtn.textContent = "Go to Repository";
-            repoBtn.classList.add("install-btn");
-            repoBtn.style.marginTop = "8px";
-
-            repoBtn.addEventListener("click", e => {
-                e.stopPropagation();
-                window.open(plugin.repository, "_blank");
+    <script>
+        // Animate items with staggered delay
+        const observer = new MutationObserver(() => {
+            const items = document.querySelectorAll('.plugin-item');
+            items.forEach((el, i) => {
+                el.style.animationDelay = `${i * 40}ms`;
             });
+            const count = items.length;
+            document.getElementById('plugin-count').textContent = `${count} plugin${count !== 1 ? 's' : ''}`;
+        });
+        observer.observe(document.getElementById('plugin-grid'), { childList: true });
 
-            pluginDiv.appendChild(repoBtn);
-        }
+        // Search filtering (works with dynamically loaded plugins)
+        document.getElementById('search-input').addEventListener('input', function() {
+            const q = this.value.toLowerCase();
+            document.querySelectorAll('.plugin-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(q) ? '' : 'none';
+            });
+        });
+    </script>
 
-        // Poner todo en el grid
-        grid.appendChild(pluginDiv);
-    });
-  })
-  .catch(error => {
-    console.error("Error:", error);
-  });
-</script>
 </body>
-
 </html>

@@ -10,9 +10,8 @@ import threading
 from math import sqrt
 from win32com.client import Dispatch
 from settings import *
-from app.updater import check_files, check_for_updates
 from app.utils.get_local_ip import get_local_ip
-from settings import load_settings
+from settings import save_settings
 from app.utils.args import get_arg
 from app.utils.logger import log
 
@@ -51,15 +50,38 @@ def sort_colors():
         json.dump(sorted_colors, f, indent=4)
 
 def get_gpu_method():
-    import pynvml
-    if "gpu_method" not in loaded_settings["neodeck"]:
-        loaded_settings["neodeck"]["gpu_method"] = "nvidia (pynvml)"
-    if loaded_settings["neodeck"]["gpu_method"] == "nvidia (pynvml)":
-        try:
-            pynvml.nvmlInit()
-        except pynvml.NVMLError:
-            loaded_settings["neodeck"]["gpu_method"] = "AMD"
-    load_settings(loaded_settings)
+    neodeck = loaded_settings.setdefault("neodeck", {})
+    
+    # Return cached value if available
+    if "gpu_method" in neodeck:
+        return neodeck["gpu_method"]
+    
+    gpu_method = "unknown"
+    
+    try:
+        result = subprocess.check_output(
+            ["wmic", "path", "win32_VideoController", "get", "Name,CurrentHorizontalResolution"],
+            text=True
+        )
+        
+        # Map GPU names to methods
+        gpu_map = {"nvidia": "nvidia", "amd": "amd", "radeon": "amd", "intel": "intel"}
+        
+        for line in result.splitlines():
+            if any(char.isdigit() for char in line):  # Active GPU has resolution
+                line_lower = line.lower()
+                for gpu_name, method in gpu_map.items():
+                    if gpu_name in line_lower:
+                        gpu_method = method
+                        break
+                break
+    except Exception:
+        pass
+    
+    neodeck["gpu_method"] = gpu_method
+    save_settings(loaded_settings)
+    return gpu_method
+
 
 def fix_vlc_cache():
     if os.name != 'nt':
@@ -97,14 +119,12 @@ def handle_shortcut():
 def on_start():
     create_directories()
     handle_shortcut()
-    check_files()
+    
     get_gpu_method()
-    if (loaded_settings["neodeck"].get("auto_updates", True) or get_arg('force_update')) and not get_arg('no_auto_update'):
-        check_for_updates()
     local_ip = get_local_ip()
     if loaded_settings["neodeck"].get("ip") == "local_ip":
         loaded_settings["neodeck"]["ip"] = local_ip
-        load_settings(loaded_settings)
+        save_settings(loaded_settings)
     threading.Thread(target=on_start_threaded, args=(loaded_settings["neodeck"].get("sort_colors_on_startup", False),)).start()
     return local_ip
 

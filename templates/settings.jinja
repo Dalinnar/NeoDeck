@@ -56,12 +56,12 @@
         const h2 = document.createElement('h2');
         const key = categ.replace(/[\s\-]+/g, "_").toUpperCase() + "_CATEGORY_NAME";
         h2.textContent = getTranslation(key);
-        h2.onclick = () => load_settings(categ);
+        h2.onclick = () => save_settings(categ);
         div.appendChild(h2);
         section_container.appendChild(div);
     }
 
-    function load_settings(categ) {
+    function save_settings(categ) {
         let prefixes = ["#", "_"]
         currentCategory = categ;
         const settings_container = document.querySelector('.settings_container');

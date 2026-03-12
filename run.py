@@ -19,7 +19,7 @@ import win32gui
 import win32con
 
 from app.server import run_server
-from app.tray import create_tray_icon
+from app.tray import generate_tray_icon
 
 
 # Redirect stderr to file
@@ -96,7 +96,7 @@ def main():
     if not get_arg("no_tray"):
         log.info("Starting tray icon")
         try:
-            create_tray_icon()
+            generate_tray_icon()
         except Exception as e:
             log.error(f"Error in tray icon: {e}")
     else:

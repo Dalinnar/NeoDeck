@@ -13,8 +13,10 @@ from launcher_ui import StatusWindow
 NO_WIN = subprocess.CREATE_NO_WINDOW
 
 REPO_URL = "https://github.com/Dalinnar/NeoDeck"
-repo_key = "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"
 
+# =========================
+# LOG ERROR
+# =========================
 
 def log_error(msg, base_dir):
     log_path = os.path.join(base_dir, "error.log")
@@ -53,7 +55,6 @@ def github_request(url):
         headers={
             "User-Agent": "NeoDeck",
             "Accept": "application/vnd.github+json",
-            "Authorization": f"Bearer {repo_key}",
         },
     )
 
@@ -63,17 +64,71 @@ def get_remote_version():
     return data["tag_name"].lstrip("v")
 
 # =========================
-# PYTHON + DEPS
+# WINDOWS MESSAGEBOX
 # =========================
 
-def find_python():
-    for py in (["py", "-3.11"], ["python"], ["python3"], [sys.executable]):
-        try:
-            subprocess.run(py + ["--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return py
-        except Exception:
-            pass
-    raise RuntimeError("Python not found")
+def ask_update(version):
+    MB_YESNO = 0x04
+    MB_ICONQUESTION = 0x20
+    IDYES = 6
+
+    msg = f"A new version ({version}) is available.\nDo you want to update now?"
+    result = ctypes.windll.user32.MessageBoxW(0, msg, "Update NeoDeck", MB_YESNO | MB_ICONQUESTION)
+    return result == IDYES
+
+# =========================
+# PYTHON + DEPS
+# =========================
+def install_python_311(base_dir):
+    url = "https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe"
+    installer = os.path.join(base_dir, "python_installer.exe")
+    urllib.request.urlretrieve(url, installer)
+    subprocess.run([
+        installer,
+        "/quiet",
+        "InstallAllUsers=0",
+        "PrependPath=1",
+        "Include_launcher=1"
+    ], check=True)
+    os.remove(installer)
+
+
+def find_python(is_console=False, base_dir=""):
+    log_error("[FIND_PYTHON] Starting Python 3.11 search...", base_dir)
+    
+    try:
+        log_error("[FIND_PYTHON] Attempting: py -3.11 --version", base_dir)
+        subprocess.run(
+            ["py", "-3.11", "--version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        log_error("[FIND_PYTHON] ✓ Found py -3.11", base_dir)
+        return ["py", "-3.11"]
+    except Exception as e:
+        log_error(f"[FIND_PYTHON] ✗ py -3.11 not found: {e}", base_dir)
+
+    log_error("[FIND_PYTHON] Python 3.11 not found, attempting installation...", base_dir)
+    try:
+        install_python_311(base_dir)
+    except Exception as e:
+        log_error(f"[FIND_PYTHON] ✗ Installation failed: {e}", base_dir)
+        raise
+
+    log_error("[FIND_PYTHON] Verifying installation: py -3.11 --version", base_dir)
+    try:
+        subprocess.run(
+            ["py", "-3.11", "--version"],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=True
+        )
+        log_error("[FIND_PYTHON] ✓ Python 3.11 verified and ready", base_dir)
+        return ["py", "-3.11"]
+    except Exception as e:
+        log_error(f"[FIND_PYTHON] ✗ Verification failed: {e}", base_dir)
+        raise RuntimeError("Python 3.11 installation failed")
 
 def hash_file(p):
     h = hashlib.sha256()
@@ -81,33 +136,79 @@ def hash_file(p):
     return h.hexdigest()
 
 def install_deps(python, base_dir, is_console, status):
+    log_error("[INSTALL_DEPS] Starting dependency installation...", base_dir)
+    log_error(f"[INSTALL_DEPS] Python executable: {python}", base_dir)
+    log_error(f"[INSTALL_DEPS] Working directory: {base_dir}", base_dir)
+    
     req = os.path.join(base_dir, "requirements.txt")
     if not os.path.exists(req):
+        log_error("[INSTALL_DEPS] ✓ requirements.txt not found, skipping", base_dir)
         return
+
+    log_error(f"[INSTALL_DEPS] ✓ Found requirements.txt at: {req}", base_dir)
 
     hfile = os.path.join(base_dir, ".deps_hash")
     h = hash_file(req)
+    log_error(f"[INSTALL_DEPS] Requirements hash: {h}", base_dir)
 
-    if os.path.exists(hfile) and open(hfile).read() == h:
-        return
+    if os.path.exists(hfile):
+        old_hash = open(hfile).read()
+        if old_hash == h:
+            log_error("[INSTALL_DEPS] ✓ Dependencies already installed (hash match), skipping", base_dir)
+            return
+        else:
+            log_error(f"[INSTALL_DEPS] Hash mismatch (old: {old_hash} → new: {h}), reinstalling...", base_dir)
+    else:
+        log_error("[INSTALL_DEPS] No hash file found, installing fresh...", base_dir)
 
     status("Installing dependencies...")
-    subprocess.check_call(
-        python + ["-m", "pip", "install", "-r", "requirements.txt"],
-        cwd=base_dir,
-        creationflags=0 if is_console else NO_WIN,
-    )
-    open(hfile, "w").write(h)
+    
+    try:
+        log_error("[INSTALL_DEPS] Running: pip install -r requirements.txt", base_dir)
+        result = subprocess.run(
+            python + ["-m", "pip", "install", "-r", "requirements.txt"],
+            cwd=base_dir,
+            creationflags=0 if is_console else NO_WIN,
+            check=False,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            error_output = result.stderr + result.stdout
+            log_error(f"[INSTALL_DEPS] ✗ Pip install failed (code {result.returncode})", base_dir)
+            log_error(f"[INSTALL_DEPS] STDOUT: {result.stdout}", base_dir)
+            log_error(f"[INSTALL_DEPS] STDERR: {result.stderr}", base_dir)
+            status(f"Pip error: {error_output[:200]}")
+            raise subprocess.CalledProcessError(result.returncode, result.args, output=error_output)
+        
+        log_error("[INSTALL_DEPS] ✓ All dependencies installed successfully", base_dir)
+        open(hfile, "w").write(h)
+        log_error(f"[INSTALL_DEPS] ✓ Hash file saved: {hfile}", base_dir)
+        
+    except subprocess.CalledProcessError as e:
+        log_error(f"[INSTALL_DEPS] ✗ Failed to install dependencies: {str(e)}", base_dir)
+        status(f"Failed to install dependencies: {str(e)}")
+        raise
 
 # =========================
 # MAIN
 # =========================
+
+import argparse
+
+def parse_args():
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("--skip_update", action="store_true")
+    return parser.parse_known_args()[0]
 
 def main():
     is_frozen = getattr(sys, "frozen", False)
     base_dir = os.path.dirname(sys.executable) if is_frozen else os.path.dirname(__file__)
     is_console = is_frozen and "Console" in sys.executable
 
+    args = parse_args()
+    
     ensure_single_instance("NeoDeckLauncherConsole" if is_console else "NeoDeckLauncherGUI")
     ui = None if is_console else StatusWindow()
 
@@ -116,27 +217,71 @@ def main():
 
     def worker():
         try:
-            status("Checking updates...")
-            if parse(get_remote_version()) > parse(read_local_version(base_dir)):
-                status("Update available, launching updater...")
-                subprocess.Popen(
-                   [os.path.join(base_dir, "NeodeckUpdater.exe")],
-                    creationflags=subprocess.CREATE_NEW_CONSOLE,
-                    )
- 
-                if ui:
-                    ui.root.quit()
-                return
+            log_error("[WORKER] ========== LAUNCHER STARTED ==========", base_dir)
+            log_error(f"[WORKER] is_frozen: {is_frozen}", base_dir)
+            log_error(f"[WORKER] base_dir: {base_dir}", base_dir)
+            log_error(f"[WORKER] is_console: {is_console}", base_dir)
+            log_error(f"[WORKER] skip_update: {args.skip_update}", base_dir)
+            
+            if not args.skip_update:
+                try:
+                    status("Checking updates...")
+                    log_error("[WORKER] Fetching remote version from GitHub...", base_dir)
 
-            python = find_python()
+                    remote_ver = get_remote_version()
+                    log_error(f"[WORKER] Remote version: {remote_ver}", base_dir)
+
+                    local_ver = read_local_version(base_dir)
+                    log_error(f"[WORKER] Local version: {local_ver}", base_dir)
+
+                    if parse(remote_ver) > parse(local_ver):
+                        log_error(f"[WORKER] Update available: {local_ver} → {remote_ver}", base_dir)
+
+                        if ask_update(remote_ver):
+                            log_error("[WORKER] User accepted update", base_dir)
+                            status("Launching updater...")
+
+                            python = find_python(is_console, base_dir)
+
+                            subprocess.Popen(
+                                python + [os.path.join(base_dir, "updater.py")],
+                                cwd=base_dir,
+                                creationflags=subprocess.CREATE_NEW_CONSOLE,
+                            )
+
+                            if ui:
+                                ui.root.quit()
+                            return
+
+                        else:
+                            log_error("[WORKER] User declined update", base_dir)
+                            status("Update cancelled by user.")
+
+                    else:
+                        log_error("[WORKER] ✓ No update needed", base_dir)
+
+                except Exception as e:
+                    log_error(f"[WORKER] Update check failed, continuing normally: {e}", base_dir)
+                    status("Update check failed, continuing...")
+            else:
+                log_error("[WORKER] ✓ Update check skipped (--skip_update flag set)", base_dir)
+
+            log_error("[WORKER] Finding Python for main app...", base_dir)
+            python = find_python(is_console, base_dir)
+            log_error(f"[WORKER] Python found: {python}", base_dir)
+            
+            log_error("[WORKER] Installing dependencies...", base_dir)
             install_deps(python, base_dir, is_console, status)
+            log_error("[WORKER] ✓ Dependencies installed", base_dir)
 
             status("Starting NeoDeck...")
+            log_error("[WORKER] Launching NeoDeck with: python run.py", base_dir)
             subprocess.Popen(
                 python + ["run.py"],
                 cwd=base_dir,
                 creationflags=subprocess.CREATE_NEW_CONSOLE if is_console else NO_WIN,
             )
+            log_error("[WORKER] ✓ NeoDeck launched successfully", base_dir)
 
             if ui:
                 ui.root.after(300, ui.root.quit)
@@ -144,15 +289,21 @@ def main():
         except Exception as e:
             import traceback
             error_msg = f"{type(e).__name__}: {e}\n" + traceback.format_exc()
+            log_error("[WORKER] ✗✗✗ CRITICAL ERROR ✗✗✗", base_dir)
+            log_error(error_msg, base_dir)
+            log_error("[WORKER] ========== ERROR LOGGED ==========", base_dir)
             if threading.main_thread().is_alive():
                 print(error_msg) if is_console else status(f"Error: {str(e)}")
-            log_error(error_msg, base_dir)
             if ui:
                 ui.root.after(3000, ui.root.quit)
 
-    threading.Thread(target=worker, daemon=True).start()
+    worker_thread = threading.Thread(target=worker, daemon=False)
+    worker_thread.start()
+    
     if ui:
         ui.root.mainloop()
+    else:
+        worker_thread.join(timeout=60)
 
 if __name__ == "__main__":
     main()

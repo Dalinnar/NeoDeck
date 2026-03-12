@@ -35,11 +35,10 @@ author_github_username=Dalinnar
 # --------------------------------------------------------------------------------------
 
 
-#errors ------------------------------------------------------------
 
 no_files_found_error=No files found.
-downloaded_successfully=Downloaded successfully.
 file_not_found_error=File not found.
+downloaded_successfully=Downloaded successfully.
 file_deleted_successfully=File deleted successfully.
 randomize=Randomize
 save=Save
@@ -97,7 +96,9 @@ SYSTEM_media_control__category_name=Media Control
 TEXT_CATEGORY_NAME=Text
 UTILITIES_CATEGORY_NAME=Utilities
 NEODECK_CATEGORY_NAME=NeoDeck
-
+TOGGLE_CONSOLE_0=Show console
+TOGGLE_CONSOLE_1=Hide console
+open_plugins_folder=Open plugins forder
 
 #default buttons
 #Display

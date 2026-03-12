@@ -35,7 +35,9 @@ class Selection {
     }
 
     _handleMouseDown(event) {
-        if (document.querySelector("#pages-container.hidden") || event.target.closest("button, input, textarea, .button_div, .menuContainer, #pages-container")) return;
+        if (!window.menu_open || window.dialogopen) return;
+        
+        if (document.querySelector("#pages-container.hidden") || event.target.closest("button, input, textarea, .button_div, .menuContainer, #pages-container","dialog" )) return;
 
         const gridItem = event.target.closest(".grid-item"),
               inButtons = document.querySelector("#buttons-container")?.contains(event.target);

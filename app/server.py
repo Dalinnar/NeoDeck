@@ -11,21 +11,25 @@ from tkinter import filedialog
 from flask import ( Flask, abort, jsonify, make_response,render_template, request, send_file, send_from_directory, )
 from flask_socketio import SocketIO
 from flask.wrappers import Response
-from flask_minify import Minify
-from GPUtil import getGPUs
 
-from app.tray import change_server_state
+import time
+from pynput.mouse import Controller, Button
+import pyautogui
+mouse = Controller()
+
+from app.tray import change_server_state,restart_program
 from app.utils.args import get_arg
 from app.utils.languages import text
 from app.utils.logger import log
-from app.utils.plugins.load_plugins import load_plugins
+from app.utils.plugins.load_plugins import load_plugins,update_plugin
 from app.utils.plugins.plugin_fetcher import *
 from app.utils.settings.audio_devices import get_audio_devices
 #from app.utils.settings.get_config import get_port
 from app.utils.working_dir import get_base_dir
 from app.utils.firewall import check_firewall_permission, fix_firewall_permission
+from urllib import parse
 
-from settings import (default_settings,get_settings,load_settings,loaded_settings,get_port)
+from settings import (get_settings,save_settings,get_port,get_default_settings)
 from .buttons.commands import get_monitors, process_command
 from .functions import *
 from .on_start import on_start
@@ -48,11 +52,13 @@ template_folder = os.path.join(base_dir, 'templates')
 static_folder = os.path.join(base_dir, 'static')
 
 
+loaded_settings = get_settings()
+
 app = CustomFlask(__name__, template_folder=template_folder, static_folder=static_folder)
 commands = load_plugins(app)
 # app custon functions
 app.get_settings = get_settings
-app.load_settings = load_settings
+app.save_settings = save_settings
 app.BASE_DIR = base_dir
 app.local_ip = local_ip
 app.url_path = f"{get_arg('host') or local_ip}:{get_port()}"
@@ -66,11 +72,8 @@ app.jinja_env.globals.update(
     get_audio_devices=get_audio_devices,
     mdebug=log.debug
 )
-if getattr(sys, "frozen", False):
-    Minify(app=app, html=True, js=True, cssless=True)
-app.config["SECRET_KEY"] = loaded_settings["neodeck"].get("secret_key", "secret_key")
 
-
+app.config["SECRET_KEY"] = get_settings("neodeck").get("secret_key","secret_key")
 
 @app.route("/monitors", methods=["POST"])
 def usage():
@@ -128,6 +131,148 @@ DEFAULT_PAGES = {
     }
 }
 
+
+
+
+scrollpad_state = {}
+
+# Timing protection constants
+CLICK_COOLDOWN   = 0.1    # avoids double-click spam
+DRAG_END_COOLDOWN = 0.15  # prevents click right after drag
+MOVE_THRESHOLD   = 2      # movement below this = still a tap
+STOP_DEBOUNCE    = 0.05   # protects against SocketIO async duplicate events
+SCREEN_W, SCREEN_H = pyautogui.size()
+SENSITIVITY = 3.0
+
+
+def get_state(scrollpad_id):
+    if scrollpad_id not in scrollpad_state:
+        scrollpad_state[scrollpad_id] = {
+            "moved":       False,
+            "last_click":  0,
+            "drag_ended":  0,
+            "last_stop":   0,
+            "last_hold":   0,
+        }
+    return scrollpad_state[scrollpad_id]
+
+
+@socketio.on("scrollpad_move")
+def handle_scrollpad_move(data):
+    try:
+        scrollpad_id = data.get("id", "unknown")
+        payload      = data.get("payload", {})
+        mode         = payload.get("mode")
+
+        st  = get_state(scrollpad_id)
+        now = time.time()
+
+        # ─────────────────────────────────
+        # RELATIVE MODE
+        # ─────────────────────────────────
+        if mode == "relative":
+            dx = payload.get("dx", 0) * SENSITIVITY
+            dy = payload.get("dy", 0) * SENSITIVITY
+
+            print(f"[{now:.4f}] REL {scrollpad_id} dx={dx:.1f} dy={dy:.1f}")
+
+            if abs(dx) > MOVE_THRESHOLD or abs(dy) > MOVE_THRESHOLD:
+                st["moved"] = True
+
+            mouse.move(dx, dy)
+
+        # ─────────────────────────────────
+        # ABSOLUTE MODE
+        # ─────────────────────────────────
+        elif mode == "absolute":
+            abs_x = int(SCREEN_W * payload.get("x", 0))
+            abs_y = int(SCREEN_H * payload.get("y", 0))
+
+            print(f"[{now:.4f}] ABS {scrollpad_id} -> ({abs_x}, {abs_y})")
+
+            st["moved"] = True
+            mouse.position = (abs_x, abs_y)
+
+        # ─────────────────────────────────
+        # TWO-FINGER WHEEL MODE
+        # ─────────────────────────────────
+        elif mode == "wheel":
+            dy = payload.get("dy", 0)
+
+            print(f"[{now:.4f}] WHEEL {scrollpad_id} dy={dy:.2f}")
+
+            # pynput scroll: positive = up, negative = down
+            # dy from client is already sign-corrected (finger-down → positive dy = scroll down)
+            mouse.scroll(0, -dy)
+
+        # ─────────────────────────────────
+        # DRAG START  → press and hold left button
+        # ─────────────────────────────────
+        elif mode == "drag_start":
+            print(f"[{now:.4f}] DRAG START {scrollpad_id}")
+            mouse.press(Button.left)
+            st["moved"] = True  # prevent stop from firing a click on release
+
+        # ─────────────────────────────────
+        # DRAG END  → release left button
+        # ─────────────────────────────────
+        elif mode == "drag_end":
+            print(f"[{now:.4f}] DRAG END {scrollpad_id}")
+            mouse.release(Button.left)
+            st["drag_ended"] = now
+            st["moved"] = True
+
+        # ─────────────────────────────────
+        # HOLD MODE  → right-click
+        # ─────────────────────────────────
+        elif mode == "hold":
+            print(f"[{now:.4f}] HOLD {scrollpad_id} → RIGHT CLICK")
+
+            # Debounce to avoid firing twice on shaky release
+            if now - st["last_hold"] >= CLICK_COOLDOWN:
+                mouse.click(Button.right, 1)
+                st["last_hold"] = now
+                # Mark as moved so the subsequent "stop" event won't fire a left-click
+                st["moved"] = True
+
+        # ─────────────────────────────────
+        # STOP MODE  → left-click (tap) or end drag
+        # ─────────────────────────────────
+        elif mode == "stop":
+            print(f"[{now:.4f}] STOP {scrollpad_id} moved={st['moved']}")
+
+            if now - st["last_stop"] < STOP_DEBOUNCE:
+                print("   - ignored: STOP debounce")
+                return
+            st["last_stop"] = now
+
+            if now - st["drag_ended"] < DRAG_END_COOLDOWN:
+                st["moved"] = False
+                return
+
+            if not st["moved"]:
+                if now - st["last_click"] >= CLICK_COOLDOWN:
+                    print("   - TAP → LEFT CLICK")
+                    mouse.click(Button.left, 1)
+                    st["last_click"] = now
+            else:
+                st["drag_ended"] = now
+
+            st["moved"] = False
+
+    except Exception as e:
+        print(f"[ScrollPad Error] {e}")
+
+
+@socketio.on("connect")
+def handle_connect():
+    print(f"Client connected! SID: {request.sid}")
+
+
+@socketio.on("disconnect")
+def handle_disconnect():
+    print(f"Client disconnected! SID: {request.sid}")
+
 @app.route('/')
 def home():
     context = {}
@@ -170,7 +315,7 @@ def home():
 def settings_page():
     context = {}
     context["text"] = text()
-    context["default_settings"] = default_settings
+    context["default_settings"] = get_default_settings()
     context["saved_settings"] = loaded_settings
     return render_template("settings.jinja", context=context)
 
@@ -178,62 +323,94 @@ def settings_page():
 @app.route("/plugins")
 def plugins_page():
     context = {}
-    # Get installed plugins
-    #context["installed_plugins"] = app.blueprints
-    #context["plugins_namelist"] = list(app.blueprints.keys())
-    #
-    ## Fetch metadata for installed plugins
-    #installed_metadata = {}
-    #for plugin_name in context["plugins_namelist"]:
-    #    if hasattr(app.blueprints[plugin_name], "metadata"):
-    #        installed_metadata[plugin_name] = app.blueprints[plugin_name].metadata
-    #
-    #context["installed_metadata"] = installed_metadata
-    # Get plugin data from repository
-    #data = get_github_file_content("plugins.json")
-    #context["repo"] = loaded_settings["neodeck"].get("plugins_repo", "Dalinnar/NeoDeck-plugins")
-    #data = json.loads(data)
-    #context["plugins_data"] = data
     
     return render_template("plugins.jinja", context=context)
 
+@app.route("/restart_app", methods=["POST"])
+def restart_app():
+    restart_program(True)
+    return None
 
-@app.route('/gitcontent/<user>/<repo>/<path:file_path>')
-def get_github_image(user, repo, file_path):
-    GITHUB_RAW_URL = "https://raw.githubusercontent.com"
-    token = loaded_settings["neodeck"].get("token", "")
-    branch = "main"  # Puedes hacerlo dinámico si necesitas
-    github_url = f"{GITHUB_RAW_URL}/{user}/{repo}/refs/heads/{branch}/{file_path}"
-    #headers with the api key
-    headers = {
-        "Authorization": f"token {token}",
-        "Accept": "application/vnd.github.v3.raw"
-    }
-    response = requests.get(github_url,headers=headers)
+
+
+@app.route("/plugin/<plugin_name>")
+def plugin_solo(plugin_name):
+    context = {}
+    context["plugin_name"] = plugin_name
+    context["plugin_version"] = app.plugins["installed"].get(plugin_name, "unknown")
+    print(context["plugin_name"])
+    print(context["plugin_version"])
     
-    if response.status_code == 200:
-        return Response(response.content, content_type=response.headers["Content-Type"])
+    return render_template("plugin_solo.jinja", context=context)
+
+@app.route('/download_mod', methods=['GET', 'POST'])
+def download_mod():
+    """Download and install/update a plugin from a .deck file URL"""
+    from urllib import parse
+
+    def fully_decode_url(url):
+        prev = None
+        while prev != url:
+            prev = url
+            url = parse.unquote(url)
+        return url
+
+    # Get the link from query parameters
+    link = request.args.get('link')
+
+    if not link:
+        return jsonify({'error': 'No link provided'}), 400
+
+    try:
+        decoded_link = fully_decode_url(link)
+    except Exception as e:
+        return jsonify({'error': f'Invalid link format: {str(e)}'}), 400
+
+    log.info(f"Received download request for: {decoded_link}")
+
+    if not isinstance(decoded_link, str) or not decoded_link.startswith(('http://', 'https://')):
+        return jsonify({'error': 'Invalid URL format'}), 400
+
+    if not decoded_link.endswith('.deck'):
+        return jsonify({'error': 'URL must point to a .deck file'}), 400
+
+    result = update_plugin(decoded_link)
+    log.info(f"update_plugin result: {result}")
+
+    if result['success']:
+        return jsonify({
+            'status': 'success',
+            'message': result['message'],
+            'plugin_name': result['plugin_name'],
+            'version': result['version'],
+            'old_version': result.get('old_version')
+        }), 200
     else:
-        return abort(404)
+        return jsonify({
+            'status': 'error',
+            'message': result['message'],
+            'plugin_name': result.get('plugin_name', 'unknown')
+        }), 400
+
+
 @app.route("/api/<value>")
 def api(value):
     
     value_map = {
         "disks": [p.device[0] for p in psutil.disk_partitions()],
-        "gpus": [gpu.name for gpu in getGPUs()],
         "deck_folders" : load_deck_folders()
     }
     return jsonify(value_map[value])
 
 @app.route("/save_settings", methods=["POST"])
-def save_settings():
+def save_settings_view():
     global loaded_settings
     data = request.get_json()
     if not data:
         return jsonify({"success": False, "message": "No data provided"}), 400
     
-    new_merge = deep_merge(deep_merge(default_settings, loaded_settings), data)
-    load_settings(new_merge)
+    new_merge = deep_merge(deep_merge(get_default_settings(), loaded_settings), data)
+    save_settings(new_merge)
     loaded_settings = get_settings()
     return jsonify({"success": True})
 
@@ -352,6 +529,18 @@ def update_folder_data(folder_name):
 
     return jsonify({"success": True,"message": "Folder data updated successfully","folder": pages[folder_name]})
 
+#get_audio_sessions
+@app.route("/retrive_audio_sessions", methods=["GET"])
+def retrive_audio_sessions():
+    from app.buttons.audio.volume import get_audio_sessions
+    from app.buttons.audio.volume import generate_audio_mixer_folder
+    
+    sessions = get_audio_sessions()  # lista de dicts
+    folder = generate_audio_mixer_folder(sessions)
+    return jsonify(folder)
+
+    
+
 
 @app.route("/get_page/<folder_name>", methods=["GET"])
 def get_page(folder_name):
@@ -462,9 +651,13 @@ def run_server():
     change_server_state(1)
 
     is_exe = getattr(sys, "frozen", False)
-    use_werkzeug = default_settings["neodeck"].get("server") == "werkzeug"
-    debug_enabled = loaded_settings["neodeck"].get("flask_debug")
-    reloader_enabled = loaded_settings["neodeck"].get("flask_reloader", False)
+
+    neodeck = get_settings("neodeck")
+
+    use_werkzeug = neodeck.get("server") == "werkzeug"
+    debug_enabled = neodeck.get("flask_debug")
+    reloader_enabled = neodeck.get("flask_reloader", False)
+    
 
     # -------------------------------------------------
     # DEVELOPMENT MODE
@@ -496,117 +689,3 @@ def run_server():
 if __name__ == "__main__":
     run_server()
 
-
-import time
-from pynput.mouse import Controller, Button
-import pyautogui
-mouse = Controller()
-
-scrollpad_state = {}
-
-# Timing protection constants
-CLICK_COOLDOWN = 0.1       # avoids double click spam
-DRAG_END_COOLDOWN = 0.15    # prevents click right after drag
-MOVE_THRESHOLD = 2          # movement below this = still a tap
-STOP_DEBOUNCE = 0.05        # protects against SocketIO async duplicate events
-SCREEN_W, SCREEN_H = pyautogui.size()
-SENSITIVITY = 3.0
-
-def get_state(scrollpad_id):
-    if scrollpad_id not in scrollpad_state:
-        scrollpad_state[scrollpad_id] = {
-            "moved": False,
-            "last_click": 0,
-            "drag_ended": 0,
-            "last_stop": 0
-        }
-    return scrollpad_state[scrollpad_id]
-
-
-@socketio.on("scrollpad_move")
-def handle_scrollpad_move(data):
-    try:
-        scrollpad_id = data.get("id", "unknown")
-        payload = data.get("payload", {})
-        mode = payload.get("mode")
-
-        st = get_state(scrollpad_id)
-        now = time.time()
-
-        # -------------------------
-        # RELATIVE MODE
-        # -------------------------
-        if mode == "relative":
-            dx = payload.get("dx", 0) * SENSITIVITY
-            dy = payload.get("dy", 0) * SENSITIVITY
-
-            print(f"[{now:.4f}] REL {scrollpad_id} dx={dx} dy={dy}")
-
-            if abs(dx) > MOVE_THRESHOLD or abs(dy) > MOVE_THRESHOLD:
-                st["moved"] = True
-
-            mouse.move(dx, dy)
-            return
-
-        # -------------------------
-        # ABSOLUTE MODE
-        # -------------------------
-        elif mode == "absolute":
-            abs_x = int(SCREEN_W * payload.get("x", 0))
-            abs_y = int(SCREEN_H * payload.get("y", 0))
-
-            print(f"[{now:.4f}] ABS {scrollpad_id} -> ({abs_x}, {abs_y})")
-
-            st["moved"] = True
-            mouse.position = (abs_x, abs_y)
-            return
-
-        # -------------------------
-        # TWO-FINGER WHEEL MODE
-        # -------------------------
-        elif mode == "wheel":
-            dy = payload.get("dy", 0)
-
-            print(f"[{now:.4f}] WHEEL {scrollpad_id} dy={dy}")
-
-            mouse.scroll(0, dy)
-            return
-
-        # -------------------------
-        # STOP MODE
-        # -------------------------
-        elif mode == "stop":
-            print(f"[{now:.4f}] STOP {scrollpad_id} moved={st['moved']}")
-
-            if now - st["last_stop"] < STOP_DEBOUNCE:
-                print("   - ignored: STOP debounce")
-                return
-            st["last_stop"] = now
-
-            if now - st["drag_ended"] < DRAG_END_COOLDOWN:
-                st["moved"] = False
-                return
-
-            if not st["moved"]:
-                if now - st["last_click"] >= CLICK_COOLDOWN:
-                    print("   - TAP → CLICK")
-                    mouse.click(Button.left, 1)
-                    st["last_click"] = now
-
-            else:
-                st["drag_ended"] = now
-
-            st["moved"] = False
-
-    except Exception as e:
-        print(f"[ScrollPad Error] {e}")
-
-
-@socketio.on("connect")
-def handle_connect():
-    print(f"Client connected! SID: {request.sid}")
-
-
-@socketio.on("disconnect")
-def handle_disconnect():
-    print(f"Client disconnected! SID: {request.sid}")
