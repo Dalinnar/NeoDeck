@@ -33,7 +33,7 @@ jobs:
         run: python setup.py build_exe
 
       - name: Zip the build
-        run: python setup.py
+        run: python -c "import setup; setup.zip_build()"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
