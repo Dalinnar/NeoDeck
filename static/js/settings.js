@@ -149,6 +149,205 @@ function createSettingInput(setting, descriptor, current_value, is_secret) {
             });
             break;
 
+        case 'textarea':
+            input = document.createElement('textarea');
+            input.value = current_value ?? '';
+            input.rows = descriptor.rows || 4;
+            if (is_secret) input.classList.add('secret');
+            break;
+
+        case 'password':
+            input = document.createElement('input');
+            input.type = 'password';
+            input.value = current_value ?? '';
+            break;
+
+        case 'color':
+            input = document.createElement('input');
+            input.type = 'color';
+            input.value = current_value || '#000000';
+            break;
+
+        case 'range':
+            input = document.createElement('input');
+            input.type = 'range';
+            input.min = descriptor.min ?? 0;
+            input.max = descriptor.max ?? 100;
+            input.step = descriptor.step ?? 1;
+            input.value = current_value ?? descriptor.min ?? 0;
+            // Show live value next to slider
+            const rangeDisplay = document.createElement('span');
+            rangeDisplay.classList.add('range-display');
+            rangeDisplay.textContent = input.value;
+            input.addEventListener('input', () => rangeDisplay.textContent = input.value);
+            // Return early with custom layout
+            input.id = setting;
+            input.name = setting;
+            input.addEventListener('change', () => markChanged());
+            const rangeWrapper = document.createElement('div');
+            rangeWrapper.style.display = 'flex';
+            rangeWrapper.style.alignItems = 'center';
+            rangeWrapper.style.gap = '8px';
+            rangeWrapper.append(input, rangeDisplay);
+            return [rangeWrapper, label];
+
+        case 'integer':
+            input = document.createElement('input');
+            input.type = 'number';
+            input.step = '1';
+            input.value = current_value ?? 0;
+            if (descriptor.min !== undefined) input.min = descriptor.min;
+            if (descriptor.max !== undefined) input.max = descriptor.max;
+            if (is_secret) input.classList.add('secret');
+            break;
+
+        case 'tags': {
+            const tagWrapper = document.createElement('div');
+            tagWrapper.classList.add('tags-input');
+            tagWrapper.id = setting;
+            tagWrapper.name = setting;
+            tagWrapper.dataset.tags = JSON.stringify(
+                Array.isArray(current_value) ? current_value : []
+            );
+            const tagList = document.createElement('div');
+            tagList.classList.add('tag-list');
+            const tagInput = document.createElement('input');
+            tagInput.type = 'text';
+            tagInput.placeholder = descriptor.placeholder || 'Add tag…';
+            const renderTags = () => {
+                const tags = JSON.parse(tagWrapper.dataset.tags);
+                tagList.innerHTML = '';
+                tags.forEach((t, i) => {
+                    const chip = document.createElement('span');
+                    chip.classList.add('tag-chip');
+                    chip.textContent = t;
+                    const rm = document.createElement('button');
+                    rm.textContent = '×';
+                    rm.onclick = () => {
+                        tags.splice(i, 1);
+                        tagWrapper.dataset.tags = JSON.stringify(tags);
+                        renderTags();
+                        markChanged();
+                    };
+                    chip.appendChild(rm);
+                    tagList.appendChild(chip);
+                });
+            };
+            tagInput.addEventListener('keydown', e => {
+                if ((e.key === 'Enter' || e.key === ',') && tagInput.value.trim()) {
+                    e.preventDefault();
+                    const tags = JSON.parse(tagWrapper.dataset.tags);
+                    const val = tagInput.value.trim().replace(/,$/, '');
+                    if (val && !tags.includes(val)) {
+                        tags.push(val);
+                        tagWrapper.dataset.tags = JSON.stringify(tags);
+                        renderTags();
+                        markChanged();
+                    }
+                    tagInput.value = '';
+                }
+            });
+            renderTags();
+            tagWrapper.append(tagList, tagInput);
+            return [tagWrapper, label];
+        }
+
+        case 'keyvalue': {
+            const kvWrapper = document.createElement('div');
+            kvWrapper.classList.add('kv-input');
+            kvWrapper.id = setting;
+            kvWrapper.name = setting;
+            const pairs = current_value && typeof current_value === 'object'
+                ? Object.entries(current_value)
+                : [];
+            kvWrapper.dataset.pairs = JSON.stringify(pairs);
+            const kvTable = document.createElement('div');
+            kvTable.classList.add('kv-table');
+            const renderPairs = () => {
+                const rows = JSON.parse(kvWrapper.dataset.pairs);
+                kvTable.innerHTML = '';
+                rows.forEach(([k, v], i) => {
+                    const row = document.createElement('div');
+                    row.classList.add('kv-row');
+                    const kInput = document.createElement('input');
+                    kInput.type = 'text'; kInput.value = k; kInput.placeholder = 'key';
+                    const vInput = document.createElement('input');
+                    vInput.type = 'text'; vInput.value = v; vInput.placeholder = 'value';
+                    const rm = document.createElement('button');
+                    rm.textContent = '×';
+                    [kInput, vInput].forEach(inp => inp.addEventListener('input', () => {
+                        rows[i] = [kInput.value, vInput.value];
+                        kvWrapper.dataset.pairs = JSON.stringify(rows);
+                        markChanged();
+                    }));
+                    rm.onclick = () => {
+                        rows.splice(i, 1);
+                        kvWrapper.dataset.pairs = JSON.stringify(rows);
+                        renderPairs();
+                        markChanged();
+                    };
+                    row.append(kInput, vInput, rm);
+                    kvTable.appendChild(row);
+                });
+                const addBtn = document.createElement('button');
+                addBtn.textContent = '+ Add';
+                addBtn.onclick = () => {
+                    rows.push(['', '']);
+                    kvWrapper.dataset.pairs = JSON.stringify(rows);
+                    renderPairs();
+                    markChanged();
+                };
+                kvTable.appendChild(addBtn);
+            };
+            renderPairs();
+            kvWrapper.appendChild(kvTable);
+            return [kvWrapper, label];
+        }
+
+        case 'json': {
+            input = document.createElement('textarea');
+            input.value = typeof current_value === 'string'
+                ? current_value
+                : JSON.stringify(current_value, null, 2);
+            input.rows = descriptor.rows || 6;
+            input.classList.add('json-input');
+            input.addEventListener('change', () => {
+                try { JSON.parse(input.value); input.classList.remove('json-error'); }
+                catch { input.classList.add('json-error'); }
+                markChanged();
+            });
+            input.id = setting; input.name = setting;
+            return [input, label];
+        }
+
+        case 'button': {
+            const btn = document.createElement('button');
+            btn.textContent = getTranslation('label__' + setting);
+            btn.classList.add('action-button');
+            btn.onclick = async () => {
+                if (descriptor.confirm && !confirm(getTranslation('confirm__' + setting) || 'Are you sure?')) return;
+                btn.disabled = true;
+                try {
+                    const res = await fetch(descriptor.action, { method: 'POST' });
+                    btn.textContent = res.ok
+                        ? (getTranslation('done__' + setting) || 'Done ✓')
+                        : (getTranslation('error__' + setting) || 'Error ✗');
+                } catch { btn.textContent = getTranslation('error__' + setting) || 'Error ✗'; }
+                setTimeout(() => {
+                    btn.textContent = getTranslation('label__' + setting);
+                    btn.disabled = false;
+                }, 2000);
+            };
+            return [btn, null];
+        }
+
+        case 'info': {
+            const span = document.createElement('span');
+            span.classList.add('setting-info');
+            span.textContent = current_value ?? '—';
+            return [span, label];
+        }
+
         default:
             // Fallback to text input
             input = document.createElement('input');
@@ -217,13 +416,17 @@ function saveSettings() {
 
         if (input.type === 'checkbox') {
             value = input.checked;
-        } else if (input.type === 'number') {
+        } else if (input.type === 'number' || input.type === 'range') {
             value = parseFloat(input.value) || 0;
+        } else if (input.classList.contains('json-input')) {
+            try { value = JSON.parse(input.value); }
+            catch { value = input.value; }  // let the backend reject it
+        } else if (input.classList.contains('tags-input')) {
+            value = JSON.parse(input.dataset.tags || '[]');
+        } else if (input.classList.contains('kv-input')) {
+            value = Object.fromEntries(JSON.parse(input.dataset.pairs || '[]'));
         } else if (input.tagName === 'SELECT' && input.multiple) {
-            value = [];
-            for (let i = 0; i < input.options.length; i++) {
-                value.push(input.options[i].value);
-            }
+            value = Array.from(input.options).map(o => o.value);
         } else if (input.tagName === 'SELECT') {
             value = input.value;
         } else {
@@ -315,7 +518,7 @@ function initializeButtons() {
 
     reset_button.textContent = getTranslation('reset');
     reset_button.id = 'reset_button';
-    
+
     save_button.disabled = true;
     save_button.id = 'save_button';
     save_button.textContent = getTranslation('save');

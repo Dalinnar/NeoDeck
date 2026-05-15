@@ -180,6 +180,8 @@ def _apply_overrides(defaults: dict, overrides: dict) -> dict:
         override_value = overrides[key]
         if isinstance(default_value, dict) and isinstance(override_value, dict):
             result[key] = _apply_overrides(default_value, override_value)
+        elif isinstance(default_value, dict) or isinstance(override_value, dict):
+            result[key] = copy.deepcopy(override_value)
         elif type(override_value) is type(default_value):
             result[key] = override_value
     return result
