@@ -75,7 +75,7 @@ body {
     background-color: var(--bg);
     color: var(--text-primary);
     display: flex;
-    justify-content: center;
+    justify-content: start;
     flex-direction: row;
     max-width: 100vw;
     min-height: 100vh;

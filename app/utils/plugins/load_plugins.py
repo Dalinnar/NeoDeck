@@ -10,7 +10,7 @@ import tempfile
 from pathlib import Path
 
 from ..logger import log
-from settings import BASE_DIR, get_settings, save_settings, get_default_settings
+from settings import BASE_DIR, get_settings, save_settings, get_default_settings,register_plugin_settings
 from app.buttons.commands import command_map as base_commands
 from app.buttons.commands import monitors_map as base_monitors
 from app.buttons.commands import getter_map as base_getters
@@ -345,20 +345,17 @@ def load_plugins(app):
                 log.info(f"Registered plugin: {plugin_name} v{plugin_version}")
 
         # Register plugin data
-        defaults = get_default_settings()
-        current = get_settings()
-
+        
+ 
         for name, plugin in app.blueprints.items():
             if hasattr(plugin, "settings"):
-                defaults[name] = plugin.settings
+                register_plugin_settings(name, plugin.settings)   # same call, new shape
             if hasattr(plugin, "command_map"):
                 base_commands.update({k: v for k, v in plugin.command_map.items() if k not in base_commands})
             if hasattr(plugin, "monitors"):
                 base_monitors.update({k: v for k, v in plugin.monitors.items() if k not in base_monitors})
             if hasattr(plugin, "getters"):
                 base_getters.update({k: v for k, v in plugin.getters.items() if k not in base_getters})
-
-        save_settings(deep_merge(defaults, current))
 
     finally:
         # Close progress popup when done

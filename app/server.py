@@ -29,7 +29,7 @@ from app.utils.working_dir import get_base_dir
 from app.utils.firewall import check_firewall_permission, fix_firewall_permission
 from urllib import parse
 
-from settings import (get_settings,save_settings,get_port,get_default_settings)
+from settings import (get_schema, get_settings,save_settings,get_port,get_default_settings)
 from .buttons.commands import get_monitors, process_command
 from .functions import *
 from .on_start import on_start
@@ -130,8 +130,6 @@ DEFAULT_PAGES = {
         "buttons": []
     }
 }
-
-
 
 
 scrollpad_state = {}
@@ -313,11 +311,25 @@ def home():
 #add method get and post to settings
 @app.route("/settings", methods=["GET", "POST"])
 def settings_page():
-    context = {}
-    context["text"] = text()
-    context["default_settings"] = get_default_settings()
-    context["saved_settings"] = loaded_settings
+    context = {
+        "text": text(),
+        "schema": get_schema(),
+        "settings": get_settings(),
+    }
+
     return render_template("settings.jinja", context=context)
+
+@app.route("/save_settings", methods=["POST"])
+def save_settings_view():
+    global loaded_settings
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "message": "No data provided"}), 400
+    
+    new_merge = deep_merge(deep_merge(get_default_settings(), loaded_settings), data)
+    save_settings(new_merge)
+    loaded_settings = get_settings()
+    return jsonify({"success": True})
 
 
 @app.route("/plugins")
@@ -402,17 +414,7 @@ def api(value):
     }
     return jsonify(value_map[value])
 
-@app.route("/save_settings", methods=["POST"])
-def save_settings_view():
-    global loaded_settings
-    data = request.get_json()
-    if not data:
-        return jsonify({"success": False, "message": "No data provided"}), 400
-    
-    new_merge = deep_merge(deep_merge(get_default_settings(), loaded_settings), data)
-    save_settings(new_merge)
-    loaded_settings = get_settings()
-    return jsonify({"success": True})
+
 
 @app.route("/upload_file", methods=["POST"])
 def upload_file():
