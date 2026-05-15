@@ -127,6 +127,11 @@ def get_languages_info(current_lang_files=None) -> list:
     } for lang, data in current_lang_files.items()]
 
 
+def get_available_languages() -> list[str]:
+    """Return list of available language codes."""
+    return list(lang_files.keys())
+
+
 def get_system_language() -> str:
     """Get the system language."""
     system_lang = locale.getdefaultlocale()[0]

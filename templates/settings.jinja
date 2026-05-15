@@ -126,6 +126,33 @@
             link.textContent = getTranslation("label__" + text);
             return [link, null];
         }
+        if (setting.startsWith('$')) {
+            const endpoint = value;  // e.g. "/obs/status"
+            const statusId = setting.slice(1); // e.g. "obs_status"
+
+            const wrapper = document.createElement('div');
+            wrapper.classList.add('status-check-item');
+
+            const dot = document.createElement('span');
+            dot.classList.add('status-dot', 'status-unknown');
+            dot.id = `status-dot-${statusId}`;
+
+            const msg = document.createElement('span');
+            msg.classList.add('status-msg');
+            msg.textContent = '...';
+
+            const btn = document.createElement('button');
+            btn.textContent = '↺';
+            btn.title = 'Recheck';
+            btn.onclick = () => fetchStatus(endpoint, dot, msg);
+
+            wrapper.append(dot, msg, btn);
+
+            // Auto-check on load
+            fetchStatus(endpoint, dot, msg);
+
+            return [wrapper, null];
+        }
         if (setting.startsWith('_')) {
             secret = true;
             setting = setting.slice(1);
@@ -307,10 +334,26 @@
             console.error("No se pudo encontrar el body.");
         }
     });
+
+    async function fetchStatus(endpoint, dot, msg) {
+        dot.className = 'status-dot status-connecting';
+        msg.textContent = '...';
+
+        try {
+            const res = await fetch(endpoint);
+            if (res.ok) {
+                dot.className = 'status-dot status-ok';
+                msg.textContent = getTranslation('status_connected') || 'Connected';
+            } else {
+                dot.className = 'status-dot status-error';
+                msg.textContent = `${getTranslation('status_error') || 'Error'} (${res.status})`;
+            }
+        } catch {
+            dot.className = 'status-dot status-error';
+            msg.textContent = getTranslation('status_unreachable') || 'Unreachable';
+        }
+    }
 </script>
-
-
-
 
 
 </html>

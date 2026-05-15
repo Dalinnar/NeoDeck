@@ -103,13 +103,13 @@ class GridManager {
         position: "absolute",
         top: "50%",
         left: "50%",
-        
+
         transform: "translate(-50%, -50%)",
         color: "rgba(255,255,255,0.5)",
         fontSize: "1.5rem",
         textAlign: "center",
         pointerEvents: "none",
-        background:"none",
+        background: "none",
         zIndex: "1"
       });
       container.appendChild(hint);
@@ -518,27 +518,18 @@ class SliderButton extends BaseButton {
     const isVertical = rowSpan > colSpan;
 
     if (isVertical) {
-      Object.assign(range.style, {
-        writingMode: "sideways-lr",
-        minWidth: "30px",
-        maxWidth: "20%",
-        height: "100%"
-      });
-      range.style.setProperty('--thumb-width', '120%');
-      range.style.setProperty('--thumb-height', '10%');
+      range.style.width = "var(--lever-long)";
+      range.style.height = "100%";
+      range.classList.remove("horizontal");
+      range.classList.add("vertical", "slider");
     } else {
-      Object.assign(range.style, {
-        writingMode: "horizontal-tb",
-        width: "100%",
-        minHeight: "30px",
-        maxHeight: "20%"
-      });
-      range.style.setProperty('--thumb-width', '10%');
-      range.style.setProperty('--thumb-height', '120%');
+      range.style.width = "100%";
+      range.style.height = "var(--lever-long)";
+      range.classList.remove("vertical");
+      range.classList.add("horizontal", "slider");
     }
 
-    range.classList.add("slider");
-    range.style.zIndex = 2;
+    range.style.zIndex = "2";
 
     if (this.data.btn_text) {
       this.element.style.flexDirection = "column-reverse";
@@ -657,8 +648,8 @@ class ScrollPadButton extends BaseButton {
     // ─────────────────────────────────────────────
     // DRAG-LOCK HELPERS  (double-tap + hold → click & drag)
     // ─────────────────────────────────────────────
-    const DOUBLE_TAP_MS  = 300; // max ms between tap and second touch
-    const DRAG_LOCK_MS   = 150; // finger must stay down this long after double-tap
+    const DOUBLE_TAP_MS = 300; // max ms between tap and second touch
+    const DRAG_LOCK_MS = 150; // finger must stay down this long after double-tap
 
     const enterDragLock = () => {
       state.dragLocked = true;

@@ -892,39 +892,109 @@ input[type="color"] {
    SLIDER
 ========================= */
 
+:root {
+  --lever-long: 44px;   /* dimension perpendicular to track (the "T" bar) */
+  --lever-short: 10px;  /* dimension along track (the "stem" of the T)     */
+  --lever-radius: 0px;
+  --track-thickness: 24px;
+}
+
 .slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 30%;
-    height: 4px;
-    background: var(--surface-3);
-    border-radius: var(--radius-pill);
-    outline: none;
-    cursor: pointer;
-    transition: background 0.2s;
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  outline: none;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
 }
 
-.slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 200%;
-    height: 18px;
-    border: 2px solid var(--bg);
-    background-color: var(--accent);
-    box-shadow: 0 0 0 2px var(--accent-glow);
-    cursor: grab;
-    transition: background 0.15s, box-shadow 0.15s;
+.slider:focus { outline: none; }
+
+/* ── Horizontal ── */
+.slider.horizontal {
+  width: 100%;
+  height: var(--lever-long);
 }
 
-.slider::-webkit-slider-thumb:active { cursor: grabbing; }
+.slider.horizontal::-webkit-slider-runnable-track {
+  height: var(--track-thickness);
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
 
-.slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    border: 2px solid var(--bg);
-    background-color: var(--accent);
-    cursor: grab;
+.slider.horizontal::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--lever-short);
+  height: var(--lever-long);
+  margin-top: calc((var(--track-thickness) - var(--lever-long)) / 2);
+  background: var(--accent);
+  border-radius: var(--lever-radius);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  cursor: grab;
+  transition: box-shadow 0.15s;
+}
+
+.slider.horizontal::-webkit-slider-thumb:active { cursor: grabbing; }
+
+.slider.horizontal::-moz-range-track {
+  height: var(--track-thickness);
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+
+.slider.horizontal::-moz-range-thumb {
+  width: var(--lever-short);
+  height: var(--lever-long);
+  border: none;
+  background: var(--accent);
+  border-radius: var(--lever-radius);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  cursor: grab;
+}
+
+/* ── Vertical — writing-mode flips the axis so thumb width/height swap ── */
+.slider.vertical {
+  writing-mode: vertical-lr;
+  direction: rtl;        /* makes value=max sit at the top, not bottom     */
+  width: var(--lever-long);
+  height: 100%;
+}
+
+.slider.vertical::-webkit-slider-runnable-track {
+  width: var(--track-thickness);
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+
+.slider.vertical::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: var(--lever-long);   /* now the "wide" bar across the vertical track */
+  height: var(--lever-short);
+  margin-left: calc((var(--track-thickness) - var(--lever-long)) / 2);
+  background: var(--accent);
+  border-radius: var(--lever-radius);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  cursor: grab;
+  transition: box-shadow 0.15s;
+}
+
+.slider.vertical::-webkit-slider-thumb:active { cursor: grabbing; }
+
+.slider.vertical::-moz-range-track {
+  width: var(--track-thickness);
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+
+.slider.vertical::-moz-range-thumb {
+  width: var(--lever-long);
+  height: var(--lever-short);
+  border: none;
+  background: var(--accent);
+  border-radius: var(--lever-radius);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  cursor: grab;
 }
 
 /* =========================

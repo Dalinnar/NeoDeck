@@ -573,6 +573,133 @@ body {
     display: inline-block;
 }
 
+
+
+/* =========================
+   STATUS CHECK ITEM ($prefix)
+========================= */
+
+.status-check-item {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    margin-bottom: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: fit-content;
+    min-width: 320px;
+    transition: border-color 0.2s;
+    animation: fadeUp 0.2s ease;
+}
+
+/* =========================
+   STATUS DOT
+========================= */
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: var(--radius-pill);
+    flex-shrink: 0;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.status-dot.status-unknown {
+    background: var(--text-muted);
+}
+
+.status-dot.status-connecting {
+    background: var(--orange);
+    box-shadow: 0 0 6px var(--orange-dim);
+    animation: pulse 1s infinite;
+}
+
+.status-dot.status-ok {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-border);
+}
+
+.status-dot.status-error {
+    background: var(--red);
+    box-shadow: 0 0 6px var(--red-border);
+}
+
+/* =========================
+   STATUS MESSAGE
+========================= */
+
+.status-msg {
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: "DM Mono", monospace;
+    letter-spacing: 0.03em;
+    flex: 1;
+    color: var(--text-muted);
+    transition: color 0.2s;
+}
+
+.status-msg.status-ok         { color: var(--green); }
+.status-msg.status-error      { color: var(--red); }
+.status-msg.status-connecting { color: var(--orange); }
+
+/* =========================
+   RECHECK BUTTON
+========================= */
+
+.status-check-item button {
+    appearance: none;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    width: 26px;
+    height: 26px;
+    border-radius: var(--radius-sm);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, transform 0.15s;
+    flex-shrink: 0;
+}
+
+.status-check-item button:hover {
+    background: var(--surface-3);
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+}
+
+.status-check-item button:active {
+    transform: rotate(180deg);
+}
+
+/* =========================
+   SIDEBAR DOT (on h2)
+========================= */
+
+.section_container h2 .status-dot {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 6px;
+    height: 6px;
+}
+
+/* =========================
+   PULSE ANIMATION
+========================= */
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.35; }
+}
+
+
+
 /* =========================
    SECRET (password mask)
 ========================= */

@@ -1,15 +1,29 @@
-from comtypes import CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED
-from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume
+from comtypes import CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, CLSCTX_ALL
+from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume, IAudioEndpointVolume
+from ctypes import cast, POINTER
 from flask import jsonify
 
 
+def _resolve_com_device(speakers):
+    """Unwrap whatever GetSpeakers() returns into a raw COM device."""
+    # Newer pycaw: AudioDevice wrapper
+    if hasattr(speakers, '_dev'):
+        return speakers._dev
+    # Older pycaw: raw COM device with Activate directly
+    if hasattr(speakers, 'Activate'):
+        return speakers
+    raise RuntimeError(
+        f"Unsupported GetSpeakers() type: {type(speakers).__name__}. "
+        f"Attrs: {[a for a in dir(speakers) if not a.startswith('__')]}"
+    )
+
+
 def _get_volume_interface():
-    """Initialize COM and get default speaker volume interface (EndpointVolume)"""
     try:
         CoInitializeEx(COINIT_APARTMENTTHREADED)
-        device = AudioUtilities.GetSpeakers()
-        volume = device.EndpointVolume
-        return volume
+        device = _resolve_com_device(AudioUtilities.GetSpeakers())
+        interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+        return cast(interface, POINTER(IAudioEndpointVolume))
     except Exception as e:
         print(f"Error al obtener interfaz de volumen: {e}")
         raise
