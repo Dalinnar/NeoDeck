@@ -71,6 +71,9 @@ exit=Exit
 change_server_port=Change server port
 enter_new_port=Enter new port
 auto_update_error=Auto update error
+startup_enabled= Start with Windows ✓
+startup_disabled=Launch at startup ✗
+
 error=Error
 background=Background
 title=Title

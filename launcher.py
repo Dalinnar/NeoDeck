@@ -1,4 +1,3 @@
-#launcher.py
 import sys
 import os
 import subprocess
@@ -76,6 +75,27 @@ def ask_update(version):
     result = ctypes.windll.user32.MessageBoxW(0, msg, "Update NeoDeck", MB_YESNO | MB_ICONQUESTION)
     return result == IDYES
 
+def show_python_install_error():
+    """Shows error dialog when Python 3.11 installation fails and prompts manual install."""
+    MB_OKCANCEL = 0x01
+    MB_ICONERROR = 0x10
+    IDOK = 1
+
+    msg = (
+        "Failed to automatically install Python 3.11.\n\n"
+        "Please install Python 3.11 manually from:\n"
+        "https://www.python.org/downloads/release/python-3119/\n\n"
+        "Make sure to check 'Add Python to PATH' during installation.\n\n"
+        "Click OK to open the download page in your browser."
+    )
+    result = ctypes.windll.user32.MessageBoxW(0, msg, "Python Installation Required", MB_OKCANCEL | MB_ICONERROR)
+    
+    if result == IDOK:
+        import webbrowser
+        webbrowser.open("https://www.python.org/downloads/release/python-3119/")
+    
+    return False
+
 # =========================
 # PYTHON FINDER
 # =========================
@@ -92,7 +112,6 @@ def install_python_311(base_dir):
         "Include_launcher=1"
     ], check=True)
     os.remove(installer)
-
 
 def find_python(is_console=False, base_dir=""):
     """Find a system-level Python 3.11 to use for creating the venv."""
@@ -116,7 +135,9 @@ def find_python(is_console=False, base_dir=""):
         install_python_311(base_dir)
     except Exception as e:
         log_error(f"[FIND_PYTHON] ✗ Installation failed: {e}", base_dir)
-        raise
+        # Show dialog prompting manual installation
+        show_python_install_error()
+        raise RuntimeError("Python 3.11 installation failed. Please install manually.")
 
     log_error("[FIND_PYTHON] Verifying installation: py -3.11 --version", base_dir)
     try:
@@ -130,7 +151,9 @@ def find_python(is_console=False, base_dir=""):
         return ["py", "-3.11"]
     except Exception as e:
         log_error(f"[FIND_PYTHON] ✗ Verification failed: {e}", base_dir)
-        raise RuntimeError("Python 3.11 installation failed")
+        # Show dialog prompting manual installation
+        show_python_install_error()
+        raise RuntimeError("Python 3.11 installation failed. Please install manually.")
 
 # =========================
 # VENV

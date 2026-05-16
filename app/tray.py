@@ -4,6 +4,8 @@ import random
 import threading
 import webbrowser
 from io import BytesIO
+import winshell
+from win32com.client import Dispatch
 
 import pystray
 import qrcode
@@ -200,6 +202,7 @@ def generate_menu(server_status=1):
             pystray.MenuItem(text('restart_application'), restart_program),
             pystray.MenuItem(text('edit_port'), lambda: change_port_prompt()),
             pystray.MenuItem(text('fix_firewall'), fix_firewall_permission),
+            pystray.MenuItem(text('startup_enabled' if is_startup_enabled() else 'startup_disabled'),toggle_startup),
         )),
         pystray.MenuItem(f"{text('server_status')} {status_text.get(server_status)}", open_config),
         pystray.Menu.SEPARATOR,
@@ -261,3 +264,48 @@ def change_server_state(new_state):
     if icon:
         icon.menu = generate_menu(SERVER_STATE)
         icon.update_menu()
+
+
+# ----------------- STARTUP -----------------
+
+def get_startup_shortcut_path():
+    return os.path.join(
+        winshell.startup(),
+        "Neodeck.lnk"
+    )
+
+def is_startup_enabled():
+    return os.path.exists(get_startup_shortcut_path())
+
+def toggle_startup():
+    try:
+        shortcut_path = get_startup_shortcut_path()
+
+        if os.path.exists(shortcut_path):
+            os.remove(shortcut_path)
+            log.info("Startup disabled")
+        else:
+            target = os.path.join(
+                BASE_DIR,
+                "NeodeckLauncherConsole.exe"
+                if loaded_settings["neodeck"]["show_console"]
+                else "NeodeckLauncher.exe"
+            )
+
+            shell = Dispatch('WScript.Shell')
+            shortcut = shell.CreateShortCut(shortcut_path)
+
+            shortcut.Targetpath = target
+            shortcut.WorkingDirectory = BASE_DIR
+            shortcut.IconLocation = target
+            shortcut.save()
+
+            log.info("Startup enabled")
+
+        # refrescar menú
+        if icon:
+            icon.menu = generate_menu(SERVER_STATE)
+            icon.update_menu()
+
+    except Exception as e:
+        log.exception(e, "Failed toggling startup")
