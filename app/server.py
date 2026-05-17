@@ -11,13 +11,12 @@ from tkinter import filedialog
 from flask import ( Flask, abort, jsonify, make_response,render_template, request, send_file, send_from_directory, )
 from flask_socketio import SocketIO
 from flask.wrappers import Response
-
 import time
 from pynput.mouse import Controller, Button
 import pyautogui
 mouse = Controller()
 
-from app.tray import change_server_state,restart_program
+from app.tray import change_server_state,restart_program,tk_root
 from app.utils.args import get_arg
 from app.utils.languages import text
 from app.utils.logger import log
@@ -576,23 +575,24 @@ def create_folder():
 
     return jsonify({"success": True, "message": "Folder created successfully"})
 
+
+
+def _ask_tk_dialog(dialog_fn, **kwargs):
+    if sys.platform != "win32":
+        return None
+
+    top = tk.Toplevel(tk_root)
+    top.withdraw()
+    top.attributes('-topmost', True)
+    path = dialog_fn(parent=top, **kwargs)
+    top.destroy()
+    return path or None
+
 def select_file():
-    if sys.platform == "win32":
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes('-topmost', True)
-        file_path = filedialog.askopenfilename()
-        root.destroy()
-        return file_path
+    return _ask_tk_dialog(filedialog.askopenfilename)
 
 def select_folder():
-    if sys.platform == "win32":
-        root = tk.Tk()
-        root.withdraw()
-        root.attributes('-topmost', True)
-        folder_path = filedialog.askdirectory()
-        root.destroy()
-        return folder_path
+    return _ask_tk_dialog(filedialog.askdirectory)
     
 @app.route("/get_sysfile", methods=["GET"])
 def get_sysfile():
