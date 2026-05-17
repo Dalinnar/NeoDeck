@@ -60,229 +60,49 @@
       window.isUsingScrollPad = false;  // MUST exist before touch listeners are attached
     </script>
     <script>
-      //add all the data to the grid
-      window.buttonData = {}
-      window.folder_data = {{ context["deck_folder"] | tojson | safe }}
-      window.folder_name = "{{ context['folder_name'] }}"
-      window.image_list = {{ context["image_list"] | tojson | safe }}
-      window.pages = {{ context["pages"] | tojson | safe }}
-    </script>
-    <script>
+      window.buttonData = {};
+      window.folder_data = {{ context["deck_folder"] | tojson | safe }};
+      window.folder_name = "{{ context['folder_name'] }}";
+      window.image_list = {{ context["image_list"] | tojson | safe }};
+      window.pages = {{ context["pages"] | tojson | safe }};
+
       const translations = {{ context["text"] | tojson | safe }};
-    </script>
-    <script>
+
       document.addEventListener("DOMContentLoaded", function () {
-        const initialPage = JSON.parse('{{ context["deck_folder"] | tojson | safe}}');
+        const initialPage = JSON.parse('{{ context["deck_folder"] | tojson | safe }}');
         updateGrid(initialPage);
 
-        const commands = JSON.parse('{{ context["commands"] | tojson | safe}}');
+        const commands = JSON.parse('{{ context["commands"] | tojson | safe }}');
         set_menu_commands(commands);
       });
 
-      // Keep the same updateGrid function signature for compatibility
       function updateGrid(pageData) {
         gridManager.updateGrid(pageData);
       }
     </script>
 
-    <script>
-      let startX = 0;
-      window.menu_open = false;
 
-      function toggleMenu() {
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        if (isMobile) return; // Exit early on mobile
-
-        window.menu_open = !window.menu_open;
-        const menu = document.querySelector(".menuContainer");
-        const pages_container = document.getElementById("pages-container");
-
-        menu.classList.toggle("hidden");
-        pages_container.classList.toggle("hidden");
-        toggle_buttons_edition();
-      }
-      function toggle_buttons_edition(override = false) {
-        const buttons = document.querySelectorAll(".button_div");
-        const menu = document.querySelector(".menuContainer");
-        const isMenuVisible = menu.classList.contains("hidden") || override;
-
-        buttons.forEach((button) => {
-          // Si el menú está visible o el override es verdadero, eliminar el SVG si existe
-          const existingSvg = button.querySelector("svg");
-          if (isMenuVisible && existingSvg) {
-            existingSvg.remove(); // Eliminar el SVG
-          } else if (!isMenuVisible && !existingSvg) {
-            // Si el menú está visible, agregar el SVG si no existe
-            const svg = document.createElement("svg");
-            svg.innerHTML = `
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-x">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>`;
-            svg.style.position = "absolute";
-            svg.style.top = "5%";
-            svg.style.right = "5%";
-            svg.style.cursor = "pointer";
-            svg.style.zIndex = 3;
-            svg.style.stroke = "red";
-            svg.style.padding = "1%";
-            svg.style.backgroundColor = "#55555555";
-            svg.style.borderRadius = "50%";
-
-            // Agregar el evento de click al SVG para removerlo
-            svg.addEventListener("click", (event) => {
-              event.stopPropagation(); // Detener la propagación del evento
-              const button_grid_area = button.style.gridArea;
-              const [row, col] = button_grid_area.split(" / ");
-
-              if (confirm(getTranslation("delete_button_confirm"))) {
-                remove_button_from_grid(row, col);
-              }
-            });
-
-            button.appendChild(svg); // Añadir el SVG al botón
-          }
-
-          // Hacer que el botón sea arrastrable si el menú está visible
-          if (!isMenuVisible) {
-            button.setAttribute("draggable", "true");
-          } else {
-            button.removeAttribute("draggable");
-          }
-        });
-      }
-      document.addEventListener("keydown", function (event) {
-        // Verificar si el foco está en un input o elemento similar
-        const isInputFocused = document.activeElement.tagName.toLowerCase() === "input" ||
-          document.activeElement.tagName.toLowerCase() === "textarea";
-
-        // Si el foco no está en un input, permite que se ejecute la acción de la tecla
-        if (!isInputFocused && event.key.toLowerCase() === "q") {
-          toggleMenu();
-        }
-      });
-
-      // Detectar el toque en pantalla (para dispositivos móviles)
-      document.addEventListener("touchstart", function (event) {
-        if (window.isUsingScrollPad) return;  // now it works
-        startX = event.touches[0].clientX;
-      });
-
-      document.addEventListener("touchend", function (event) {
-        if (window.isUsingScrollPad) return;
-        const endX = event.changedTouches[0].clientX;
-        if (startX - endX > 50) toggleMenu();
-        else if (endX - startX > 50) toggleMenu();
-      });
-    </script>
-
-
-    <script>
-      async function remove_button_from_grid(row, col) {
-        const folder_data = window.folder_data;
-        const folder_name = window.folder_name;
-
-        // Buscar el índice del botón que coincida con la fila y columna proporcionadas
-        const buttonIndex = folder_data.buttons.findIndex(button => button.row == row && button.column == col);
-
-        // Si encontramos el botón, lo eliminamos
-        if (buttonIndex !== -1) {
-          folder_data.buttons.splice(buttonIndex, 1);  // Eliminar el botón
-          console.log(`Button at row ${row}, column ${col} removed.`);
-
-          // Esperamos a que la función de subida termine
-          result = await uploadFolderData(folder_name, folder_data);
-          updateGrid(result.folder)
-
-
-
-        } else {
-          console.log(`No button found at row ${row}, column ${col}.`);
-        }
-      }
-    </script>
-
-
-
-    <script>
-      function search_commands(search) {
-        const containers = document.querySelectorAll("#menuContainer .container");
-        const categories = document.querySelectorAll("#menuContainer [id^='category_']");
-        const query = search.trim().toLowerCase();
-
-        // Reset everything when query is empty
-        if (!query) {
-          categories.forEach(category => category.classList.remove("hidden"));
-          containers.forEach(container => {
-            container.classList.add("hidden");
-            container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
-          });
-          return;
-        }
-
-        // Track categories and containers with matching buttons
-        const matchingCategories = new Set();
-        const matchingContainers = new Set();
-
-        // First pass: Check category names and mark matching ones
-        categories.forEach(category => {
-          const categoryName = category.textContent.toLowerCase();
-          const categoryId = category.id;
-          const containerId = categoryId.replace("category_", "container_");
-
-          if (categoryName.includes(query)) {
-            matchingCategories.add(categoryId);
-            matchingContainers.add(containerId);
-          }
-        });
-
-        // Second pass: Process containers and buttons
-        containers.forEach(container => {
-          const containerId = container.id;
-          const categoryId = containerId.replace("container_", "category_");
-          const buttons = container.querySelectorAll(".button_opt");
-
-          // Check if any buttons match the query
-          let hasButtonMatch = false;
-
-          buttons.forEach(button => {
-            const buttonMatches = button.textContent.toLowerCase().includes(query);
-            button.classList.toggle("hidden", !buttonMatches);
-
-            if (buttonMatches) {
-              hasButtonMatch = true;
-              matchingCategories.add(categoryId);
-              matchingContainers.add(containerId);
-            }
-          });
-
-          // If container's category matched, show all buttons
-          if (matchingCategories.has(categoryId) && !hasButtonMatch) {
-            buttons.forEach(button => button.classList.remove("hidden"));
-          }
-        });
-
-        // Update visibility of categories and containers
-        categories.forEach(category => {
-          category.classList.toggle("hidden", !matchingCategories.has(category.id));
-        });
-
-        containers.forEach(container => {
-          container.classList.toggle("hidden", !matchingContainers.has(container.id));
-        });
-      } </script>
-
-
+    <!-- ============================================================
+  2. MENU — Build, render, search
+  Responsible for constructing the sidebar menu from JSON data,
+  rendering category/subcategory trees, and filtering via search.
+============================================================ -->
     <script defer>
+      // --- Helpers ---
+
       function clean(str) {
         return str.replace(/ /g, "_").replace("'", "").replace(/[{}]/g, "").toLowerCase();
       }
 
+      function getTranslation(key) {
+        return translations[key] ?? key;
+      }
+
+      // --- Entry point ---
+
       function set_menu_commands(jsonData) {
         const container = document.getElementById("menuContainer");
 
-        // Add search input
         const search = createSearchInput();
         container.appendChild(search);
 
@@ -290,6 +110,8 @@
           container.appendChild(createCategory(category, data));
         });
       }
+
+      // --- Builders ---
 
       function createSearchInput() {
         const search = document.createElement("input");
@@ -321,9 +143,7 @@
 
         Object.entries(data).forEach(([name, subdata]) => {
           if (subdata.TYPE === "multiple") {
-            subcategoriesContainer.appendChild(
-              createSubcategory(category, name, subdata)
-            );
+            subcategoriesContainer.appendChild(createSubcategory(category, name, subdata));
           } else {
             addButton(buttonsContainer, name, subdata, _category);
           }
@@ -335,8 +155,7 @@
       function createSubcategory(category, name, subdata) {
         const _category = clean(category).toUpperCase();
         const _subcategory = `${_category}_${clean(name)}`;
-        const subcategoryName =
-          getTranslation(`${_subcategory}__category_name`) || name;
+        const subcategoryName = getTranslation(`${_subcategory}__category_name`) || name;
 
         const subcategoryDiv = document.createElement("div");
         subcategoryDiv.appendChild(createTitleBar(subcategoryName, subcategoryDiv));
@@ -365,7 +184,6 @@
           container.classList.toggle("open");
         };
 
-
         const icon = document.createElement("img");
         icon.src = "static/img/menu_icon_white.png";
         icon.style.cssText = "width: 30px; aspect-ratio: 1;";
@@ -378,92 +196,284 @@
         return container;
       }
 
+      function toggleCategory(menu) {
+        const container = menu.querySelector(".container");
+        container.classList.toggle("hidden");
+      }
+
       function populateInputLabels(buttonData, category, commandName) {
         buttonData.inputs?.forEach((input, index) => {
-          input.label = getTranslation(
-            `${category}_${clean(commandName)}_input${index}`
-          );
+          input.label = getTranslation(`${category}_${clean(commandName)}_input${index}`);
         });
       }
 
       function addButton(parentElement, name, data, categ = "", subcateg = "") {
-        let div = document.createElement("div");
+        const div = document.createElement("div");
         div.classList.add("button_opt");
 
         if (data.image) {
-          var img = document.createElement("img");
+          const img = document.createElement("img");
           img.src = data.image;
           div.appendChild(img);
         }
 
-        let cleanName = clean(name);
-        let query;
-
-        if (subcateg) {
-          const sub = clean(subcateg.replace(/^.*?_/, "")); // remove category prefix
-          query = `${categ}_${sub}_${cleanName}__btn_name`;
-        } else {
-          query = `${categ}_${cleanName}__btn_name`;
-        }
+        const cleanName = clean(name);
+        const query = subcateg
+          ? `${categ}_${clean(subcateg.replace(/^.*?_/, ""))}_${cleanName}__btn_name`
+          : `${categ}_${cleanName}__btn_name`;
 
         div.innerText = getTranslation(query);
-        data.ButtonTitle =  getTranslation(query);
+        data.ButtonTitle = getTranslation(query);
         div.id = query;
         window.buttonData[div.id] = data;
 
         div.draggable = true;
         parentElement.appendChild(div);
       }
-    </script>
-    <script>
-      //scrupt to show the menu contents
-      function toggleCategory(menu) {
-        //grab the div class container on the menu div
-        container = menu.querySelector(".container");
-        container.classList.toggle("hidden");
+
+      // --- Search / filter ---
+
+      function search_commands(search) {
+        const containers = document.querySelectorAll("#menuContainer .container");
+        const categories = document.querySelectorAll("#menuContainer [id^='category_']");
+        const query = search.trim().toLowerCase();
+
+        if (!query) {
+          categories.forEach(category => category.classList.remove("hidden"));
+          containers.forEach(container => {
+            container.classList.add("hidden");
+            container.querySelectorAll(".button_opt").forEach(button => button.classList.remove("hidden"));
+          });
+          return;
+        }
+
+        const matchingCategories = new Set();
+        const matchingContainers = new Set();
+
+        categories.forEach(category => {
+          const categoryName = category.textContent.toLowerCase();
+          const categoryId = category.id;
+          const containerId = categoryId.replace("category_", "container_");
+
+          if (categoryName.includes(query)) {
+            matchingCategories.add(categoryId);
+            matchingContainers.add(containerId);
+          }
+        });
+
+        containers.forEach(container => {
+          const containerId = container.id;
+          const categoryId = containerId.replace("container_", "category_");
+          const buttons = container.querySelectorAll(".button_opt");
+          let hasButtonMatch = false;
+
+          buttons.forEach(button => {
+            const buttonMatches = button.textContent.toLowerCase().includes(query);
+            button.classList.toggle("hidden", !buttonMatches);
+            if (buttonMatches) {
+              hasButtonMatch = true;
+              matchingCategories.add(categoryId);
+              matchingContainers.add(containerId);
+            }
+          });
+
+          if (matchingCategories.has(categoryId) && !hasButtonMatch) {
+            buttons.forEach(button => button.classList.remove("hidden"));
+          }
+        });
+
+        categories.forEach(category => {
+          category.classList.toggle("hidden", !matchingCategories.has(category.id));
+        });
+
+        containers.forEach(container => {
+          container.classList.toggle("hidden", !matchingContainers.has(container.id));
+        });
       }
     </script>
+
+
+    <!-- ============================================================
+  3. BUTTON EDITION — Toggle edit mode, add/remove overlay actions
+  Handles the edit/delete overlays on grid buttons and the
+  open/close logic for the menu panel (keyboard + touch + click).
+============================================================ -->
+    <script>
+      let startX = 0;
+      window.menu_open = false;
+
+      // --- Menu panel open/close ---
+
+      function toggleMenu() {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) return;
+
+        window.menu_open = !window.menu_open;
+        const menu = document.querySelector(".menuContainer");
+        const pages_container = document.getElementById("pages-container");
+
+        menu.classList.toggle("hidden");
+        pages_container.classList.toggle("hidden");
+        toggle_buttons_edition();
+      }
+
+      // Keyboard shortcut: Q
+      document.addEventListener("keydown", function (event) {
+        const isInputFocused =
+          document.activeElement.tagName.toLowerCase() === "input" ||
+          document.activeElement.tagName.toLowerCase() === "textarea";
+
+        if (!isInputFocused && event.key.toLowerCase() === "q") {
+          toggleMenu();
+        }
+      });
+
+      // Touch swipe (mobile)
+      document.addEventListener("touchstart", function (event) {
+        if (window.isUsingScrollPad) return;
+        startX = event.touches[0].clientX;
+      });
+
+      document.addEventListener("touchend", function (event) {
+        if (window.isUsingScrollPad) return;
+        const endX = event.changedTouches[0].clientX;
+        if (Math.abs(startX - endX) > 50) toggleMenu();
+      });
+
+      // --- Edit/delete overlays on grid buttons ---
+
+      function toggle_buttons_edition(override = false) {
+        const buttons = document.querySelectorAll(".button_div");
+        const menu = document.querySelector(".menuContainer");
+        const isMenuVisible = menu.classList.contains("hidden") || override;
+
+        buttons.forEach((button) => {
+          const existingSvg = button.querySelector("svg.delete-btn");
+          const existingEdit = button.querySelector("svg.edit-btn");
+
+          if (isMenuVisible) {
+            existingSvg?.remove();
+            existingEdit?.remove();
+          } else {
+            if (!existingSvg) {
+              button.appendChild(createDeleteOverlay(button));
+            }
+            if (!existingEdit) {
+              button.appendChild(createEditOverlay(button));
+            }
+          }
+
+          // Draggable only while in edit mode
+          if (!isMenuVisible) {
+            button.setAttribute("draggable", "true");
+          } else {
+            button.removeAttribute("draggable");
+          }
+        });
+      }
+
+      function createDeleteOverlay(button) {
+        const svg = document.createElement("svg");
+        svg.classList.add("delete-btn");
+        svg.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+           fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>`;
+        Object.assign(svg.style, {
+          position: "absolute", top: "5%", right: "5%",
+          cursor: "pointer", zIndex: 3, stroke: "red",
+          padding: "1%", backgroundColor: "#55555555", borderRadius: "50%",
+        });
+        svg.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const [row, col] = button.style.gridArea.split(" / ");
+          if (confirm(getTranslation("delete_button_confirm"))) {
+            remove_button_from_grid(row, col);
+          }
+        });
+        return svg;
+      }
+
+      function createEditOverlay(button) {
+        const editSvg = document.createElement("svg");
+        editSvg.classList.add("edit-btn");
+        editSvg.innerHTML = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+           fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+      </svg>`;
+        Object.assign(editSvg.style, {
+          position: "absolute", top: "5%", left: "5%",
+          cursor: "pointer", zIndex: 3, stroke: "dodgerblue",
+          padding: "1%", backgroundColor: "#55555555", borderRadius: "50%",
+        });
+        editSvg.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const [row, col] = button.style.gridArea.split(" / ");
+          edit_button_in_grid(row, col);
+        });
+        return editSvg;
+      }
+
+      // --- Grid button CRUD ---
+
+      async function remove_button_from_grid(row, col) {
+        const folder_data = window.folder_data;
+        const folder_name = window.folder_name;
+
+        const buttonIndex = folder_data.buttons.findIndex(
+          (button) => button.row == row && button.column == col
+        );
+
+        if (buttonIndex !== -1) {
+          folder_data.buttons.splice(buttonIndex, 1);
+          console.log(`Button at row ${row}, column ${col} removed.`);
+          const result = await uploadFolderData(folder_name, folder_data);
+          updateGrid(result.folder);
+        } else {
+          console.log(`No button found at row ${row}, column ${col}.`);
+        }
+      }
+    </script>
+
+
+    <!-- ============================================================
+  4. DRAG & DROP — Drag menu items onto grid slots
+  Handles dragging .button_opt items from the menu panel and
+  dropping them onto empty grid cells to place new buttons.
+============================================================ -->
     <script>
       function setupDragAndDrop() {
         document.addEventListener("dragover", (e) => e.preventDefault());
 
-        const menuButtons = document.querySelectorAll('#menuContainer .button_opt');
+        const menuButtons = document.querySelectorAll("#menuContainer .button_opt");
         const deckSlots = document.querySelectorAll(".buttons-container div:empty");
-        const validButtonIds = new Set([...menuButtons].map(btn => btn.id));
+        const validButtonIds = new Set([...menuButtons].map((btn) => btn.id));
 
-        // Función para crear y devolver una imagen falsa para el drag
         function createDragImage() {
-          const dragImage = document.createElement('div');
+          const dragImage = document.createElement("div");
           Object.assign(dragImage.style, {
-            width: '100px',
-            height: '100px',
-            opacity: '0.8',
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            borderRadius: '8px',
-            pointerEvents: 'none',
-            position: 'absolute',
-            zIndex: '9999',
+            width: "100px", height: "100px", opacity: "0.8",
+            backgroundColor: "rgba(0, 0, 0, 0.5)", borderRadius: "8px",
+            pointerEvents: "none", position: "absolute", zIndex: "9999",
           });
           document.body.appendChild(dragImage);
           return dragImage;
         }
 
-        // Asignar eventos a cada botón del menú
-        menuButtons.forEach(button => {
-          button.addEventListener('dragstart', (e) => {
+        menuButtons.forEach((button) => {
+          button.addEventListener("dragstart", (e) => {
             const dragImage = createDragImage();
             e.dataTransfer.setDragImage(dragImage, 50, 50);
             e.dataTransfer.setData("text/plain", button.id);
-
-            button.addEventListener('dragend', () => {
-              dragImage.remove();
-            }, { once: true }); // Solo una vez por cada drag
+            button.addEventListener("dragend", () => dragImage.remove(), { once: true });
           });
         });
 
-        // Asignar eventos de drop a las celdas vacías
-        deckSlots.forEach(slot => {
-          slot.addEventListener('drop', (e) => {
+        deckSlots.forEach((slot) => {
+          slot.addEventListener("drop", (e) => {
             e.preventDefault();
             const id = e.dataTransfer.getData("text/plain");
             if (!validButtonIds.has(id)) return;
@@ -475,9 +485,13 @@
             const parentRect = parent.getBoundingClientRect();
             const slotRect = slot.getBoundingClientRect();
 
-            const getSize = (value) => parseFloat(value.replace('px', '')) || 1;
-            const columnWidth = getSize(getComputedStyle(parent).getPropertyValue('grid-template-columns').split(' ')[0]);
-            const rowHeight = getSize(getComputedStyle(parent).getPropertyValue('grid-template-rows').split(' ')[0]);
+            const getSize = (value) => parseFloat(value.replace("px", "")) || 1;
+            const columnWidth = getSize(
+              getComputedStyle(parent).getPropertyValue("grid-template-columns").split(" ")[0]
+            );
+            const rowHeight = getSize(
+              getComputedStyle(parent).getPropertyValue("grid-template-rows").split(" ")[0]
+            );
 
             const col = Math.floor((slotRect.left - parentRect.left) / columnWidth) + 1;
             const row = Math.floor((slotRect.top - parentRect.top) / rowHeight) + 1;
@@ -488,36 +502,34 @@
         });
       }
 
-      window.addEventListener('load', setupDragAndDrop);
+      window.addEventListener("load", setupDragAndDrop);
     </script>
 
 
+    <!-- ============================================================
+  5. MONITORS — Poll server for live data and update DOM
+  Periodically fetches usage/status data and reflects it in any
+  element carrying a [data_from] attribute.
+============================================================ -->
     <script>
       let isFetching = false;
-      const data = new Set();
+      const monitorTracks = new Set();
 
       function Initialize_monitors(track) {
-        // Agregar el track si aún no está en el set
-        if (track) {
-          data.add(track);
-        }
+        if (track) monitorTracks.add(track);
         if (isFetching) return;
         isFetching = true;
         fetch_monitors();
       }
 
       function fetch_monitors() {
-        fetch('/monitors', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ track: [...data] }) // Convertir Set a Array antes de enviar
+        fetch("/monitors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ track: [...monitorTracks] }),
         })
-          .then(response => response.json())
-          .then(data => {
-            window.usage_dict = data;
-          })
+          .then((response) => response.json())
+          .then((data) => { window.usage_dict = data; })
           .catch(() => console.error("Error fetching usage data"))
           .finally(() => {
             update_monitors();
@@ -526,15 +538,14 @@
       }
 
       function update_monitors() {
-        var monitors = document.querySelectorAll('[data_from]');
-        monitors.forEach(monitor => {
-          const dataFrom = monitor.getAttribute('data_from');
+        document.querySelectorAll("[data_from]").forEach((monitor) => {
+          const dataFrom = monitor.getAttribute("data_from");
           const value = dataFrom.split(".").reduce((obj, key) => obj && obj[key], window);
-          if (value === undefined) return;
-          monitor.innerHTML = value;
+          if (value !== undefined) monitor.innerHTML = value;
         });
       }
     </script>
 
 </body>
+
 </html>
