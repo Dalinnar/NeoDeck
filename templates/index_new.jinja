@@ -436,6 +436,47 @@
           console.log(`No button found at row ${row}, column ${col}.`);
         }
       }
+
+      async function edit_button_in_grid(row, col) {
+        const folder_data = window.folder_data;
+        const folder_name = window.folder_name;
+
+        // Find the button at this position
+        const buttonIndex = folder_data.buttons.findIndex(
+          (button) => button.row == row && button.column == col
+        );
+
+        if (buttonIndex === -1) {
+          console.log(`No button found at row ${row}, column ${col}.`);
+          return;
+        }
+
+        const savedButton = folder_data.buttons[buttonIndex];
+
+        // Get the original button template from constructor
+        const constructor_id = savedButton.constructor;
+        if (!constructor_id || !window.buttonData[constructor_id]) {
+          alert("Cannot edit this button: constructor not found");
+          console.log("Constructor ID:", constructor_id, "Available data:", window.buttonData);
+          
+          return;
+        }
+
+        const originalButtonData = window.buttonData[constructor_id];
+
+        // Open the dialog in edit mode
+        const modal = document.getElementById("button_creator_dialog");
+
+        if (originalButtonData.command == "__multiaction__") {
+          modal.show();
+          window.dialogopen = true;
+          setup_multiaction_edit(originalButtonData, folder_name, folder_data, col, row, savedButton, buttonIndex);
+        } else {
+          modal.showModal();
+          window.dialogopen = true;
+          setup_regular_edit(originalButtonData, folder_name, folder_data, col, row, savedButton, buttonIndex);
+        }
+      }
     </script>
 
 
@@ -497,7 +538,7 @@
             const row = Math.floor((slotRect.top - parentRect.top) / rowHeight) + 1;
 
             const cleanId = id.replace(/__btn_name$/, "");
-            generate_button(buttonData, window.folder_name, window.folder_data, col, row, cleanId);
+            generate_button(buttonData, window.folder_name, window.folder_data, col, row, id);
           });
         });
       }

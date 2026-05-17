@@ -247,7 +247,7 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
             btn_text: inputs.button_text?.value,
             background_color: inputs.background_color?.value || "#1e1e1e",
             text_color: inputs.text_color?.value || "#ffffff",
-            constructor: constructor_id, 
+            constructor: constructor_id,
             actions
         };
 
@@ -586,7 +586,7 @@ async function buildButton(button_data, folder_name, folder_data, column, row, c
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
         toggleable: button_data.toggleable ?? false,
-        constructor: constructor_id, 
+        constructor: constructor_id,
     };
 
     if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
@@ -652,7 +652,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row, 
         background_color: inputs.background_color?.value || "#1e1e1e",
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
-        constructor: constructor_id, 
+        constructor: constructor_id,
     };
 
     // Add image handling similar to buildButton
@@ -993,11 +993,11 @@ const createMacroInput = (input) => {
 
         // Click buttons
         downBtn.addEventListener("click", (e) => { e.stopPropagation(); updateValue(-10); });
-        upBtn.addEventListener("click",   (e) => { e.stopPropagation(); updateValue(+10); });
+        upBtn.addEventListener("click", (e) => { e.stopPropagation(); updateValue(+10); });
 
         // Arrow keys while hovering the delay tag
         tag.addEventListener("keydown", (e) => {
-            if (e.key === "ArrowUp")   { e.preventDefault(); e.stopPropagation(); updateValue(+10); }
+            if (e.key === "ArrowUp") { e.preventDefault(); e.stopPropagation(); updateValue(+10); }
             if (e.key === "ArrowDown") { e.preventDefault(); e.stopPropagation(); updateValue(-10); }
         });
 
@@ -1561,3 +1561,799 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 
     return div;
 }
+
+
+// Add this function to button_generator.js
+
+function setup_regular_edit(button_data, folder_name, folder_data, column, row, savedButton, buttonIndex) {
+    const dialog_content = document.querySelector(".dialog_content");
+    dialog_content.innerHTML = "";
+
+    // Create text input and pre-fill
+    const text_generic = document.createElement("input");
+    text_generic.name = "button_text";
+    text_generic.setAttribute("type", "text");
+    text_generic.setAttribute("placeholder", "Button Text");
+    text_generic.value = savedButton.btn_text || "";
+    text_generic.addEventListener("input", () => {
+        const button_text = document.getElementById("button_text");
+        button_text.textContent = text_generic.value;
+    });
+
+    dialog_content.appendChild(text_generic);
+
+    // Handle actions or regular inputs
+    if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
+        const actionsElement = setup_actions(button_data);
+        dialog_content.appendChild(actionsElement);
+
+        // Pre-fill action selects
+        setTimeout(() => {
+            button_data.actions.forEach(action => {
+                if (savedButton[action]) {
+                    const select = document.querySelector(`select[name="${action}"]`);
+                    if (select) {
+                        select.value = savedButton[action];
+                        select.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+        }, 100);
+    } else {
+        button_data.inputs?.forEach(input => {
+            const inputField = createInputField(input);
+            dialog_content.appendChild(inputField);
+
+            // Pre-fill input values after creation
+            setTimeout(() => {
+                const inputElement = inputField.querySelector(`[name="${input.name}"]`);
+                if (inputElement && savedButton[input.name]) {
+                    inputElement.value = savedButton[input.name];
+                }
+            }, 50);
+        });
+    }
+
+    // Create button template
+    const button_template = createButtonTemplate(button_data);
+    dialog_content.appendChild(button_template);
+
+    // Pre-fill button preview
+    setTimeout(() => {
+        const button_text = document.getElementById("button_text");
+        button_text.textContent = savedButton.btn_text || "";
+
+        if (savedButton.image && savedButton.image !== "/static/img/empty_img.png") {
+            const img = document.querySelector(".button_image");
+            img.src = savedButton.image;
+        }
+
+        button_template.style.backgroundColor = savedButton.background_color || "#1e1e1e";
+        const text_div = document.querySelector(".button_text_div");
+        text_div.style.color = savedButton.text_color || "#ffffff";
+    }, 50);
+
+    // Create customization controls
+    const personalization_div = document.createElement("div");
+    personalization_div.classList.add("personalization_settings");
+    const { colorLabel, colorInput, text_color_input, sizeSlider } = createCustomizationControls(button_template);
+
+    // Pre-fill customization values
+    colorInput.value = savedButton.background_color || "#1e1e1e";
+    text_color_input.value = savedButton.text_color || "#ffffff";
+    sizeSlider.value = savedButton.image_size || "80";
+
+    personalization_div.append(colorLabel, colorInput, text_color_input);
+    dialog_content.appendChild(personalization_div);
+    dialog_content.appendChild(sizeSlider);
+
+    // Submit button - UPDATE instead of CREATE
+    const submit_button = document.createElement("button");
+    submit_button.textContent = "Update";
+    submit_button.classList.add("submit_button");
+    submit_button.addEventListener("click", function () {
+        if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
+            updateActionsButton(button_data, folder_name, folder_data, column, row, savedButton.constructor, buttonIndex);
+        } else {
+            updateButton(button_data, folder_name, folder_data, column, row, savedButton.constructor, buttonIndex);
+        }
+
+        document.getElementById("button_creator_dialog").close();
+        window.dialogopen = false;
+    });
+
+    dialog_content.appendChild(submit_button);
+}
+
+// Add these functions to button_generator.js
+
+async function updateButton(button_data, folder_name, folder_data, column, row, constructor_id, buttonIndex) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return;
+    }
+
+    const replacePlaceholders = createReplacer(inputs, false);
+    const col = Number(column);
+    const r = Number(row);
+
+    const obj = {
+        command: replacePlaceholders(button_data.command),
+        column: col,
+        row: r,
+        endcolumn: col + 1,
+        endrow: r + 1,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+        toggleable: button_data.toggleable ?? false,
+        constructor: constructor_id,
+    };
+
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+
+    if (button_data.command === "#monitor") {
+        obj.track = button_data.track;
+        obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+    }
+
+    if (button_data.command.startsWith("!")) {
+        obj.min = button_data.min;
+        obj.max = button_data.max;
+    }
+
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            const fileData = await handleFileUpload(input.files[0]);
+            obj.command = obj.command.replace(new RegExp(`{${input.name}}`, 'g'), fileData?.file_path || "");
+        }
+    }));
+
+    // UPDATE existing button instead of push
+    folder_data.buttons[buttonIndex] = obj;
+
+    try {
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    } catch (error) {
+        console.error("Error updating button:", error);
+    }
+}
+
+async function updateActionsButton(button_data, folder_name, folder_data, column, row, constructor_id, buttonIndex) {
+    const dialog = document.getElementById("button_creator_dialog");
+    const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
+
+    const requiredInputs = Object.entries(inputs).filter(([name, input]) => input.required && !input.value);
+    if (requiredInputs.length > 0) {
+        const missingInputs = requiredInputs.map(([name, input]) => input.placeholder || name).join(", ");
+        alert(`Please fill in the following required inputs: ${missingInputs}`);
+        return;
+    }
+
+    const replacePlaceholders = createReplacer(inputs, true);
+    const col = Number(column);
+    const r = Number(row);
+
+
+    const obj = {
+        column: col,
+        row: r,
+        endcolumn: col + 1,
+        endrow: r + 1,
+        background_color: inputs.background_color?.value || "#1e1e1e",
+        text_color: inputs.text_color?.value || "#ffffff",
+        btn_text: inputs.button_text?.value,
+        constructor: constructor_id,
+    };
+
+    if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
+        const src = document.querySelector(".button_image").src;
+        obj.image = src.startsWith(window.location.origin) ? src.replace(window.location.origin, "") : src;
+        obj.image_size = inputs.img_size?.value || "80";
+    }
+
+    let hasConfiguredAction = false;
+
+    button_data.actions.forEach(action => {
+        if (!inputs[action] || inputs[action].value === "None") {
+            return;
+        }
+
+        hasConfiguredAction = true;
+        let command = replacePlaceholders(inputs[action].value);
+        let variables = command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+
+        let parent = inputs[action].closest('.action-container');
+        let inputs_container = parent.querySelector(".inputs_container");
+
+        variables.forEach(variable => {
+            let input = inputs_container.querySelector(`[name="${variable}"]`);
+            if (!input) {
+                input = inputs_container.querySelector(`#${action}_${variable}`);
+            }
+            if (!input && inputs[`global_${variable}`]) {
+                input = inputs[`global_${variable}`];
+            }
+            if (input) {
+                command = command.replace(new RegExp(`{${variable}}`, 'g'), input.value);
+            }
+        });
+
+        obj[action] = command;
+    });
+
+    if (!hasConfiguredAction) {
+        alert("Cannot save an empty button. Please configure at least one action.");
+        return;
+    }
+
+    await Promise.all(Object.values(inputs).map(async (input) => {
+        if (input.type === "file" && input.files.length > 0) {
+            try {
+                const fileData = await handleFileUpload(input.files[0]);
+                if (fileData && fileData.file_path) {
+                    Object.keys(obj).forEach(key => {
+                        if (typeof obj[key] === 'string') {
+                            obj[key] = obj[key].replace(new RegExp(`{${input.name.replace('global_', '')}}`, 'g'), fileData.file_path);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error(`Error uploading file for ${input.name}:`, error);
+            }
+        }
+    }));
+
+    button_data.actions.forEach(action => {
+        if (obj[action] && obj[action].startsWith("!")) {
+            obj.min = button_data.min;
+            obj.max = button_data.max;
+        }
+        if (obj[action] && obj[action] === "#monitor") {
+            obj.track = button_data.track;
+            if (button_data.collect_data_from) {
+                obj.collect_data_from = replacePlaceholders(button_data.collect_data_from);
+            }
+        }
+    });
+
+    // UPDATE existing button instead of push
+    folder_data.buttons[buttonIndex] = obj;
+
+    try {
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    } catch (error) {
+        console.error("Error updating actions button:", error);
+    }
+}
+
+
+const setup_multiaction_edit = (button_data, folder_name, folder_data, column, row, savedButton, buttonIndex) => {
+    const dialog = document.getElementById("button_creator_dialog");
+    const dialog_content = document.querySelector(".dialog_content");
+
+    dialog_content.innerHTML = "";
+
+    // Clone window.buttonData
+    const localButtonData = structuredClone(window.buttonData || {});
+
+    // Create and setup dropzone
+    const dropzone = document.createElement("DIV");
+    dropzone.classList.add("multiaction_dropzone");
+    dropzone.addEventListener("dragover", (e) => e.preventDefault());
+    dropzone.addEventListener("drop", handleDrop);
+    dialog_content.appendChild(dropzone);
+
+    // Helper function to create element with attributes
+    const createElement = (tag, classes = [], attributes = {}) => {
+        const el = document.createElement(tag);
+        if (classes.length) el.classList.add(...classes);
+        if (attributes.text) el.textContent = attributes.text;
+        if (attributes.src) el.src = attributes.src;
+        if (attributes.dataId) el.dataset.id = attributes.dataId;
+        return el;
+    };
+
+    let draggedContainer = null;
+
+    function handleButtonDragStart(e) {
+        draggedContainer = e.currentTarget;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("application/x-reorder", "true");
+        draggedContainer.style.opacity = "0.5";
+    }
+
+    function handleButtonDragEnd(e) {
+        draggedContainer.style.opacity = "1";
+        draggedContainer = null;
+    }
+
+    function handleButtonDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+
+        const isReorder = e.dataTransfer.types.includes("application/x-reorder");
+        if (!isReorder || !draggedContainer) return;
+
+        const afterElement = getDragAfterElement(dropzone, e.clientY);
+
+        if (afterElement == null) {
+            dropzone.appendChild(draggedContainer);
+        } else {
+            dropzone.insertBefore(draggedContainer, afterElement);
+        }
+    }
+
+    function getDragAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll(".multiaction_button_container:not(.dragging)")];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    // Handle dropped buttons (new buttons from outside)
+    function handleDrop(e) {
+        e.preventDefault();
+
+        // Check if this is a reorder operation
+        const isReorder = e.dataTransfer.types.includes("application/x-reorder");
+        if (isReorder) return;
+
+        const id = e.dataTransfer.getData("text/plain");
+        const buttonData = localButtonData?.[id];
+        if (!buttonData) return;
+
+        const buttonContainer = createElement("div", ["multiaction_button_container"]);
+        buttonContainer.draggable = true;
+        buttonContainer.addEventListener("dragstart", handleButtonDragStart);
+        buttonContainer.addEventListener("dragend", handleButtonDragEnd);
+        buttonContainer.addEventListener("dragover", handleButtonDragOver);
+
+        buttonContainer.dataset.buttonId = id;
+
+        const header = createElement("div", ["button_header"]);
+
+        const leftContainer = createElement("div", ["buttondata_container"]);
+
+        const img = createElement("img", [], {
+            src: buttonData.style?.image
+                ? `/static/img/${buttonData.style.image}`
+                : "/static/img/key.png"
+        });
+
+        const title = createElement("span", ["button_title"], {
+            text: buttonData.ButtonTitle || "Button"
+        });
+
+        leftContainer.appendChild(img);
+        leftContainer.appendChild(title);
+
+        // Inputs container
+        const inputsContainer = createElement("div", ["inputs_container"]);
+
+        if (buttonData.command?.startsWith("!")) {
+            buttonData.inputs ??= [];
+
+            // Solo agregamos el slider si no existe ya
+            let slide_input = buttonData.inputs.find(i => i.name === "_slider_out");
+            if (!slide_input) {
+                slide_input = {
+                    TYPE: "input number",
+                    name: "_slider_out",
+                    attributes: {
+                        min: buttonData.min ?? 0,
+                        max: buttonData.max ?? 0
+                    }
+                };
+                buttonData.inputs.push(slide_input);
+            }
+
+            // Aseguramos que el comando tenga la referencia al slider
+            const placeholder = `{${slide_input.name}}`;
+            if (!buttonData.command.includes(placeholder)) {
+                buttonData.command = buttonData.command.trim() + ` ${placeholder}`;
+            }
+        }
+        if (buttonData.commands && typeof buttonData.commands === "object" && !buttonData.command && buttonData.actions) {
+            buttonData.actions = ["trigger"];
+            inputsContainer.appendChild(setup_actions(buttonData, localButtonData));
+
+            const chevron = createElement("span", ["button_chevron"], { text: "▼" });
+            chevron.addEventListener("click", () => {
+                const isHidden = inputsContainer.classList.contains("hidden");
+                inputsContainer.classList.toggle("hidden");
+                chevron.textContent = isHidden ? "▼" : "▲";
+            });
+            leftContainer.appendChild(chevron);
+        } else if (buttonData.inputs?.length) {
+            buttonData.inputs.forEach(input => inputsContainer.appendChild(createInputField(input)));
+            const chevron = createElement("span", ["button_chevron"], { text: "▼" });
+            chevron.addEventListener("click", () => {
+                const isHidden = inputsContainer.classList.contains("hidden");
+                inputsContainer.classList.toggle("hidden");
+                chevron.textContent = isHidden ? "▼" : "▲";
+            });
+            leftContainer.appendChild(chevron);
+        }
+
+        const removeBtn = createElement("span", ["buttondata_cancel"], { text: "✖" });
+        removeBtn.addEventListener("click", () => buttonContainer.remove());
+
+        header.appendChild(leftContainer);
+        header.appendChild(removeBtn);
+        buttonContainer.appendChild(header);
+        buttonContainer.appendChild(inputsContainer);
+        dropzone.appendChild(buttonContainer);
+    }
+
+    // PRE-POPULATE existing actions from savedButton
+    if (savedButton.actions && Array.isArray(savedButton.actions)) {
+        savedButton.actions.forEach(actionData => {
+            if (!actionData.command) return;
+
+            // Try to find matching button template
+            let matchedId = null;
+            let matchedButtonData = null;
+
+            // Search through localButtonData to find a match
+            for (const [id, btnData] of Object.entries(localButtonData)) {
+                if (btnData.command && actionData.command.startsWith(btnData.command.split('{')[0])) {
+                    matchedId = id;
+                    matchedButtonData = structuredClone(btnData);
+                    break;
+                }
+            }
+
+            // If no match found, create a generic button container
+            if (!matchedId) {
+                const buttonContainer = createElement("div", ["multiaction_button_container"]);
+                buttonContainer.draggable = true;
+                buttonContainer.addEventListener("dragstart", handleButtonDragStart);
+                buttonContainer.addEventListener("dragend", handleButtonDragEnd);
+                buttonContainer.addEventListener("dragover", handleButtonDragOver);
+
+                buttonContainer.dataset.command = actionData.command;
+
+                const header = createElement("div", ["button_header"]);
+                const leftContainer = createElement("div", ["buttondata_container"]);
+
+                const title = createElement("span", ["button_title"], { text: actionData.command });
+                leftContainer.appendChild(title);
+
+                const removeBtn = createElement("span", ["buttondata_cancel"], { text: "✖" });
+                removeBtn.addEventListener("click", () => buttonContainer.remove());
+
+                header.appendChild(leftContainer);
+                header.appendChild(removeBtn);
+                buttonContainer.appendChild(header);
+                dropzone.appendChild(buttonContainer);
+                return;
+            }
+
+            // Create full button container with matched template
+            const buttonContainer = createElement("div", ["multiaction_button_container"]);
+            buttonContainer.draggable = true;
+            buttonContainer.addEventListener("dragstart", handleButtonDragStart);
+            buttonContainer.addEventListener("dragend", handleButtonDragEnd);
+            buttonContainer.addEventListener("dragover", handleButtonDragOver);
+
+            buttonContainer.dataset.buttonId = matchedId;
+
+            const header = createElement("div", ["button_header"]);
+            const leftContainer = createElement("div", ["buttondata_container"]);
+
+            const img = createElement("img", [], {
+                src: matchedButtonData.style?.image
+                    ? `/static/img/${matchedButtonData.style.image}`
+                    : "/static/img/key.png"
+            });
+
+            const title = createElement("span", ["button_title"], {
+                text: matchedButtonData.ButtonTitle || "Button"
+            });
+
+            leftContainer.appendChild(img);
+            leftContainer.appendChild(title);
+
+            const inputsContainer = createElement("div", ["inputs_container"]);
+
+            // Extract values from saved command
+            const extractedValues = {};
+            if (matchedButtonData.command) {
+                const commandPattern = matchedButtonData.command;
+                const placeholders = commandPattern.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
+
+                // Simple extraction - split by spaces and match positions
+                const templateParts = commandPattern.split(/\s+/);
+                const actualParts = actionData.command.split(/\s+/);
+
+                placeholders.forEach(placeholder => {
+                    const templateIndex = templateParts.findIndex(part => part.includes(`{${placeholder}}`));
+                    if (templateIndex !== -1 && actualParts[templateIndex]) {
+                        extractedValues[placeholder] = actualParts[templateIndex];
+                    }
+                });
+            }
+
+            if (matchedButtonData.command?.startsWith("!")) {
+                matchedButtonData.inputs ??= [];
+
+                let slide_input = matchedButtonData.inputs.find(i => i.name === "_slider_out");
+                if (!slide_input) {
+                    slide_input = {
+                        TYPE: "input number",
+                        name: "_slider_out",
+                        attributes: {
+                            min: matchedButtonData.min ?? 0,
+                            max: matchedButtonData.max ?? 0
+                        }
+                    };
+                    matchedButtonData.inputs.push(slide_input);
+                }
+
+                const placeholder = `{${slide_input.name}}`;
+                if (!matchedButtonData.command.includes(placeholder)) {
+                    matchedButtonData.command = matchedButtonData.command.trim() + ` ${placeholder}`;
+                }
+            }
+
+            if (matchedButtonData.commands && typeof matchedButtonData.commands === "object" && !matchedButtonData.command && matchedButtonData.actions) {
+                matchedButtonData.actions = ["trigger"];
+                inputsContainer.appendChild(setup_actions(matchedButtonData, localButtonData));
+
+                const chevron = createElement("span", ["button_chevron"], { text: "▼" });
+                chevron.addEventListener("click", () => {
+                    const isHidden = inputsContainer.classList.contains("hidden");
+                    inputsContainer.classList.toggle("hidden");
+                    chevron.textContent = isHidden ? "▼" : "▲";
+                });
+                leftContainer.appendChild(chevron);
+            } else if (matchedButtonData.inputs?.length) {
+                matchedButtonData.inputs.forEach(input => {
+                    const inputField = createInputField(input);
+                    inputsContainer.appendChild(inputField);
+
+                    // Pre-fill extracted values
+                    setTimeout(() => {
+                        const inputElement = inputField.querySelector(`[name="${input.name}"]`);
+                        if (inputElement && extractedValues[input.name]) {
+                            inputElement.value = extractedValues[input.name];
+                        }
+                    }, 50);
+                });
+
+                const chevron = createElement("span", ["button_chevron"], { text: "▼" });
+                chevron.addEventListener("click", () => {
+                    const isHidden = inputsContainer.classList.contains("hidden");
+                    inputsContainer.classList.toggle("hidden");
+                    chevron.textContent = isHidden ? "▼" : "▲";
+                });
+                leftContainer.appendChild(chevron);
+            }
+
+            const removeBtn = createElement("span", ["buttondata_cancel"], { text: "✖" });
+            removeBtn.addEventListener("click", () => buttonContainer.remove());
+
+            header.appendChild(leftContainer);
+            header.appendChild(removeBtn);
+            buttonContainer.appendChild(header);
+            buttonContainer.appendChild(inputsContainer);
+            dropzone.appendChild(buttonContainer);
+        });
+    }
+
+    // Add template, customization controls, and submit button
+    const button_template = createButtonTemplate(button_data);
+    dialog_content.appendChild(button_template);
+
+    // Pre-fill button template values
+    setTimeout(() => {
+        const button_text = document.getElementById("button_text");
+        if (button_text) button_text.textContent = savedButton.btn_text || "";
+
+        if (savedButton.image && savedButton.image !== "/static/img/empty_img.png") {
+            const img = document.querySelector(".button_image");
+            if (img) img.src = savedButton.image;
+        }
+
+        button_template.style.backgroundColor = savedButton.background_color || "#1e1e1e";
+        const text_div = document.querySelector(".button_text_div");
+        if (text_div) text_div.style.color = savedButton.text_color || "#ffffff";
+    }, 50);
+
+    const personalization_div = createElement("div", ["personalization_settings"]);
+    const { colorLabel, colorInput, text_color_input, sizeSlider } = createCustomizationControls(button_template);
+
+    // Pre-fill customization values
+    colorInput.value = savedButton.background_color || "#1e1e1e";
+    text_color_input.value = savedButton.text_color || "#ffffff";
+    sizeSlider.value = savedButton.image_size || "80";
+
+    personalization_div.append(colorLabel, colorInput, text_color_input);
+    dialog_content.appendChild(personalization_div);
+    dialog_content.appendChild(sizeSlider);
+
+    const submit_button = createElement("button", ["submit_button"], { text: "Update" });
+    submit_button.addEventListener("click", () => {
+        updateMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData, savedButton.constructor, buttonIndex);
+        dialog.close();
+        window.dialogopen = false;
+    });
+    dialog_content.appendChild(submit_button);
+
+    // -------------------------------
+    // HELPER FUNCTIONS
+    // -------------------------------
+    function collectMultiactionButtons(localButtonData) {
+        const actions = [];
+
+        document.querySelectorAll(".multiaction_button_container").forEach(container => {
+            const buttonData = localButtonData?.[container.dataset.buttonId];
+
+            // Handle generic command containers (no matched template)
+            if (!buttonData && container.dataset.command) {
+                actions.push({ command: container.dataset.command });
+                return;
+            }
+
+            if (!buttonData) return;
+
+            const inputs = Object.fromEntries(
+                [...container.querySelectorAll("[name]:not([disabled])")].map(i => [i.name, i])
+            );
+
+            const replacer = createReplacer(inputs, true);
+
+            if (buttonData.command) {
+                actions.push({ command: replacer(buttonData.command) });
+            } else if (buttonData.actions && buttonData.commands) {
+                actions.push({ command: replacer(inputs.trigger?.value || "") });
+            }
+        });
+
+        return actions;
+    }
+
+    async function updateMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData, constructor_id, buttonIndex) {
+        const dialog = document.getElementById("button_creator_dialog");
+
+        const inputs = Object.fromEntries(
+            [...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input])
+        );
+
+        const actions = collectMultiactionButtons(localButtonData);
+
+        if (!actions.length) {
+            alert("Multiaction button must contain at least one button");
+            return;
+        }
+
+        const obj = {
+            command: "__multiaction__",
+            column,
+            row,
+            endcolumn: column + 1,
+            endrow: row + 1,
+            btn_text: inputs.button_text?.value,
+            background_color: inputs.background_color?.value || "#1e1e1e",
+            text_color: inputs.text_color?.value || "#ffffff",
+            constructor: constructor_id,
+            actions
+        };
+
+        if (inputs.img_size || !document.querySelector(".button_image").src.includes("empty_img")) {
+            const src = document.querySelector(".button_image").src;
+            obj.image = src.startsWith(window.location.origin)
+                ? src.replace(window.location.origin, "")
+                : src;
+            obj.image_size = inputs.img_size?.value || "80";
+        }
+
+        // UPDATE existing button instead of push
+        folder_data.buttons[buttonIndex] = obj;
+
+        const result = await uploadFolderData(folder_name, folder_data);
+        updateGrid(result.folder);
+    }
+
+    function setup_actions(button_data, localButtonData) {
+        const createElement = (type, className = '', text = '') => {
+            const elem = document.createElement(type);
+            if (className) elem.classList.add(className);
+            if (text) elem.textContent = text;
+            return elem;
+        };
+
+        const actions = createElement("div");
+        const global_inputs_container = createElement("div", "global-inputs-container");
+
+        const select_options = document.createDocumentFragment();
+        const noneOption = createElement("option", "", getTranslation("NONE"));
+        noneOption.value = "None";
+        noneOption.selected = true;
+        select_options.appendChild(noneOption);
+
+        if (button_data.commands) {
+            Object.entries(button_data.commands).forEach(([key, value]) => {
+                const option = createElement("option", "", key);
+                option.value = value;
+                option.textContent = getTranslation("option_verbose_" + key);
+                select_options.appendChild(option);
+            });
+        }
+
+        if (button_data.inputs && button_data.inputs.length > 0) {
+            button_data.inputs
+                .filter(input => input.shared === true)
+                .forEach(input => {
+                    const globalInput = { ...input, name: "global_" + input.name };
+                    const inputContainer = createInputField(globalInput);
+                    global_inputs_container.appendChild(inputContainer);
+                });
+        }
+
+        const actions_fragment = document.createDocumentFragment();
+
+        if (button_data.actions && button_data.actions.length > 0) {
+            button_data.actions.forEach(action => {
+                const action_container = createElement("div", "action-container");
+                const label = createElement("label", "command-label", getTranslation("ACTION_NAME_" + action));
+                const action_select = createElement("select", "command-select");
+                action_select.name = action;
+                action_select.appendChild(select_options.cloneNode(true));
+                action_select.id = "command-select-" + action;
+                action_select.addEventListener("change", function () { update_inputs(this); });
+
+                const inputs_container = createElement("div", "inputs_container");
+
+                if (button_data.inputs && button_data.inputs.length > 0) {
+                    button_data.inputs
+                        .filter(input => input.shared !== true)
+                        .forEach(input => {
+                            const actionInput = {
+                                ...input,
+                                name: input.name,
+                                label: getTranslation("ACTION_" + input.name),
+                                id: action + "_" + input.name
+                            };
+                            const inputContainer = createInputField(actionInput);
+                            inputContainer.style.display = "none";
+                            inputContainer.querySelectorAll('input, select, textarea').forEach(elem => {
+                                elem.disabled = true;
+                                elem.id = action + "_" + input.name;
+                                elem.style.display = "block";
+                            });
+                            inputs_container.appendChild(inputContainer);
+                        });
+                }
+
+                action_container.append(label, action_select, inputs_container);
+                actions_fragment.appendChild(action_container);
+            });
+        }
+
+        actions.appendChild(actions_fragment);
+        actions.appendChild(global_inputs_container);
+
+        return actions;
+    }
+};
