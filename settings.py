@@ -1,4 +1,5 @@
 import os
+import locale
 import json
 import copy
 from app.utils.working_dir import get_base_dir
@@ -24,6 +25,38 @@ def get_available_languages() -> dict:
     return languages
 
 
+def resolve_default_language() -> str:
+    """
+    Resolve the best default language from the system locale.
+    Exact match first, then base language match, then fallback to en_US.
+    """
+
+    available = get_available_languages()
+
+    if not available:
+        return "en_US"
+
+    system_lang = locale.getdefaultlocale()[0]
+
+    if not system_lang:
+        return "en_US"
+
+    system_lang = system_lang.replace("-", "_")
+
+    # Exact match
+    if system_lang in available:
+        return system_lang
+
+    # Base language fallback
+    base = system_lang.split("_")[0].lower()
+
+    for lang in available:
+        if lang.split("_")[0].lower() == base:
+            return lang
+
+    return "en_US"
+
+
 # =========================
 # CORE SCHEMA
 # Each leaf is a descriptor dict with at least "type".
@@ -47,7 +80,7 @@ _CORE_SCHEMA: dict = {
 
         "language": {
             "type": "select",
-            "default": "en_US",
+            "default": resolve_default_language(),
             "options": "dynamic:get_available_languages",
         },
 

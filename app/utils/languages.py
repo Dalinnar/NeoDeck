@@ -53,9 +53,24 @@ def load_lang_file(lang, lang_file_path=None) -> dict:
 
 
 def get_language(lang=None) -> str:
-    """Get the language code."""
-    lang = lang or get_system_language()
-    return next((l for l in lang_files if l.lower().startswith(lang.lower())), default_lang)
+    """Resolve language ignoring locale/region."""
+    
+    lang = (lang or get_system_language()).replace("-", "_").lower()
+
+    # Obtener solo idioma principal
+    short_lang = lang.split("_")[0]
+
+    # Buscar coincidencia exacta
+    for available in lang_files:
+        if available.lower() == lang:
+            return available
+
+    # Buscar por idioma solamente
+    for available in lang_files:
+        if available.lower().split("_")[0] == short_lang:
+            return available
+
+    return default_lang
 
 
 def language_exists(language_code=None) -> bool:
