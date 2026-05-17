@@ -69,12 +69,6 @@
     </script>
     <script>
       const translations = {{ context["text"] | tojson | safe }};
-      function getTranslation(key) {
-        if (!translations[key]) {
-          console.log(`Translation key not found: ${key}`);
-        }
-        return translations[key] || key;
-      }
     </script>
     <script>
       document.addEventListener("DOMContentLoaded", function () {
@@ -488,7 +482,8 @@
             const col = Math.floor((slotRect.left - parentRect.left) / columnWidth) + 1;
             const row = Math.floor((slotRect.top - parentRect.top) / rowHeight) + 1;
 
-            generate_button(buttonData, window.folder_name, window.folder_data, col, row);
+            const cleanId = id.replace(/__btn_name$/, "");
+            generate_button(buttonData, window.folder_name, window.folder_data, col, row, cleanId);
           });
         });
       }
@@ -542,5 +537,4 @@
     </script>
 
 </body>
-
 </html>

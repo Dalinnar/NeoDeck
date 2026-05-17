@@ -1,3 +1,9 @@
+      function getTranslation(key) {
+        if (!translations[key]) {
+          console.log(`Translation key not found: ${key}`);
+        }
+        return translations[key] || key;
+      }
 
 function request_data(message, action = "send", method = "POST") {
   const endpoint = `/data/${action}`;
@@ -16,7 +22,6 @@ function request_data(message, action = "send", method = "POST") {
     // En GET no se puede enviar body, podrías enviar el mensaje como header personalizado
     options.headers['X-Message'] = message;
   }
-
   return fetch(endpoint, options)
     .then(response => response.json())
     .then(data => {

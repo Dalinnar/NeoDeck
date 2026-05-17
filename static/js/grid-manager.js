@@ -98,12 +98,11 @@ class GridManager {
     if (pageData.buttons.length === 0) {
       const hint = document.createElement("div");
       hint.className = "empty-grid-hint";
-      hint.innerHTML = "Press <strong>Q</strong> to start making buttons";
+      hint.innerHTML = getTranslation("EMPTY_GRID_HINT")
       Object.assign(hint.style, {
         position: "absolute",
         top: "50%",
         left: "50%",
-
         transform: "translate(-50%, -50%)",
         color: "rgba(255,255,255,0.5)",
         fontSize: "1.5rem",

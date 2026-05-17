@@ -1,3 +1,5 @@
+// button generator.js
+//grabs the raw json button data, and makes the necesary imputs and modifications to to make a valid button
 document.addEventListener("DOMContentLoaded", () => {
     const main_container = document.querySelector(".main-container");
     main_container.innerHTML += `
@@ -190,7 +192,7 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
 
     const submit_button = createElement("button", ["submit_button"], { text: "Submit" });
     submit_button.addEventListener("click", () => {
-        buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData);
+        buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData, constructor_id)
         dialog.close();
         window.dialogopen = false;
     });
@@ -222,7 +224,7 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
         return actions;
     }
 
-    async function buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData) {
+    async function buildMultiactionButton(button_data, folder_name, folder_data, column, row, localButtonData, constructor_id) {
         const dialog = document.getElementById("button_creator_dialog");
 
         const inputs = Object.fromEntries(
@@ -245,6 +247,7 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row) =
             btn_text: inputs.button_text?.value,
             background_color: inputs.background_color?.value || "#1e1e1e",
             text_color: inputs.text_color?.value || "#ffffff",
+            constructor: constructor_id, 
             actions
         };
 
@@ -444,7 +447,7 @@ function setup_actions(button_data) {
 }
 
 // Función para generar el botón y mostrar el diálogo
-const generate_button = (button_data, folder_name, folder_data, column, row) => {
+const generate_button = (button_data, folder_name, folder_data, column, row, constructor_id = null) => {
     const modal = document.getElementById("button_creator_dialog");
     if (button_data.command == "__multiaction__") {
         modal.show();
@@ -503,10 +506,10 @@ const generate_button = (button_data, folder_name, folder_data, column, row) => 
     submit_button.addEventListener("click", function () {
         if (button_data.commands && typeof button_data.commands === "object" && !button_data.command && button_data.actions) {
             //call a function to build and select the actions
-            buildActions(button_data, folder_name, folder_data, column, row)
+            buildActions(button_data, folder_name, folder_data, column, row, constructor_id)
         }
         else {
-            buildButton(button_data, folder_name, folder_data, column, row)
+            buildButton(button_data, folder_name, folder_data, column, row, constructor_id)
         }
 
 
@@ -560,7 +563,7 @@ function createReplacer(inputs, useGlobalFallback = false, maxDepth = 10) {
 // ========================================
 // BUILD BUTTON
 // ========================================
-async function buildButton(button_data, folder_name, folder_data, column, row) {
+async function buildButton(button_data, folder_name, folder_data, column, row, constructor_id) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]))
 
@@ -583,6 +586,7 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
         toggleable: button_data.toggleable ?? false,
+        constructor: constructor_id, 
     };
 
     if (inputs.img_size || !document.querySelector(".button_image").src.includes("/static/img/empty_img.png")) {
@@ -623,7 +627,7 @@ async function buildButton(button_data, folder_name, folder_data, column, row) {
 // ========================================
 // BUILD ACTIONS
 // ========================================
-async function buildActions(button_data, folder_name, folder_data, column, row) {
+async function buildActions(button_data, folder_name, folder_data, column, row, constructor_id) {
     const dialog = document.getElementById("button_creator_dialog");
     const inputs = Object.fromEntries([...dialog.querySelectorAll("[name]:not([disabled])")].map(input => [input.name, input]));
 
@@ -648,6 +652,7 @@ async function buildActions(button_data, folder_name, folder_data, column, row) 
         background_color: inputs.background_color?.value || "#1e1e1e",
         text_color: inputs.text_color?.value || "#ffffff",
         btn_text: inputs.button_text?.value,
+        constructor: constructor_id, 
     };
 
     // Add image handling similar to buildButton
@@ -1556,5 +1561,3 @@ function createGalleryImage(imageSrc, imgOrSvg, dialog) {
 
     return div;
 }
-
-
