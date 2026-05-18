@@ -256,6 +256,12 @@ const setup_multiaction_edit = (button_data, folder_name, folder_data, column, r
     dropzone.classList.add("multiaction_dropzone");
     dropzone.addEventListener("dragover", (e) => e.preventDefault());
 
+    // Add the label
+    const dropLabel = document.createElement("H2");
+    dropLabel.textContent = "Drop the buttons here";
+    dropLabel.classList.add("multiaction_dropzone__label");
+    dropzone.appendChild(dropLabel);
+
     const dragHandlers = createDragHandlers(dropzone);
     dropzone.addEventListener("drop", handleDrop);
     dialog_content.appendChild(dropzone);
@@ -270,10 +276,13 @@ const setup_multiaction_edit = (button_data, folder_name, folder_data, column, r
 
         const container = buildMultiactionButtonContainer(id, buttonData, localButtonData, dragHandlers);
         dropzone.appendChild(container);
+
+        dropLabel.style.display = "none";
     }
 
     // Pre-populate saved actions
-    if (savedButton.actions && Array.isArray(savedButton.actions)) {
+    if (savedButton.actions && Array.isArray(savedButton.actions) && savedButton.actions.length) {
+        dropLabel.style.display = "none";
         savedButton.actions.forEach(actionData => {
             if (!actionData.command) return;
 
@@ -289,7 +298,6 @@ const setup_multiaction_edit = (button_data, folder_name, folder_data, column, r
             }
 
             if (!matchedId) {
-                // Generic container for unmatched commands
                 const createElement = (tag, classes = [], attributes = {}) => {
                     const el = document.createElement(tag);
                     if (classes.length) el.classList.add(...classes);
@@ -318,7 +326,6 @@ const setup_multiaction_edit = (button_data, folder_name, folder_data, column, r
                 return;
             }
 
-            // Extract pre-fill values from saved command
             const extractedValues = {};
             if (matchedButtonData.command) {
                 const placeholders = matchedButtonData.command.match(/\{(.*?)\}/g)?.map(v => v.replace(/[{}]/g, "")) || [];
@@ -334,7 +341,6 @@ const setup_multiaction_edit = (button_data, folder_name, folder_data, column, r
 
             const container = buildMultiactionButtonContainer(matchedId, matchedButtonData, localButtonData, dragHandlers);
 
-            // Pre-fill extracted values after render
             setTimeout(() => {
                 Object.entries(extractedValues).forEach(([name, value]) => {
                     const inputElement = container.querySelector(`[name="${name}"]`);

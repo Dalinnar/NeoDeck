@@ -22,6 +22,13 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row, c
 
     const dropzone = document.createElement("DIV");
     dropzone.classList.add("multiaction_dropzone");
+
+    // Add the label
+    const dropLabel = document.createElement("H2");
+    dropLabel.textContent = "Drop the buttons here";
+    dropLabel.classList.add("multiaction_dropzone__label");
+    dropzone.appendChild(dropLabel);
+
     dropzone.addEventListener("dragover", (e) => e.preventDefault());
 
     const dragHandlers = createDragHandlers(dropzone);
@@ -38,6 +45,7 @@ const setup_multiaction = (button_data, folder_name, folder_data, column, row, c
 
         const container = buildMultiactionButtonContainer(id, buttonData, localButtonData, dragHandlers);
         dropzone.appendChild(container);
+        dropLabel.style.display = "none";
     }
 
     const button_template = createButtonTemplate(button_data);

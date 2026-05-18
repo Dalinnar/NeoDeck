@@ -102,12 +102,6 @@
         return str.replace(/ /g, "_").replace("'", "").replace(/[{}]/g, "").toLowerCase();
       }
 
-      function getTranslation(key) {
-        return translations[key] ?? key;
-      }
-
-      // --- Entry point ---
-
       function set_menu_commands(jsonData) {
         const container = document.getElementById("menuContainer");
 

@@ -13,7 +13,7 @@ const createInputField = (input) => {
     if (!input.name) alert("Input name is undefined");
 
     const label = document.createElement("label");
-    label.textContent = input.label || input.name;
+    label.textContent = getTranslation(`input_label__${(input.label || input.name).replace(/\s+/g, "_")}`);
 
     const _input = document.createElement(element);
     _input.name = input.name;
@@ -53,7 +53,7 @@ const createSysInputField = (input) => {
     container.classList.add("input-container");
 
     const label = document.createElement("label");
-    label.textContent = input.label || input.name;
+    label.textContent = getTranslation(`input_label__${(input.label || input.name).replace(/\s+/g, "_")}`);
 
     const inputWrapper = document.createElement("div");
     inputWrapper.classList.add("sys-input-wrapper");
@@ -102,7 +102,7 @@ const createMacroInput = (input) => {
     container.classList.add("input-container");
 
     const label = document.createElement("label");
-    label.textContent = input.label || input.name;
+    label.textContent = getTranslation(`input_label__${(input.label || input.name).replace(/\s+/g, "_")}`);
 
     const hiddenInput = document.createElement("textarea");
     hiddenInput.name = input.name;
