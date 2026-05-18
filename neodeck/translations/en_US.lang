@@ -36,26 +36,33 @@ author_github_username=Dalinnar
 
 
 
+# --------------------------------------------------------------------------------------
+# GLOBAL / UI
+# --------------------------------------------------------------------------------------
 no_files_found_error=No files found.
 file_not_found_error=File not found.
 downloaded_successfully=Downloaded successfully.
 file_deleted_successfully=File deleted successfully.
 randomize=Randomize
 save=Save
+reset=Reset
+not_specified=Not specified
+error=Error
 EMPTY_GRID_HINT=Press Q to start making buttons
-vlc_not_installed_error=VLC is not installed.
-ffmpeg_not_installed_error=FFmpeg is not installed.
-open_github_issue_prompt_title=Open GitHub Issue Prompt
-open_github_issue_prompt_message=Do you want to open a GitHub issue?
-copy_to_clipboard_prompt_title=Copy to Clipboard
-copy_to_clipboard_prompt_message=Do you want to copy the following text to the clipboard?
-welcome_message_window_title=Welcome to NeoDeck
+SEARCH_COMMANDS=Search for commands...
 
+# --------------------------------------------------------------------------------------
+# WELCOME MESSAGE
+# --------------------------------------------------------------------------------------
+welcome_message_window_title=Welcome to NeoDeck
 welcome_message_label_1=Welcome to NeoDeck!
 welcome_message_label_2=You can find the tray icon here for quick access.
 welcome_message_button_dont_show_again=Don`t show this message again
 welcome_message_button_ok=OK
-not_specified=Not specified
+
+# --------------------------------------------------------------------------------------
+# TRAY / SERVER
+# --------------------------------------------------------------------------------------
 qr_code=QR Code
 server_loading=Server loading...
 server_online=Server online
@@ -74,11 +81,15 @@ enter_new_port=Enter new port
 auto_update_error=Auto update error
 startup_enabled= Start with Windows ✓
 startup_disabled=Launch at startup ✗
+TOGGLE_CONSOLE_0=Show console
+TOGGLE_CONSOLE_1=Hide console
+open_plugins_folder=Open plugins forder
 
-error=Error
+# --------------------------------------------------------------------------------------
+# GRID / FOLDER / BUTTON EDITOR
+# --------------------------------------------------------------------------------------
 background=Background
 title=Title
-save=Save
 background_image=Background image
 remove_image=Remove image
 columns=Columns
@@ -87,96 +98,150 @@ delete_folder_confirm=Are you sure you want to delete this folder?
 delete_button_confirm=Are you sure you want to delete this button?
 no_image_generic=No image
 upload_image_generic=Upload image
-SEARCH_COMMANDS=Search for commands...
-#category names
-DISPLAY_CATEGORY_NAME=Display
-DISPLAY_disks__category_name=Disks
-DISPLAY_gpu__category_name=GPU
-REMOTE_INPUTS_CATEGORY_NAME=Remote Inputs
-DISPLAY_memory__category_name=Memory
-DISPLAY_network__category_name=Network
-SOUNDBOARD_CATEGORY_NAME=Soundboard
-SYSTEM_CATEGORY_NAME=System
-SYSTEM_media_control__category_name=Media Control
-TEXT_CATEGORY_NAME=Text
-UTILITIES_CATEGORY_NAME=Utilities
-NEODECK_CATEGORY_NAME=NeoDeck
-TOGGLE_CONSOLE_0=Show console
-TOGGLE_CONSOLE_1=Hide console
-open_plugins_folder=Open plugins forder
 
-#default buttons
-#Display
+# --------------------------------------------------------------------------------------
+# PROMPTS
+# --------------------------------------------------------------------------------------
+open_github_issue_prompt_title=Open GitHub Issue Prompt
+open_github_issue_prompt_message=Do you want to open a GitHub issue?
+copy_to_clipboard_prompt_title=Copy to Clipboard
+copy_to_clipboard_prompt_message=Do you want to copy the following text to the clipboard?
+
+# --------------------------------------------------------------------------------------
+# SETTINGS LABELS
+# --------------------------------------------------------------------------------------
+label__allowed_networks=Allowed Networks
+label__app_admin=Open app as admin
+label__auto_updates=Auto Updates
+label__automatic_firewall_bypass=Bypass firewall
+label__data_transfer_method=http method
+label__dev_mode=Developer mode
+label__flask_debug=Flask debug
+label__flask_reloader=Flask reloader
+label__flask_secret_key=Flask secret key
+label__ip=IP Address
+label__language=Language
+label__netmask=Netmask
+label__open_settings_in_integrated_browser=Open settings in integrated browser
+label__plugins_repo=Plugins repository
+label__port=Port
+label__server=Server
+label__show_console=Show console
+label__show_popup=Show popup
+label__update_repo=Update repository
+label__use_root_plugins=Use root plugins
+
+# --------------------------------------------------------------------------------------
+# INPUT LABELS
+# --------------------------------------------------------------------------------------
+input_label__folder-path=folder path
+input_label__path=Folder path
+input_label__batch_code=batch code
+input_label__code_type=code type
+input_label__selected_option= selected option
+input_label__file-path =File path
+input_label__url=Url
+input_label__Select_disk=Select Disk
+input_label__Select_GPU= select 
+input_label__copy_type=Copy Type
+inupt_label__text=Text
+inupt_label__key=Key
+inupt_label__macro=Record macro
+
+# --------------------------------------------------------------------------------------
+# SELECT VERBOSE
+# --------------------------------------------------------------------------------------
+select_verbose_uploaded_file=uploaded file
+select_verbose_NONE=None
+select_verbose_file_path=file path
+select_verbose_single_line=single line
+select_verbose_simple_copy=simple copy
+select_verbose_copytext_to_clipboard=copy text to clipboard
+
+# --------------------------------------------------------------------------------------
+# MULTI ACTION BUTTON
+# --------------------------------------------------------------------------------------
+NEODECK_multi_action_button__btn_name=Multi Action Button
+ACTION_NAME_single_click=Single Click
+ACTION_NAME_double_click=Double Click
+ACTION_NAME_hold=Hold
+
+# --------------------------------------------------------------------------------------
+# CATEGORY: DISPLAY
+# --------------------------------------------------------------------------------------
+DISPLAY_CATEGORY_NAME=Display
+
 DISPLAY_cpu__btn_name=Cpu Load
+
+#display/disks
+DISPLAY_disks__category_name=Disks
 DISPLAY_disks_free_gb__btn_name=Free Disk Space
-DISPLAY_disks_total_gb__btn_name=Total Disk Space
-DISPLAY_disks_usage_percent__btn_name=Disk Usage
-DISPLAY_disks_used_gb__btn_name=Used Disk Space
-#display inputs
 DISPLAY_disks_free_gb_input0=Select disk
+DISPLAY_disks_total_gb__btn_name=Total Disk Space
 DISPLAY_disks_total_gb_input0=Select disk
+DISPLAY_disks_usage_percent__btn_name=Disk Usage
 DISPLAY_disks_usage_percent_input0=Select disk
+DISPLAY_disks_used_gb__btn_name=Used Disk Space
 DISPLAY_disks_used_gb_input0=Select disk
 
-
-#gpu
+#display/gpu
+DISPLAY_gpu__category_name=GPU
 DISPLAY_gpu_total_mb__btn_name=Total GPU Memory
-DISPLAY_gpu_usage_percent__btn_name=GPU Usage
-DISPLAY_gpu_used_mb__btn_name=Used GPU Memory
-#gpu inputs
 DISPLAY_gpu_total_mb_input0=Select GPU
+DISPLAY_gpu_usage_percent__btn_name=GPU Usage
 DISPLAY_gpu_usage_percent_input0=Select GPU
+DISPLAY_gpu_used_mb__btn_name=Used GPU Memory
 DISPLAY_gpu_used_mb_input0=Select GPU
 
+#display/memory
+DISPLAY_memory__category_name=Memory
 DISPLAY_memory_available_gb__btn_name=Available Memory
 DISPLAY_memory_total_gb__btn_name=Total Memory
 DISPLAY_memory_usage_percent__btn_name=Memory Usage
 DISPLAY_memory_used_gb__btn_name=Used Memory
 
+#display/network
+DISPLAY_network__category_name=Network
 DISPLAY_network_bytes_recv__btn_name=Bytes Received
 DISPLAY_network_bytes_sent__btn_name=Bytes Sent
 
-#soundboard
+# --------------------------------------------------------------------------------------
+# CATEGORY: REMOTE INPUTS
+# --------------------------------------------------------------------------------------
+REMOTE_INPUTS_CATEGORY_NAME=Remote Inputs
+REMOTE_INPUTS_trackpad__btn_name=Trackpad
+REMOTE_INPUTS_virtual_keyboard__btn_name=Virtual Keyboard
+
+# --------------------------------------------------------------------------------------
+# CATEGORY: SOUNDBOARD
+# --------------------------------------------------------------------------------------
+SOUNDBOARD_CATEGORY_NAME=Soundboard
+vlc_not_installed_error=VLC is not installed.
+ffmpeg_not_installed_error=FFmpeg is not installed.
 SOUNDBOARD_playsound__btn_name=Play Sound
 SOUNDBOARD_stopsound__btn_name=Stop Sound
 
-#system
+# --------------------------------------------------------------------------------------
+# CATEGORY: SYSTEM
+# --------------------------------------------------------------------------------------
+SYSTEM_CATEGORY_NAME=System
 SYSTEM_execute_batch_code__btn_name=Execute Batch Code
 SYSTEM_execute_batch_code_input0=Enter batch code
-
 SYSTEM_execute_python_code__btn_name=Execute Python Code
 SYSTEM_execute_python_code_input0=Enter python code
 SYSTEM_execute_python_code_input1=select file
 SYSTEM_execute_python_code_input2=select path
 SYSTEM_execute_python_code_input3=single line code
-
-#multi action button:
-NEODECK_multi_action_button__btn_name=Multi Action Button
-
-
-#multi click category name
-ACTION_NAME_single_click=Single Click
-ACTION_NAME_double_click=Double Click
-ACTION_NAME_hold=Hold
-
-#remote_inputs
-REMOTE_INPUTS_trackpad__btn_name=Trackpad
-REMOTE_INPUTS_virtual_keyboard__btn_name=Virtual Keyboard
-
-select_verbose_uploaded_file=uploaded file
-select_verbose_NONE=None
-select_verbose_file_path=file path
-select_verbose_single_line=single line
-
 SYSTEM_hibernate_pc__btn_name=Hibernate PC
 SYSTEM_kill_a_task__btn_name=Kill a Task
 SYSTEM_kill_a_task_input0=task path
-
 SYSTEM_lock_session__btn_name=Lock Session
 SYSTEM_open__btn_name=Open
 SYSTEM_open_input0=file path
 SYSTEM_open_a_website__btn_name=Open a Website
 SYSTEM_open_a_website_input0=website url
+SYSTEM_opendir__btn_name=Open Directory
+SYSTEM_opendir_input0=directory path
 SYSTEM_restart_pc__btn_name=Restart PC
 SYSTEM_restart_a_task__btn_name=Restart a Task
 SYSTEM_restart_a_task_input0=task path
@@ -185,22 +250,28 @@ SYSTEM_screensaver__btn_name=Screensaver
 SYSTEM_shutdown_pc__btn_name=Shutdown PC
 SYSTEM_sleep_pc__btn_name=Sleep PC
 SYSTEM_superaltf4__btn_name=Super Alt+F4
-SYSTEM_opendir__btn_name=Open Directory
-SYSTEM_opendir_input0=directory path
-#system/mediacontrol
+
+#system/media_control
+SYSTEM_media_control__category_name=Media Control
 SYSTEM_media_control_next__btn_name=Next
 SYSTEM_media_control_playpause__btn_name=Play/Pause
 SYSTEM_media_control_previous__btn_name=Previous
+
 #system/volume
 SYSTEM_volume__category_name=Volume controls
-
 SYSTEM_volume_mute_toggle__btn_name=Mute/Unmute
 SYSTEM_volume_volume_default__btn_name=Volume Slider
 SYSTEM_volume_volume_mixer__btn_name=Volume Mixer
-#text
+
+# --------------------------------------------------------------------------------------
+# CATEGORY: TEXT
+# --------------------------------------------------------------------------------------
+TEXT_CATEGORY_NAME=Text
 TEXT_clear_clipboard__btn_name=Clear Clipboard
 TEXT_copy__btn_name=Copy
 TEXT_cut__btn_name=Cut (Ctrl+X)
+TEXT_macro__btn_name=Macro
+TEXT_macro_input0=Enter macro
 TEXT_open_clipboard__btn_name=Open Clipboard
 TEXT_paste__btn_name=Paste (Ctrl+V)
 TEXT_press_a_key__btn_name=Press a Key
@@ -209,33 +280,18 @@ TEXT_write_text__btn_name=Write Text
 TEXT_write_text_input0=Enter text
 TEXT_write_text_and_press_enter__btn_name=Write Text and Press Enter
 TEXT_write_text_and_press_enter_input0=Enter text
-TEXT_macro__btn_name=Macro
-TEXT_macro_input0=Enter macro
 
-#utilities
+# --------------------------------------------------------------------------------------
+# CATEGORY: UTILITIES
+# --------------------------------------------------------------------------------------
+UTILITIES_CATEGORY_NAME=Utilities
 UTILITIES_color_picker__btn_name=Color Picker
 
-#neodeck
+# --------------------------------------------------------------------------------------
+# CATEGORY: NEODECK
+# --------------------------------------------------------------------------------------
+NEODECK_CATEGORY_NAME=NeoDeck
 NEODECK_config__btn_name=Config
 NEODECK_fullscreen__btn_name=Fullscreen
 NEODECK_open_a_folder__btn_name=Open a Folder
 NEODECK_reload_page__btn_name=Reload Page
-
-#settings labels
-label__allowed_networks=Allowed Networks
-label__app_admin=Open app as admin
-label__auto_updates=Auto Updates
-label__automatic_firewall_bypass=Bypass firewall
-label__data_transfer_method=http method
-label__dev_mode=Developer mode
-
-
-
-#inputs labels
-input_label__folder-path=folder path
-input_label__path=Folder path
-input_label__batch_code=batch code
-input_label__code_type=code type
-input_label__selected_option= selected option
-input_label__file-path =File path
-input_label__url=Url

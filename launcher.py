@@ -89,12 +89,64 @@ def show_python_install_error():
         "Click OK to open the download page in your browser."
     )
     result = ctypes.windll.user32.MessageBoxW(0, msg, "Python Installation Required", MB_OKCANCEL | MB_ICONERROR)
-    
+
     if result == IDOK:
         import webbrowser
         webbrowser.open("https://www.python.org/downloads/release/python-3119/")
-    
+
     return False
+
+# =========================
+# ADMIN ELEVATION
+# =========================
+
+def is_admin():
+    """Returns True if the current process has administrator privileges."""
+    try:
+        return bool(ctypes.windll.shell32.IsUserAnAdmin())
+    except Exception:
+        return False
+
+def relaunch_as_admin(base_dir):
+    """
+    Re-launches the current executable requesting UAC elevation.
+    Returns True if ShellExecuteW succeeded (user accepted UAC prompt),
+    False if the user cancelled or an error occurred.
+    """
+    executable = sys.executable
+    # Rebuild argument list, skipping the executable itself
+    params = " ".join(f'"{a}"' if " " in a else a for a in sys.argv)
+
+    try:
+        result = ctypes.windll.shell32.ShellExecuteW(
+            None,       # hwnd
+            "runas",    # verb — triggers UAC prompt
+            executable, # program to run
+            params,     # arguments
+            base_dir,   # working directory
+            1,          # SW_SHOWNORMAL
+        )
+        # ShellExecuteW returns a value > 32 on success
+        return result > 32
+    except Exception as e:
+        log_error(f"[ADMIN] ShellExecuteW failed: {e}", base_dir)
+        return False
+
+def read_launch_as_admin(base_dir):
+    """
+    Reads the app_admin setting from settings.json (or whichever
+    config file your project uses). Returns True/False.
+    Adapt the path/key to match your actual settings file.
+    """
+    settings_path = os.path.join(base_dir, "settings.json")
+    if not os.path.exists(settings_path):
+        return False
+    try:
+        with open(settings_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return bool(data.get("app_admin", False))
+    except Exception:
+        return False
 
 # =========================
 # PYTHON FINDER
@@ -135,7 +187,6 @@ def find_python(is_console=False, base_dir=""):
         install_python_311(base_dir)
     except Exception as e:
         log_error(f"[FIND_PYTHON] ✗ Installation failed: {e}", base_dir)
-        # Show dialog prompting manual installation
         show_python_install_error()
         raise RuntimeError("Python 3.11 installation failed. Please install manually.")
 
@@ -151,7 +202,6 @@ def find_python(is_console=False, base_dir=""):
         return ["py", "-3.11"]
     except Exception as e:
         log_error(f"[FIND_PYTHON] ✗ Verification failed: {e}", base_dir)
-        # Show dialog prompting manual installation
         show_python_install_error()
         raise RuntimeError("Python 3.11 installation failed. Please install manually.")
 
@@ -277,6 +327,21 @@ def main():
     base_dir = os.path.dirname(sys.executable) if is_frozen else os.path.dirname(__file__)
     is_console = is_frozen and "Console" in sys.executable
 
+    # =========================
+    # ADMIN ELEVATION CHECK
+    # Must happen BEFORE ensure_single_instance so the elevated process
+    # (which is a new PID) isn't blocked by the original mutex.
+    # =========================
+    if read_launch_as_admin(base_dir) and not is_admin():
+        log_error("[MAIN] launch_as_admin is enabled and process is not elevated. Requesting UAC...", base_dir)
+        success = relaunch_as_admin(base_dir)
+        if success:
+            log_error("[MAIN] UAC accepted. Elevated process launched. Exiting current process.", base_dir)
+            sys.exit(0)
+        else:
+            # User cancelled UAC — log and continue without admin
+            log_error("[MAIN] UAC cancelled or failed. Continuing without admin privileges.", base_dir)
+
     args = parse_args()
 
     ensure_single_instance("NeoDeckLauncherConsole" if is_console else "NeoDeckLauncherGUI")
@@ -292,6 +357,7 @@ def main():
             log_error(f"[WORKER] base_dir: {base_dir}", base_dir)
             log_error(f"[WORKER] is_console: {is_console}", base_dir)
             log_error(f"[WORKER] skip_update: {args.skip_update}", base_dir)
+            log_error(f"[WORKER] running_as_admin: {is_admin()}", base_dir)
 
             if not args.skip_update:
                 try:
