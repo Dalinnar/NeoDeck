@@ -49,51 +49,6 @@ def sort_colors():
     with open("neodeck/colors.json", "w", encoding="utf-8") as f:
         json.dump(sorted_colors, f, indent=4)
 
-def get_gpu_method():
-    neodeck = loaded_settings.setdefault("neodeck", {})
-    
-    # Return cached value if available
-    if "gpu_method" in neodeck:
-        return neodeck["gpu_method"]
-    
-    gpu_method = "unknown"
-    
-    try:
-        result = subprocess.check_output(
-            ["wmic", "path", "win32_VideoController", "get", "Name,CurrentHorizontalResolution"],
-            text=True
-        )
-        
-        # Map GPU names to methods
-        gpu_map = {"nvidia": "nvidia", "amd": "amd", "radeon": "amd", "intel": "intel"}
-        
-        for line in result.splitlines():
-            if any(char.isdigit() for char in line):  # Active GPU has resolution
-                line_lower = line.lower()
-                for gpu_name, method in gpu_map.items():
-                    if gpu_name in line_lower:
-                        gpu_method = method
-                        break
-                break
-    except Exception:
-        pass
-    
-    neodeck["gpu_method"] = gpu_method
-    save_settings(loaded_settings)
-    return gpu_method
-
-
-def fix_vlc_cache():
-    if os.name != 'nt':
-        return
-    try:
-        import winreg
-        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\VideoLAN\VLC")
-        vlc_path, _ = winreg.QueryValueEx(key, "InstallDir")
-        winreg.CloseKey(key)
-        subprocess.run(f'"{vlc_path}/vlc-cache-gen.exe" "{vlc_path}/plugins"', shell=True, check=True)
-    except Exception as e:
-        log.exception(e, "Failed to execute VLC cache generation command")
 
 def create_directories():
     for path in [".config/user_uploads", ".config/themes", "plugins"]:
@@ -120,15 +75,8 @@ def on_start():
     create_directories()
     handle_shortcut()
     
-    get_gpu_method()
     local_ip = get_local_ip()
     if loaded_settings["neodeck"].get("ip") == "local_ip":
         loaded_settings["neodeck"]["ip"] = local_ip
         save_settings(loaded_settings)
-    threading.Thread(target=on_start_threaded, args=(loaded_settings["neodeck"].get("sort_colors_on_startup", False),)).start()
     return local_ip
-
-def on_start_threaded(sort_colors_flag: bool):
-    fix_vlc_cache()
-    if sort_colors_flag:
-        sort_colors()

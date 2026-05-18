@@ -69,12 +69,6 @@ _CORE_SCHEMA: dict = {
         "server":           {"type": "text",    "default": "flask"},
         "plugins_repo":     {"type": "text",    "default": "Dalinnar/NeoDeck-plugins"},
         "update_repo":      {"type": "text",    "default": "Dalinnar/NeoDeck"},
-        "update_channel":   {
-            "type": "select",
-            "default": "stable",
-            "options": {"stable": "Stable", "beta": "Beta", "nightly": "Nightly"},
-        },
-
         "ip":               {"type": "text",    "default": "0.0.0.0"},
         "port":             {"type": "number",  "default": 59997},
 
@@ -83,30 +77,17 @@ _CORE_SCHEMA: dict = {
             "default": resolve_default_language(),
             "options": "dynamic:get_available_languages",
         },
-
         "data_transfer_method": {"type": "text", "default": "http"},
         "allowed_networks":     {"type": "multiselect", "default": []},
         "netmask":              {"type": "text", "default": "16"},
-
         "auto_updates":     {"type": "boolean", "default": True},
-        "dev_mode":         {"type": "boolean", "default": False},
-
-        "windows_startup":                  {"type": "boolean", "default": True},
-        "windows_start_menu_shortcut":      {"type": "boolean", "default": False},
         "open_settings_in_integrated_browser": {"type": "boolean", "default": False},
 
         "show_popup":               {"type": "boolean", "default": True},
         "show_console":             {"type": "boolean", "default": False},
-        "optimized_usage_display":  {"type": "boolean", "default": False},
-
-        "ear_soundboard":       {"type": "boolean", "default": True},
-        "fix_stop_soundboard":  {"type": "boolean", "default": False},
-
-        "gpu_method":   {"type": "text", "default": "nvidia (pynvml)"},
 
         "automatic_firewall_bypass": {"type": "boolean", "default": False},
-        "sort_colors_on_startup":    {"type": "boolean", "default": False},
-
+        
         "flask_debug":      {"type": "boolean", "default": False},
         "flask_reloader":   {"type": "boolean", "default": False},
         "flask_secret_key": {"type": "text",    "default": "secret", "secret": True},

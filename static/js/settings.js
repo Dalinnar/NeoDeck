@@ -6,6 +6,10 @@ let currentCategory = null;
 // These will be set from the HTML page
 
 function getTranslation(key) {
+    if (!(key in translations)) {
+        console.log(`Missing translation: ${key}`);
+    }
+
     return translations[key] || key;
 }
 
