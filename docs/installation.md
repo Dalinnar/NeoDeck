@@ -1,0 +1,3 @@
+# Installation
+
+## Clone the repository
