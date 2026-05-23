@@ -1,14 +1,45 @@
-# NeoDeck
+# Plugin Development
 
-Welcome to the NeoDeck documentation.
+Welcome to the NeoDeck plugin development documentation.
 
-## Features
+NeoDeck plugins can extend:
+- buttons
+- commands
+- monitors
+- frontend scripts
+- translations
+- routes
+- backend systems
 
-- Plugin system
-- Web UI
-- Dynamic actions
-- Custom buttons
+Plugins are distributed using the `.deck` format and loaded dynamically at runtime.
+
+---
+
+# Documentation
 
 ## Getting Started
 
-See the installation guide.
+- Getting Started
+- Plugin Structure
+- Metadata
+
+## Core Systems
+
+- Buttons
+- Commands
+- Monitors
+- Routes
+
+## Resources
+
+- Assets
+- Languages
+- Settings
+- Requirements
+
+## Advanced Topics
+
+- Loading Process
+- Packaging
+- Debugging
+- Best Practices

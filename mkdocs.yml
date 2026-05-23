@@ -4,7 +4,54 @@ site_url: https://Dalinnar.github.io/NeoDeck/
 theme:
   name: material
 
+  palette:
+    - scheme: slate
+
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.highlight
+    - search.share
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+      linenums: true
+
+  - pymdownx.superfences
+
+  - pymdownx.inlinehilite
+
+  - pymdownx.tabbed:
+      alternate_style: true
+
+  - toc:
+      permalink: true
+
 nav:
-  - Home: index.md
-  - Installation: installation.md
-  - Plugin Development: plugin-development.md
+  - Home:
+      - Overview: index.md
+      - Getting Started: getting-started.md
+
+  - Core Concepts:
+      - Plugin Structure: plugin-structure.md
+      - Metadata: metadata.md
+      - Settings: settings.md
+      - Inputs: inputs.md
+      - Commands: commands.md
+      - Buttons: buttons.md
+      - Routes: routes.md
+      - Assets: assets.md
+      - Languages: languages.md
+      - Requirements: requirements.md
+
+  - Plugin System:
+      - Loading Process: loading-process.md
+      - Packaging: packaging.md
+      - Debugging: debugging.md
+      - Best Practices: best-practices.md

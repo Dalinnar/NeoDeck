@@ -1,3 +1,0 @@
-# plugin development
-
-make later... :)
