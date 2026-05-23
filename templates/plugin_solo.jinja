@@ -6,7 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="/static/css/plugin_page.css">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <title>{{context["plugin_name"]}}</title>
@@ -17,8 +19,9 @@
     <!-- ── NAV ── -->
     <nav>
         <a class="nav-back" onclick="history.back()" href="#">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M19 12H5M12 5l-7 7 7 7"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5M12 5l-7 7 7 7" />
             </svg>
             Plugin Store
         </a>
@@ -35,7 +38,8 @@
             <!-- LEFT -->
             <div class="container_left">
                 <img id="plugin_image" alt="">
-                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
+                <div
+                    style="flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; align-items:center; width:100%;">
                     <h1 id="plugin_name"></h1>
                     <div id="plugin_status"></div>
                 </div>
@@ -53,120 +57,159 @@
 
     </main>
 
-<script>
-    let plugin_name     = "{{ context['plugin_name'] }}";
-    let installed_version = "{{ context['plugin_version'] }}";
-    let pluginData = null;
+    <script>
+        let plugin_name = "{{ context['plugin_name'] }}";
+        let installed_version = "{{ context['plugin_version'] }}";
+        let pluginData = null;
 
-    const MANIFEST_URL = `https://raw.githubusercontent.com/Dalinnar/NeoDeck-plugins/main/${plugin_name}/plugin.json`;
+        const MANIFEST_URL = `https://raw.githubusercontent.com/Dalinnar/NeoDeck-plugins/main/${plugin_name}/plugin.json`;
 
-    fetch(MANIFEST_URL)
-        .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
-        .then(plugin => { pluginData = plugin; plug_details(plugin); })
-        .catch(err => {
-            console.error(err);
-            document.getElementById("plugin_details").innerHTML =
-                `<p style="color:var(--red)">Failed to load plugin manifest.</p>`;
-        });
-
-    /* ── helpers ── */
-
-    function setStatusBadge(text, state = "working", spinning = false) {
-        const container = document.getElementById("plugin_status");
-        const spinner = spinning ? `<span class="throbber"></span>` : "";
-        const existing = container.querySelector(".status-badge-main");
-        const el = document.createElement("div");
-        el.className = `status-badge status-${state} status-badge-main`;
-        el.innerHTML = spinner + text;
-        if (existing) existing.replaceWith(el);
-        else container.prepend(el);
-    }
-
-    function formatFileSize(bytes) {
-        bytes = Number(bytes);
-        if (!bytes) return "—";
-        const k = 1024, sizes = ["B","KB","MB","GB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
-    }
-
-    function compareVersions(v1, v2) {
-        const p1 = v1.split(".").map(Number);
-        const p2 = v2.split(".").map(Number);
-        for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
-            const a = p1[i] || 0, b = p2[i] || 0;
-            if (a < b) return -1;
-            if (a > b) return  1;
-        }
-        return 0;
-    }
-
-    function getStatusBadge(installedVer, latestVer) {
-        if (installedVer === "unknown") return { text: "Not Installed", cls: "status-install", type: "install" };
-        const cmp = compareVersions(installedVer, latestVer);
-        if (cmp === 0)  return { text: "Up to Date",       cls: "status-uptodate", type: "uptodate" };
-        if (cmp  <  0)  return { text: "Update Available", cls: "status-update",   type: "update"   };
-        return { text: "Latest Installed", cls: "status-uptodate", type: "uptodate" };
-    }
-
-    function getVersionDownloadUrl(version) {
-        const release = pluginData?.releases?.find(r => r.version === version);
-        return release?.assets?.[0]?.download_url ?? null;
-    }
-
-    function performPluginAction(version, action) {
-        const downloadLink = getVersionDownloadUrl(version);
-        if (!downloadLink) { setStatusBadge("Download link not found ✕", "error"); return; }
-        const encodedUrl = encodeURIComponent(downloadLink);
-        setStatusBadge(action === "update" ? "Updating…" : "Installing…", "working", true);
-        disableButtons(true);
-
-        fetch(`/download_mod?link=${encodedUrl}`)
-            .then(r => { if (!r.ok) throw new Error("Action failed"); return r.json(); })
-            .then(() => {
-                setStatusBadge("Restarting…", "working", true);
-                fetch("/restart_app", { method: "POST" });
-                setTimeout(() => { setStatusBadge("Done ✓", "success"); disableButtons(false); }, 2500);
-            })
+        fetch(MANIFEST_URL)
+            .then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+            .then(plugin => { pluginData = plugin; plug_details(plugin); })
             .catch(err => {
                 console.error(err);
-                setStatusBadge("Failed ✕", "error");
-                disableButtons(false);
+                document.getElementById("plugin_details").innerHTML =
+                    `<p style="color:var(--red)">Failed to load plugin manifest.</p>`;
             });
-    }
 
-    function disableButtons(state) {
-        document.querySelectorAll(".status-button").forEach(b => b.disabled = state);
-    }
+        /* ── helpers ── */
 
-    /* ── main render ── */
-
-    function plug_details(plugin) {
-        /* Nav title */
-        const pretty = plugin.plugin_name.replaceAll("_", " ");
-        document.getElementById("nav-plugin-name").textContent = pretty;
-        document.title = pretty;
-
-        /* LEFT */
-        document.getElementById("plugin_name").textContent = pretty;
-        const img = document.getElementById("plugin_image");
-        img.src = plugin.icon_url;
-        img.alt = pretty;
-
-        /* Status block */
-        const status = getStatusBadge(installed_version, plugin.latest_version);
-        let actionBtn = "";
-        if (status.type === "install") {
-            actionBtn = `<button class="status-button btn-install btn-install-full" onclick="performPluginAction('${plugin.latest_version}','install')">
-                Install
-            </button>`;
-        } else if (status.type === "update") {
-            actionBtn = `<button class="status-button btn-update btn-update-full" onclick="performPluginAction('${plugin.latest_version}','update')">
-                Update to ${plugin.latest_version}
-            </button>`;
+        function setStatusBadge(text, state = "working", spinning = false) {
+            const container = document.getElementById("plugin_status");
+            const spinner = spinning ? `<span class="throbber"></span>` : "";
+            const existing = container.querySelector(".status-badge-main");
+            const el = document.createElement("div");
+            el.className = `status-badge status-${state} status-badge-main`;
+            el.innerHTML = spinner + text;
+            if (existing) existing.replaceWith(el);
+            else container.prepend(el);
         }
 
-        document.getElementById("plugin_status").innerHTML = `
+        function formatFileSize(bytes) {
+            bytes = Number(bytes);
+            if (!bytes) return "—";
+            const k = 1024, sizes = ["B", "KB", "MB", "GB"];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+        }
+
+        function compareVersions(v1, v2) {
+            const p1 = v1.split(".").map(Number);
+            const p2 = v2.split(".").map(Number);
+            for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+                const a = p1[i] || 0, b = p2[i] || 0;
+                if (a < b) return -1;
+                if (a > b) return 1;
+            }
+            return 0;
+        }
+
+        function getStatusBadge(installedVer, latestVer) {
+            if (installedVer === "unknown") return { text: "Not Installed", cls: "status-install", type: "install" };
+            const cmp = compareVersions(installedVer, latestVer);
+            if (cmp === 0) return { text: "Up to Date", cls: "status-uptodate", type: "uptodate" };
+            if (cmp < 0) return { text: "Update Available", cls: "status-update", type: "update" };
+            return { text: "Latest Installed", cls: "status-uptodate", type: "uptodate" };
+        }
+
+        function getVersionDownloadUrl(version) {
+            const release = pluginData?.releases?.find(r => r.version === version);
+            return release?.assets?.[0]?.download_url ?? null;
+        }
+
+        function performPluginAction(version, action) {
+            const downloadLink = getVersionDownloadUrl(version);
+            if (!downloadLink) { setStatusBadge("Download link not found ✕", "error"); return; }
+            const encodedUrl = encodeURIComponent(downloadLink);
+            setStatusBadge(action === "update" ? "Updating…" : "Installing…", "working", true);
+            disableButtons(true);
+
+            fetch(`/download_mod?link=${encodedUrl}`)
+                .then(r => { if (!r.ok) throw new Error("Action failed"); return r.json(); })
+                .then(() => {
+                    setStatusBadge("Restarting…", "working", true);
+                    fetch("/restart_app", { method: "POST" });
+                    setTimeout(() => { setStatusBadge("Done ✓", "success"); disableButtons(false); }, 2500);
+                })
+                .catch(err => {
+                    console.error(err);
+                    setStatusBadge("Failed ✕", "error");
+                    disableButtons(false);
+                });
+        }
+
+        function disableButtons(state) {
+            document.querySelectorAll(".status-button").forEach(b => b.disabled = state);
+        }
+        function uninstallPlugin() {
+            setStatusBadge("Uninstalling…", "working", true);
+            disableButtons(true);
+
+            fetch(`/plugin/${plugin_name}/uninstall`, {
+                method: "POST"
+            })
+                .then(r => {
+                    if (!r.ok) throw new Error("Uninstall failed");
+                    return r.json();
+                })
+                .then(() => {
+                    setStatusBadge("Restarting…", "working", true);
+
+                    fetch("/restart_app", {
+                        method: "POST"
+                    });
+
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2500);
+                })
+                .catch(err => {
+                    console.error(err);
+                    setStatusBadge("Failed ✕", "error");
+                    disableButtons(false);
+                });
+        }
+
+        /* ── main render ── */
+
+        function plug_details(plugin) {
+            /* Nav title */
+            const pretty = plugin.plugin_name.replaceAll("_", " ");
+            document.getElementById("nav-plugin-name").textContent = pretty;
+            document.title = pretty;
+
+            /* LEFT */
+            document.getElementById("plugin_name").textContent = pretty;
+            const img = document.getElementById("plugin_image");
+            img.src = plugin.icon_url;
+            img.alt = pretty;
+
+            /* Status block */
+            const status = getStatusBadge(installed_version, plugin.latest_version);
+            let actionBtn = "";
+            let uninstallBtn = "";
+
+            if (installed_version !== "unknown") {
+                uninstallBtn = `
+        <button
+            class="status-button btn-uninstall"
+            onclick="uninstallPlugin()">
+            Uninstall
+        </button>
+    `;
+            }
+            if (status.type === "install") {
+                actionBtn = `<button class="status-button btn-install btn-install-full" onclick="performPluginAction('${plugin.latest_version}','install')">
+                Install
+            </button>`;
+            } else if (status.type === "update") {
+                actionBtn = `<button class="status-button btn-update btn-update-full" onclick="performPluginAction('${plugin.latest_version}','update')">
+                Update to ${plugin.latest_version}
+            </button>`;
+            }
+
+            document.getElementById("plugin_status").innerHTML = `
             <div class="status-badge ${status.cls} status-badge-main">${status.text}</div>
             <div>
                 <span style="color:var(--text-muted)">installed</span>
@@ -176,11 +219,14 @@
                 <span style="color:var(--text-muted)">latest</span>
                 <span class="version-badge">${plugin.latest_version}</span>
             </div>
-            ${actionBtn}
+            <div class="plugin-actions">
+    ${actionBtn}
+    ${uninstallBtn}
+</div>
         `;
 
-        /* RIGHT */
-        document.getElementById("plugin_details").innerHTML = `
+            /* RIGHT */
+            document.getElementById("plugin_details").innerHTML = `
             <strong>Description</strong>
             <p>${plugin.description}</p>
             <strong>Creators</strong>
@@ -189,8 +235,8 @@
             <p>${new Date(plugin.updated_at).toLocaleString()}</p>
         `;
 
-        /* VERSIONS */
-        document.getElementById("plugin_versions").innerHTML = `
+            /* VERSIONS */
+            document.getElementById("plugin_versions").innerHTML = `
             <h2>Release History</h2>
             <table>
                 <thead>
@@ -205,15 +251,15 @@
                 </thead>
                 <tbody>
                     ${plugin.releases.map(r => {
-                        const asset   = r.assets?.[0];
-                        const vStatus = getStatusBadge(installed_version, r.version);
-                        let actionBtn = "";
-                        if (installed_version === "unknown") {
-                            actionBtn = `<button class="status-button btn-install" onclick="performPluginAction('${r.version}','install')">Install</button>`;
-                        } else if (compareVersions(installed_version, r.version) < 0) {
-                            actionBtn = `<button class="status-button btn-update" onclick="performPluginAction('${r.version}','update')">Update</button>`;
-                        }
-                        return `
+                const asset = r.assets?.[0];
+                const vStatus = getStatusBadge(installed_version, r.version);
+                let actionBtn = "";
+                if (installed_version === "unknown") {
+                    actionBtn = `<button class="status-button btn-install" onclick="performPluginAction('${r.version}','install')">Install</button>`;
+                } else if (compareVersions(installed_version, r.version) < 0) {
+                    actionBtn = `<button class="status-button btn-update" onclick="performPluginAction('${r.version}','update')">Update</button>`;
+                }
+                return `
                             <tr>
                                 <td>${asset?.name ?? "—"}</td>
                                 <td><span class="version-badge">${r.version}</span></td>
@@ -223,12 +269,13 @@
                                 <td>${actionBtn}</td>
                             </tr>
                         `;
-                    }).join("")}
+            }).join("")}
                 </tbody>
             </table>
         `;
-    }
-</script>
+        }
+    </script>
 
 </body>
+
 </html>

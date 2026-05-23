@@ -20,7 +20,7 @@ from app.tray import change_server_state,restart_program,tk_root
 from app.utils.args import get_arg
 from app.utils.languages import text
 from app.utils.logger import log
-from app.utils.plugins.load_plugins import load_plugins,update_plugin
+from app.utils.plugins.load_plugins import load_plugins, uninstall_plugin,update_plugin
 from app.utils.plugins.plugin_fetcher import *
 from app.utils.settings.audio_devices import get_audio_devices
 #from app.utils.settings.get_config import get_port
@@ -403,6 +403,34 @@ def download_mod():
             'plugin_name': result.get('plugin_name', 'unknown')
         }), 400
 
+@app.route('/plugin/<plugin_name>/uninstall', methods=['POST'])
+def uninstall_plugin_route(plugin_name):
+
+    try:
+        result = uninstall_plugin(plugin_name)
+
+        if result["success"]:
+            return jsonify({
+                "status": "success",
+                "message": result["message"],
+                "plugin_name": result["plugin_name"]
+            }), 200
+
+        return jsonify({
+            "status": "error",
+            "message": result["message"],
+            "plugin_name": result.get("plugin_name", plugin_name)
+        }), 400
+
+    except Exception as e:
+        log.exception(f"Failed uninstalling plugin {plugin_name}")
+
+        return jsonify({
+            "status": "error",
+            "message": str(e),
+            "plugin_name": plugin_name
+        }), 500
+
 
 @app.route("/api/<value>")
 def api(value):
@@ -690,4 +718,3 @@ def run_server():
 
 if __name__ == "__main__":
     run_server()
-

@@ -555,3 +555,130 @@ def rollback_plugin(plugin_name):
             'success': False,
             'message': f'Rollback failed: {str(e)}'
         }
+    
+def uninstall_plugin(plugin_name):
+    try:
+        removed_files = []
+
+        # -----------------------------
+        # Remove .deck files + backups
+        # -----------------------------
+        for entry in os.listdir(PLUGINS_PATH):
+            sanitized = re.sub(
+                r"[^A-Za-z0-9_]",
+                "_",
+                entry[:-5] if entry.endswith(".deck") else entry
+            )
+
+            if sanitized != plugin_name:
+                continue
+
+            full_path = os.path.join(PLUGINS_PATH, entry)
+
+            try:
+                if os.path.isfile(full_path):
+                    os.remove(full_path)
+                else:
+                    shutil.rmtree(full_path, ignore_errors=True)
+
+                removed_files.append(full_path)
+                log.info(f"Removed plugin file: {full_path}")
+
+            except Exception as e:
+                log.warning(f"Failed removing {full_path}: {e}")
+
+        # -----------------------------
+        # Remove backups
+        # -----------------------------
+        for entry in os.listdir(PLUGINS_PATH):
+            if entry.startswith(plugin_name) and ".backup" in entry:
+                backup_path = os.path.join(PLUGINS_PATH, entry)
+
+                try:
+                    os.remove(backup_path)
+                    removed_files.append(backup_path)
+                    log.info(f"Removed backup: {backup_path}")
+                except Exception as e:
+                    log.warning(f"Failed removing backup {backup_path}: {e}")
+
+        # -----------------------------
+        # Remove temp assets/scripts
+        # -----------------------------
+        if os.path.exists(TEMP_PATH):
+            for entry in os.listdir(TEMP_PATH):
+                if entry.startswith(f"{plugin_name}__"):
+                    path = os.path.join(TEMP_PATH, entry)
+
+                    try:
+                        if os.path.isfile(path):
+                            os.remove(path)
+                        else:
+                            shutil.rmtree(path, ignore_errors=True)
+
+                        removed_files.append(path)
+
+                    except Exception as e:
+                        log.warning(f"Failed removing temp asset {path}: {e}")
+
+        # -----------------------------
+        # Remove satisfied install entry
+        # -----------------------------
+        satisfied_path = Path(SATISFIED_INSTALLS)
+
+        if satisfied_path.exists():
+            lines = satisfied_path.read_text(
+                encoding="utf-8"
+            ).splitlines()
+
+            lines = [
+                l for l in lines
+                if not l.startswith(f"{plugin_name}==")
+            ]
+
+            satisfied_path.write_text(
+                "\n".join(lines),
+                encoding="utf-8"
+            )
+
+            log.info(f"Removed satisfied install for {plugin_name}")
+
+        # -----------------------------
+        # Unload python modules
+        # -----------------------------
+        modules_to_remove = [
+            name for name in sys.modules
+            if name == plugin_name or name.startswith(f"{plugin_name}_")
+        ]
+
+        for module_name in modules_to_remove:
+            try:
+                del sys.modules[module_name]
+                log.info(f"Unloaded module: {module_name}")
+            except Exception as e:
+                log.warning(f"Failed unloading module {module_name}: {e}")
+
+        # -----------------------------
+        # Remove settings
+        # -----------------------------
+        settings = get_settings()
+
+        if plugin_name in settings:
+            del settings[plugin_name]
+            save_settings(settings)
+            log.info(f"Removed settings for {plugin_name}")
+
+        return {
+            "success": True,
+            "plugin_name": plugin_name,
+            "removed_files": removed_files,
+            "message": f"Plugin {plugin_name} uninstalled successfully"
+        }
+
+    except Exception as e:
+        log.exception(f"Failed uninstalling plugin {plugin_name}")
+
+        return {
+            "success": False,
+            "plugin_name": plugin_name,
+            "message": str(e)
+        }
