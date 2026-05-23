@@ -48,18 +48,41 @@ const createButtonTemplate = (button_data) => {
     }
 
     if (button_data.command?.startsWith("!")) {
-        const rangeInput = document.createElement("input");
-        rangeInput.type = "range";
-        rangeInput.classList.add("slider");
-        rangeInput.min = button_data.min ?? 0;
-        rangeInput.max = button_data.max ?? 100;
-        rangeInput.style.writingMode = "sideways-lr";
-        rangeInput.style.position = "absolute";
-        rangeInput.style.height = "95%";
-        rangeInput.style.width = "inherit";
+        // Create knob preview instead of slider
+        const knobContainer = document.createElement("div");
+        knobContainer.style.cssText = `
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        `;
+        
+        const knob = document.createElement("div");
+        knob.classList.add("knob");
+        
+        const knobInner = document.createElement("div");
+        knobInner.classList.add("knob-inner");
+        
+        const knobDot = document.createElement("div");
+        knobDot.classList.add("knob-dot");
+        
+        const knobLabel = document.createElement("div");
+        knobLabel.classList.add("knob-label");
+        const minVal = parseFloat(button_data.min) || 0;
+        const maxVal = parseFloat(button_data.max) || 100;
+        const midValue = Math.round((minVal + maxVal) / 2);
+        knobLabel.textContent = midValue.toString();
+        
+        knobInner.appendChild(knobDot);
+        knob.appendChild(knobInner);
+        knobContainer.appendChild(knob);
+        knobContainer.appendChild(knobLabel);
+        
         text_div.style.zIndex = "3";
-        text_div.style.bottom = "0";
-        button_template.appendChild(rangeInput);
+        button_template.appendChild(knobContainer);
     }
 
     const img = document.createElement("img");
