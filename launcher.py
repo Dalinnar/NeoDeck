@@ -257,60 +257,70 @@ def hash_file(p):
 
 def install_deps(python, base_dir, is_console, status):
     log_error("[INSTALL_DEPS] Starting dependency installation...", base_dir)
-    log_error(f"[INSTALL_DEPS] Python executable: {python}", base_dir)
-    log_error(f"[INSTALL_DEPS] Working directory: {base_dir}", base_dir)
 
     req = os.path.join(base_dir, "requirements.txt")
-    if not os.path.exists(req):
-        log_error("[INSTALL_DEPS] ✓ requirements.txt not found, skipping", base_dir)
-        return
 
-    log_error(f"[INSTALL_DEPS] ✓ Found requirements.txt at: {req}", base_dir)
+    if not os.path.exists(req):
+        return
 
     hfile = os.path.join(base_dir, ".deps_hash")
     h = hash_file(req)
-    log_error(f"[INSTALL_DEPS] Requirements hash: {h}", base_dir)
 
     if os.path.exists(hfile):
         old_hash = open(hfile).read()
+
         if old_hash == h:
-            log_error("[INSTALL_DEPS] ✓ Dependencies already installed (hash match), skipping", base_dir)
+            log_error("[INSTALL_DEPS] Dependencies already installed", base_dir)
             return
-        else:
-            log_error(f"[INSTALL_DEPS] Hash mismatch (old: {old_hash} → new: {h}), reinstalling...", base_dir)
-    else:
-        log_error("[INSTALL_DEPS] No hash file found, installing fresh...", base_dir)
 
     status("Installing dependencies...")
 
-    try:
-        log_error("[INSTALL_DEPS] Running: pip install -r requirements.txt", base_dir)
-        result = subprocess.run(
-            python + ["-m", "pip", "install", "-r", "requirements.txt"],
-            cwd=base_dir,
-            creationflags=0 if is_console else NO_WIN,
-            check=False,
-            capture_output=True,
-            text=True
+    cmd = python + [
+        "-m",
+        "pip",
+        "install",
+        "-r",
+        "requirements.txt",
+        "-v",
+        "--disable-pip-version-check",
+        "--no-input"
+    ]
+
+    process = subprocess.Popen(
+        cmd,
+        cwd=base_dir,
+        creationflags=0 if is_console else NO_WIN,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1
+    )
+
+    for line in process.stdout:
+        line = line.strip()
+
+        if not line:
+            continue
+
+        log_error(f"[PIP] {line}", base_dir)
+
+        # Mostrar progreso en UI
+        status(line[:120])
+
+        # También imprimir en consola si querés
+        if is_console:
+            print(line)
+
+    process.wait()
+
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"pip install failed with code {process.returncode}"
         )
 
-        if result.returncode != 0:
-            error_output = result.stderr + result.stdout
-            log_error(f"[INSTALL_DEPS] ✗ Pip install failed (code {result.returncode})", base_dir)
-            log_error(f"[INSTALL_DEPS] STDOUT: {result.stdout}", base_dir)
-            log_error(f"[INSTALL_DEPS] STDERR: {result.stderr}", base_dir)
-            status(f"Pip error: {error_output[:200]}")
-            raise subprocess.CalledProcessError(result.returncode, result.args, output=error_output)
+    open(hfile, "w").write(h)
 
-        log_error("[INSTALL_DEPS] ✓ All dependencies installed successfully", base_dir)
-        open(hfile, "w").write(h)
-        log_error(f"[INSTALL_DEPS] ✓ Hash file saved: {hfile}", base_dir)
-
-    except subprocess.CalledProcessError as e:
-        log_error(f"[INSTALL_DEPS] ✗ Failed to install dependencies: {str(e)}", base_dir)
-        status(f"Failed to install dependencies: {str(e)}")
-        raise
-
+    log_error("[INSTALL_DEPS] Dependencies installed successfully", base_dir)
 # =========================
 # MAIN
 # =========================
