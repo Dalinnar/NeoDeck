@@ -67,30 +67,6 @@ Activate it:
 venv\Scripts\activate
 ```
 
-### Linux/macOS
-
-```Bash
-source venv/bin/activate
-```
-
-Install dependencies:
-
-```Bash
-pip install -r requirements.txt
-```
-
-Run the application:
-
-```Bash
-python run.py
-```
-build the aplication:
-
-```Bash
-python setup.py build_exe
-```
-* * *
-
 ## 🧩 Plugins
 
 NeoDeck supports plugins and modular actions.
@@ -104,6 +80,10 @@ Plugin architecture has been heavily reworked compared to the original project, 
 * Plugin isolation
 * UI integration
 * * *
+
+See the [documentation](https://dalinnar.github.io/NeoDeck/) to learn how to create plugins.
+
+Check out the [official plugins repository](https://github.com/Dalinnar/NeoDeck-plugins).
 
 ## 🛠️ Project Status
 
