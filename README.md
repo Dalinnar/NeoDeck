@@ -1,4 +1,5 @@
 # NeoDeck
+![NeoDeck Screenshot](static/img/neodeck.png)
 
 A modern remote control dashboard inspired by the original [WebDeck](https://github.com/Lenochxd/WebDeck) project.
 
