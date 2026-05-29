@@ -1,6 +1,4 @@
-# assets.md
-
-## Assets System
+# Assets System
 
 NeoDeck plugins can include custom assets such as:
 
