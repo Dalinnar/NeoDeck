@@ -28,9 +28,7 @@ Built with Python, Flask, JavaScript, and a plugin-based architecture.
 
 
 
-```Markdown
-![NeoDeck Screenshot](docs/images/screenshot.png)
-```
+![NeoDeck Screenshot](static/img/md_example.png)
 
 * * *
 
