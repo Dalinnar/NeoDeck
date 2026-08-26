@@ -960,18 +960,20 @@ class ScrollPadButton extends BaseButton {
       activeTouches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
 
       if (state.wheelMode) {
-        // Two-finger scroll: process per-finger delta
         processTwoFingerScroll(ev.pointerId, ev.clientY);
         return;
       }
+
+      // Snapshot BEFORE handleMove mutates state.lastPos
+      const prevPos = state.lastPos;
 
       // Single-finger move
       handleMove(ev.clientX, ev.clientY);
 
       // If moved significantly, cancel the hold timer
-      if (!state.hasMoved && state.lastPos) {
-        const dx = ev.clientX - state.lastPos.x;
-        const dy = ev.clientY - state.lastPos.y;
+      if (!state.hasMoved && prevPos) {
+        const dx = ev.clientX - prevPos.x;
+        const dy = ev.clientY - prevPos.y;
         if (Math.sqrt(dx * dx + dy * dy) > 8) {
           state.hasMoved = true;
           clearHoldTimer();
