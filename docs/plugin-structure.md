@@ -8,7 +8,7 @@ This page explains the recommended plugin layout and what each file or folder is
 
 # Standard Structure
 
-```txt
+```text
 my_plugin/
 │
 ├── __init__.py
@@ -25,11 +25,11 @@ my_plugin/
 │   └── helper.js
 │
 └── languages/
-    ├── en.lang
-    └── es.lang
-````
+    ├── en_US.lang
+    └── es_ES.lang
+```
 
-* * *
+---
 
 # Root Files
 
@@ -41,13 +41,13 @@ NeoDeck searches for this file when loading plugins.
 
 This file usually contains:
 
-* Metadata
-* Flask Blueprint
-* Command registration
-* Monitor registration
-* Settings
-* Routes
-* Initialization logic
+- Metadata
+- Flask Blueprint
+- Command registration
+- Monitor registration
+- Settings
+- Routes
+- Initialization logic
 
 Example:
 
@@ -60,7 +60,7 @@ plugin_version = "1.0.0"
 plugin = Blueprint(plugin_name, __name__)
 ```
 
-* * *
+---
 
 ## `functions.py`
 
@@ -68,10 +68,10 @@ Contains reusable plugin logic.
 
 Usually used for:
 
-* Command functions
-* Utility functions
-* External API communication
-* Shared logic
+- Command functions
+- Utility functions
+- External API communication
+- Shared logic
 
 Example:
 
@@ -80,7 +80,7 @@ def say_hello():
     print("Hello from NeoDeck")
 ```
 
-* * *
+---
 
 ## `routes.py`
 
@@ -108,7 +108,7 @@ plugin.add_url_rule(
 )
 ```
 
-* * *
+---
 
 ## `requirements.txt`
 
@@ -123,7 +123,7 @@ requests
 psutil
 ```
 
-* * *
+---
 
 ## `buttons.json`
 
@@ -131,13 +131,15 @@ Defines buttons added by the plugin.
 
 NeoDeck automatically loads and merges this file into the global button registry.
 
+The **key of each button entry is the text displayed on the button** —
+there is no separate `label` or `name` field.
+
 Example:
 
 ```JSON
 {
   "my_plugin": {
-    "hello_button": {
-      "label": "Hello",
+    "Hello": {
       "command": "/hello"
     }
   }
@@ -146,7 +148,7 @@ Example:
 
 Button styling and advanced options are covered in `buttons.md`.
 
-* * *
+---
 
 # Assets Folder
 
@@ -158,12 +160,12 @@ Used for static plugin resources.
 
 Examples:
 
-* Icons
-* Images
-* Audio files
-* CSS
-* HTML
-* Fonts
+- Icons
+- Images
+- Audio files
+- CSS
+- HTML
+- Fonts
 
 NeoDeck automatically copies assets into the temporary asset directory during plugin loading.
 
@@ -175,7 +177,7 @@ plugin.metadata = {
 }
 ```
 
-* * *
+---
 
 # Scripts Folder
 
@@ -189,12 +191,12 @@ NeoDeck copies this folder into the temporary plugin asset directory.
 
 Common uses:
 
-* JavaScript helpers
-* Batch scripts
-* PowerShell scripts
-* Shell scripts
+- JavaScript helpers
+- Batch scripts
+- PowerShell scripts
+- Shell scripts
 
-* * *
+---
 
 # Languages Folder
 
@@ -204,7 +206,9 @@ languages/
 
 Contains translation files.
 
-Each file uses the `.lang` format.
+Each file uses the `.lang` format, named after a locale
+(`language_COUNTRY`, e.g. `en_US`, `es_ES`, `es_AR`, `fr_FR`) — not a
+bare language code.
 
 Example:
 
@@ -217,16 +221,16 @@ Supported example:
 
 ```
 languages/
-├── en.lang
-├── es.lang
-└── fr.lang
+├── en_US.lang
+├── es_ES.lang
+└── fr_FR.lang
 ```
 
 NeoDeck merges all plugin language files into the global translation system.
 
 Language handling is covered in `languages.md`.
 
-* * *
+---
 
 # Optional Files
 
@@ -241,25 +245,23 @@ my_plugin/
 
 More advanced plugins may include:
 
-* Assets
-* Settings
-* Routes
-* Buttons
-* Localization
-* External dependencies
+- Assets
+- Settings
+- Routes
+- Buttons
+- Localization
+- External dependencies
 
-* * *
+---
 
 # Development Recommendations
 
 Recommended practices:
 
-* Keep routes separated from logic
-* Store reusable code inside `functions.py`
-* Keep assets organized
-* Use clear plugin names
-* Avoid global state when possible
+- Keep routes separated from logic
+- Store reusable code inside `functions.py`
+- Keep assets organized
+- Use clear plugin names
+- Avoid global state when possible
 
 Additional recommendations are covered in `best-practices.md`.
-
-* * *
