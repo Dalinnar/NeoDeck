@@ -43,7 +43,7 @@ Flow:
 ```text
 plugin.settings
     ↓
-schema generation (register_plugin_settings, automatic on plugin load)
+schema generation (register_plugin_settings, see "Registration Timing" below)
     ↓
 settings.js
     ↓
@@ -53,13 +53,74 @@ saveSettings()
     ↓
 backend persistence (settings.json)
     ↓
-get_settings() at runtime
+current_app.get_settings() at runtime
 ```
 
 When a plugin is loaded, NeoDeck automatically registers `plugin.settings`
 under a category named after `plugin_name`. You do not need to call any
 registration function yourself — just define `plugin.settings` and the
 loader takes care of the rest.
+
+> ⚠️ **Registration is not per-plugin, it's a second pass over ALL
+> plugins.** See [Registration Timing](#registration-timing) before you
+> read settings from any code that runs during plugin import (e.g. a
+> module-level call, or anything started from `__init__.py` at load
+> time). If your plugin reads its own settings before every plugin has
+> finished loading, it may read an empty/default dict even though the
+> user has real values saved.
+
+---
+
+# Registration Timing
+
+`load_plugins()` runs in **two passes**:
+
+1. **Pass 1** — every `.deck`/plugin directory is extracted, its
+   `__init__.py` is executed (this is where `plugin = Blueprint(...)`,
+   `plugin.settings = {...}`, `plugin.command_map = {...}`, etc. get
+   defined), and its blueprint is registered on the Flask app.
+2. **Pass 2** — *after every plugin has finished Pass 1*, NeoDeck loops
+   over `app.blueprints` and calls `register_plugin_settings(name,
+   plugin.settings)` for each one, plus wires up `command_map`,
+   `monitors`, and `getters`.
+
+The practical consequence: **your plugin's settings category is not
+registered yet while your `__init__.py` module body is still
+executing.** If your plugin does any of the following directly at
+module level (i.e. not deferred to a later hook), it is running before
+Pass 2:
+
+- Starting a background thread or reconnect loop
+- Making a network call that depends on saved credentials
+- Reading settings for `your_plugin_name` and expecting real values
+
+```python
+# ❌ Do NOT do this at module level in __init__.py
+functions.start_background_connection(_current_settings)
+```
+
+At the point this line runs, `register_plugin_settings("discord_control", ...)`
+hasn't executed yet, so reading settings for `"discord_control"` can
+return `{}` or stale defaults — intermittently, depending on plugin load
+order.
+
+**Defer startup work to `plugin.init`.** If your Blueprint defines an
+`init` attribute (a zero-arg callable), NeoDeck calls it automatically
+once *all* plugins are loaded and registered, inside
+`with self.app_context():` (see `CustomFlask.run()`):
+
+```python
+# ✅ Correct — deferred until after all plugins (incl. yours) are registered,
+# and called with an app context already active
+def init():
+    functions.start_background_connection(_current_settings)
+
+plugin.init = init
+```
+
+This guarantees settings for `plugin_name` are registered and readable
+the first time your background loop calls it — see below for how to
+actually read them from a background thread.
 
 ---
 
@@ -352,36 +413,107 @@ can simply mean "using the default", not "never saved".
 Defining `plugin.settings` gives you the schema and the settings UI,
 but plugin code that needs the **current, saved** values (for example,
 to connect to an external service using user-provided credentials)
-should call `get_settings()` from `app.utils.settings`:
+reads them off the Flask app object via `current_app`:
 
 ```python
-from app.utils.settings import get_settings
+from flask import current_app
 
 # Full resolved dict for your plugin's category (defaults + overrides)
-my_settings = get_settings("my_plugin")
+my_settings = current_app.get_settings(plugin_name)
 
 # A single value
-port = get_settings("my_plugin", "server_port")
+port = current_app.get_settings("my_plugin", "server_port")
 ```
 
-- `get_settings()` with no arguments returns the full resolved settings
-  dict across every category (core `neodeck` settings plus every
-  registered plugin).
-- `get_settings(category)` returns the resolved dict for one category —
-  pass your `plugin_name` here.
-- `get_settings(category, key)` returns a single resolved value, or
-  `None` if the key doesn't exist.
+`app.get_settings` is attached to the Flask app instance once, in
+NeoDeck's bootstrap (`app.get_settings = get_settings`, pointing at the
+core `get_settings` function from the top-level `settings.py` module).
+`current_app` is how plugin code — which is dynamically loaded via
+`exec_module` and does **not** sit inside a conventional importable
+`app` package — gets a handle back to that same function.
 
-"Resolved" means defaults from `plugin.settings` merged with whatever
-the user has actually saved through the settings UI — this is what you
-want to read, not the schema itself.
+## ⚠️ Do NOT `import` settings helpers directly in plugin code
+
+You may be tempted to write:
+
+```python
+# ❌ Will fail — there is no importable `app.utils.settings` module
+from app.utils.settings import get_settings
+```
+
+**This import does not resolve in NeoDeck plugin code**, and the
+failure is easy to miss. Plugins are loaded via
+`importlib.util.spec_from_file_location` + `exec_module`, and the
+surrounding `load_plugin_module()` call is wrapped in a `try/except`
+that only logs a warning:
+
+```python
+if "__init__.py" in files:
+    try:
+        load_plugin_module(app, root, "__init__.py", plugin_name)
+    except Exception as e:
+        log.warning(f"Error loading __init__.py: {e}")
+```
+
+So a bad top-level import in your `__init__.py` doesn't crash NeoDeck —
+it just quietly logs a warning and **your blueprint never registers**.
+Your commands, monitors, routes, and settings UI simply won't appear,
+with no obvious error surfaced to the user. If a plugin you're
+building "isn't showing up at all," check the NeoDeck log for a
+`ModuleNotFoundError` on this exact line before assuming the loader
+itself is broken.
+
+`app` is the local variable name for the running `CustomFlask` instance
+in the bootstrap script — a Flask application object, not a Python
+package on `sys.path`. There is no `app/utils/settings.py` submodule to
+import in plugin code. Always go through `current_app.get_settings(...)`
+instead.
+
+## Reading settings from background threads
+
+`current_app` is a **context-local proxy** — it only resolves while an
+application or request context is pushed on the *current thread*. That
+holds true inside a route handler, inside a `command_map`/`monitors`
+callback (NeoDeck pushes a context for these), and inside `plugin.init()`
+(NeoDeck wraps the `init()` pass in `with self.app_context():`).
+
+It does **not** hold inside a background thread you start yourself
+(e.g. a reconnect loop via `start_background_connection`, a
+`threading.Timer`, or similar) — that thread has no context pushed by
+default, and calling `current_app.get_settings(...)` from it raises
+`RuntimeError: Working outside of application context`.
+
+The fix is to capture the **real app object** (not the `current_app`
+proxy — a proxy can't be handed off to another thread) while a context
+is active, typically inside `init()`, and push a short-lived context
+around each read from the background thread:
+
+```python
+from flask import current_app
+
+def _make_current_settings(app):
+    def _current_settings():
+        try:
+            with app.app_context():
+                return app.get_settings(plugin_name) or {}
+        except Exception as exc:
+            functions._log(f"No se pudo leer settings: {exc}")
+            return {}
+    return _current_settings
+
+def init():
+    app = current_app._get_current_object()
+    functions.start_background_connection(_make_current_settings(app))
+
+plugin.init = init
+```
 
 Because settings can change while NeoDeck is running (the user can
 open the settings UI at any time), avoid reading settings once and
-caching them for the plugin's whole lifetime. Call `get_settings()`
-again whenever you need a fresh value — for example, right before
-attempting a reconnect — instead of reusing a value captured at plugin
-load time.
+caching them for the plugin's whole lifetime. Call
+`current_app.get_settings(...)` again whenever you need a fresh value —
+for example, right before attempting a reconnect — instead of reusing a
+value captured at plugin load time.
 
 There is also `save_settings(updates)`, used internally by the
 `POST /save_settings` endpoint, but plugins generally shouldn't call
@@ -435,9 +567,9 @@ plugin.settings = {
 Reading it back at runtime:
 
 ```python
-from app.utils.settings import get_settings
+from flask import current_app
 
-settings = get_settings("obs_integration")
+settings = current_app.get_settings("obs_integration")
 port = settings.get("server_port")
 password = settings.get("server_password")
 ```
@@ -451,4 +583,12 @@ password = settings.get("server_password")
 - Multiple setting types are supported
 - `link`, `status`, and `button` are display-only and must not have a `"default"`
 - Settings are saved automatically, and only the delta from defaults is persisted
-- Plugin code reads current values with `get_settings(plugin_name)` from `app.utils.settings`, not from the schema
+- Registration happens in a **second pass**, after every plugin has finished
+  loading — defer startup work (background threads, reconnects) to
+  `plugin.init`, not module-level code in `__init__.py`
+- Plugin code reads current values via `current_app.get_settings(plugin_name)`
+  — there is no importable `app.utils.settings` module; attempting that
+  import silently breaks plugin loading instead of raising a visible error
+- `current_app` only resolves inside an active request/app context —
+  background threads must capture the real `app` object (during
+  `init()`) and push their own `app.app_context()` on each read
