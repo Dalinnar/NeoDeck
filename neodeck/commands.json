@@ -8,9 +8,8 @@
         "image_size": "50%"
       }
     },
-
-    "multi action button":{
-      "command" :"__multiaction__",
+    "multi action button": {
+      "command": "__multiaction__",
       "inputs": [],
       "style": {
         "image": "multiaction.png",
@@ -48,27 +47,25 @@
       }
     }
   },
-  "remote_inputs":{
-    "trackpad":{
+  "remote_inputs": {
+    "trackpad": {
       "command": "#scrollpad",
       "inputs": [],
       "blank_img": true,
-       "style": {
+      "style": {
         "image": "",
         "image_size": ""
       }
     },
-    "virtual_keyboard":{
+    "virtual_keyboard": {
       "command": "$vt_keyboard()",
       "inputs": [],
-
-      "style":{
+      "style": {
         "image": "keyboard.svg",
         "image_size": "75%"
-        
       }
-  }
-},
+    }
+  },
   "Display": {
     "CPU": {
       "command": "#monitor",
@@ -246,9 +243,9 @@
           "max": "100"
         },
         "volume_mixer": {
-          "command" : "$vol_mixer()",
+          "command": "$vol_mixer()",
           "inputs": [],
-          "style" :{
+          "style": {
             "image": "vol_mixer.png",
             "image_size": "75%"
           }
@@ -280,6 +277,18 @@
           "inputs": []
         }
       }
+    },
+    "toglle_mic": {
+      "command": "/toggle_mic {mic_src}",
+      "toggleable": true,
+      "inputs": [
+        {
+          "TYPE": "select",
+          "name": "mic_src",
+          "options_url": "/api/list_mic_src"
+        }
+      ],
+      "style": {}
     },
     "Open": {
       "command": "/start {file-path}",
@@ -561,11 +570,9 @@
         {
           "TYPE": "macro_rec",
           "name": "macro"
-          
         }
-        
       ],
-      "style":{
+      "style": {
         "image": "key.png",
         "image_size": "75%"
       }

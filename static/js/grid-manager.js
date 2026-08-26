@@ -322,18 +322,157 @@ class BaseButton {
 
 // Monitor Button class
 class MonitorButton extends BaseButton {
+  constructor(buttonData, index) {
+    super(buttonData, index);
+    this.history = [];
+    this.maxHistory = 60; // keep last 60 readings
+    this.canvas = null;
+    this.ctx = null;
+    this.isNumeric = false;
+  }
+
   setupInteractions() {
-    // run base interactions (commands, click handlers, etc)
     super.setupInteractions();
 
-    if (this.data.command === "#monitor") {
-      Initialize_monitors(this.data.track ?? undefined);
+    if (this.data.command !== "#monitor") return;
 
-      const monitor = document.createElement("h2");
-      monitor.style.zIndex = 2;
-      monitor.setAttribute("data_from", this.data.collect_data_from);
+    Initialize_monitors(this.data.track ?? undefined);
 
-      this.element.appendChild(monitor);
+    // Label (sits on top of canvas)
+    const monitor = document.createElement("h2");
+    monitor.style.cssText = "z-index:2; position:relative; pointer-events:none; margin:0;";
+    monitor.setAttribute("data_from", this.data.collect_data_from);
+    this.monitorLabel = monitor;
+
+    // Canvas for sparkline (fills the button as background)
+    const canvas = document.createElement("canvas");
+    canvas.style.cssText = `
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      border-radius: inherit;
+      opacity: 0.6;
+    `;
+    this.canvas = canvas;
+    this.ctx = canvas.getContext("2d");
+
+    this.element.style.position = "relative";
+    this.element.style.overflow = "hidden";
+    this.element.appendChild(canvas);
+    this.element.appendChild(monitor);
+
+    // Watch for data updates via MutationObserver on the h2
+    const observer = new MutationObserver(() => {
+      const raw = monitor.innerText?.trim();
+      this.onDataUpdate(raw);
+    });
+    observer.observe(monitor, { childList: true, subtree: true, characterData: true });
+
+    // Also resize canvas when button resizes
+    const ro = new ResizeObserver(() => this.resizeCanvas());
+    ro.observe(this.element);
+  }
+
+  onDataUpdate(raw) {
+    const num = parseFloat(raw);
+    if (!isNaN(num)) {
+      this.isNumeric = true;
+      this.history.push(num);
+      if (this.history.length > this.maxHistory) this.history.shift();
+      this.drawSparkline();
+    } else {
+      this.isNumeric = false;
+    }
+  }
+
+  resizeCanvas() {
+    if (!this.canvas) return;
+    const rect = this.element.getBoundingClientRect();
+    this.canvas.width = rect.width;
+    this.canvas.height = rect.height;
+    this.drawSparkline();
+  }
+
+  drawSparkline() {
+    if (!this.ctx || this.history.length < 2) return;
+
+    const { width, height } = this.canvas;
+    const ctx = this.ctx;
+    const data = this.history;
+
+    ctx.clearRect(0, 0, width, height);
+
+    const min = Math.min(...data);
+    const max = Math.max(...data);
+    const range = max - min || 1;
+
+    const pad = { top: 8, bottom: 8, left: 4, right: 4 };
+    const drawW = width - pad.left - pad.right;
+    const drawH = height - pad.top - pad.bottom;
+
+    const toX = (i) => pad.left + (i / (data.length - 1)) * drawW;
+    const toY = (v) => pad.top + (1 - (v - min) / range) * drawH;
+
+    // Filled area under the line
+    const gradient = ctx.createLinearGradient(0, pad.top, 0, height);
+
+    // Use button's text color or fallback to a teal/blue
+    const baseColor = this.data.text_color || "#4dd0e1";
+    gradient.addColorStop(0, baseColor + "88");
+    gradient.addColorStop(1, baseColor + "11");
+
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(data[0]));
+    for (let i = 1; i < data.length; i++) {
+      // Smooth curve via bezier
+      const x0 = toX(i - 1), y0 = toY(data[i - 1]);
+      const x1 = toX(i), y1 = toY(data[i]);
+      const cpx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+    }
+    ctx.lineTo(toX(data.length - 1), height);
+    ctx.lineTo(toX(0), height);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Line on top
+    ctx.beginPath();
+    ctx.moveTo(toX(0), toY(data[0]));
+    for (let i = 1; i < data.length; i++) {
+      const x0 = toX(i - 1), y0 = toY(data[i - 1]);
+      const x1 = toX(i), y1 = toY(data[i]);
+      const cpx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cpx, y0, cpx, y1, x1, y1);
+    }
+    ctx.strokeStyle = baseColor;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dot at latest value
+    const lastX = toX(data.length - 1);
+    const lastY = toY(data[data.length - 1]);
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = baseColor;
+    ctx.fill();
+
+    // Optional: min/max faint horizontal lines
+    if (range > 0) {
+      ctx.strokeStyle = baseColor + "33";
+      ctx.lineWidth = 0.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(pad.left, toY(max));
+      ctx.lineTo(width - pad.right, toY(max));
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(pad.left, toY(min));
+      ctx.lineTo(width - pad.right, toY(min));
+      ctx.stroke();
+      ctx.setLineDash([]);
     }
   }
 }

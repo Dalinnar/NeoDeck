@@ -10,7 +10,7 @@ from flask import jsonify
 
 
 
-from app.buttons.audio.volume import set_volume,get_volume,get_mute,set_mixer_volume,get_app_volume
+from app.buttons.audio.volume import set_volume,get_volume,get_mute,set_mixer_volume,get_app_volume,toggle_mic,get_toggle_mic
 from app.utils.firewall import fix_firewall_permission
 from app.utils.kill_nircmd import kill_nircmd
 from app.utils.logger import log
@@ -69,6 +69,7 @@ getter_map = {
     "!volume":                 lambda: get_volume(),
     "/soundcontrol_mute":     lambda: get_mute(),
     "!app_volume":              lambda message: get_app_volume(message),
+    "/toggle_mic":          lambda message: get_toggle_mic(message),
 }
 
 command_map ={
@@ -103,6 +104,7 @@ command_map ={
         "/setoutputdevice":         lambda message: audio.set_speakers_by_name(message.replace("/setoutputdevice", "").strip()),
         "/restart":                 lambda message: actions.restarttask(message),
         "!volume":                  lambda message: set_volume(message),
+        "/toggle_mic":              lambda message: toggle_mic(message),
         "!app_volume":              lambda message: set_mixer_volume(message),
 
         "/colorpicker":             lambda : actions.get_color_under_cursor(),

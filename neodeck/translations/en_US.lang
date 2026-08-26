@@ -250,7 +250,8 @@ SYSTEM_screensaver__btn_name=Screensaver
 SYSTEM_shutdown_pc__btn_name=Shutdown PC
 SYSTEM_sleep_pc__btn_name=Sleep PC
 SYSTEM_superaltf4__btn_name=Super Alt+F4
-
+SYSTEM_toglle_mic__btn_name=Toggle microphone
+input_label__mic_src=Select microphone
 #system/media_control
 SYSTEM_media_control__category_name=Media Control
 SYSTEM_media_control_next__btn_name=Next

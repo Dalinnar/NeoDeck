@@ -2,6 +2,15 @@ from comtypes import CoInitializeEx, CoUninitialize, COINIT_APARTMENTTHREADED, C
 from pycaw.pycaw import AudioUtilities, ISimpleAudioVolume, IAudioEndpointVolume
 from ctypes import cast, POINTER
 from flask import jsonify
+import comtypes
+
+# Import paths differ slightly across pycaw versions, so fall back if needed.
+try:
+    from pycaw.api import EDataFlow, ERole
+    from pycaw.api.mmdeviceapi import CLSID_MMDeviceEnumerator, DEVICE_STATE, IMMDeviceEnumerator
+except ImportError:
+    from pycaw.constants import CLSID_MMDeviceEnumerator, DEVICE_STATE, EDataFlow, ERole
+    from pycaw.api.mmdeviceapi import IMMDeviceEnumerator
 
 
 def _resolve_com_device(speakers):
@@ -55,6 +64,32 @@ def get_mute():
         print(f"Error en get_mute: {e}")
         return jsonify({"success": False, "message": f"Error obteniendo mute: {e}"})
 
+def get_toggle_mic(message):
+    """
+    Get current mute state for a specific microphone by device id.
+    Format: '/toggle_mic {device-id}'
+    Example: '/toggle_mic {0.0.1.00000000}.{6acab3bb-ac45-4ef0-a1ac-e79e027ccc97}'
+    """
+    try:
+        parts = message.split(maxsplit=1)
+        if len(parts) < 2:
+            return jsonify({"success": False, "message": "Format: '/toggle_mic <device_id>'"})
+
+        device_id = parts[1].strip()
+
+        CoInitializeEx(COINIT_APARTMENTTHREADED)
+        volume = _get_endpoint_volume_by_id(device_id)
+        muted = bool(volume.GetMute())
+
+        return jsonify({"data": muted, "target": device_id})
+    except Exception as e:
+        print(f"Error en get_toggle_mic: {e}")
+        return jsonify({"success": False, "message": f"Error obteniendo estado del mic: {e}"})
+    finally:
+        try:
+            CoUninitialize()
+        except:
+            pass
 
 def set_volume(message):
     """Set volume using message format '!volume 50'"""
@@ -282,7 +317,7 @@ def set_mixer_volume(message):
         return jsonify({"success": False, "message": "Invalid volume value"})
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
-    
+
 
 def get_app_volume(message):
     """
@@ -326,6 +361,139 @@ def get_app_volume(message):
 
     except Exception as e:
         return jsonify({"success": False, "message": str(e)})
+    finally:
+        try:
+            CoUninitialize()
+        except:
+            pass
+
+
+# ---------------------------------------------------------------------------
+# Microphone (capture device) helpers
+# ---------------------------------------------------------------------------
+
+def _get_device_enumerator():
+    return comtypes.CoCreateInstance(
+        CLSID_MMDeviceEnumerator,
+        IMMDeviceEnumerator,
+        comtypes.CLSCTX_INPROC_SERVER,
+    )
+
+
+def list_microphones(active_only=True):
+    """
+    Return all microphone (capture) devices.
+    By default only ENABLED/ACTIVE mics are returned.
+
+    Each entry: {"id": str, "name": str, "is_default": bool}
+    """
+    try:
+        CoInitializeEx(COINIT_APARTMENTTHREADED)
+
+        enumerator = _get_device_enumerator()
+        if enumerator is None:
+            return []
+
+        state_mask = DEVICE_STATE.ACTIVE.value if active_only else DEVICE_STATE.MASK_ALL.value
+        collection = enumerator.EnumAudioEndpoints(EDataFlow.eCapture.value, state_mask)
+        count = collection.GetCount()
+
+        # Resolve the current default mic id, if any is set.
+        default_id = None
+        try:
+            default_raw = enumerator.GetDefaultAudioEndpoint(
+                EDataFlow.eCapture.value, ERole.eMultimedia.value
+            )
+            default_id = default_raw.GetId()
+        except Exception:
+            default_id = None
+
+        mics = []
+        for i in range(count):
+            raw_dev = collection.Item(i)
+            if raw_dev is None:
+                continue
+
+            device = AudioUtilities.CreateDevice(raw_dev)  # wraps + reads FriendlyName/id/state
+            dev_id = getattr(device, "id", None)
+            name = getattr(device, "FriendlyName", None) or "Unknown microphone"
+
+            mics.append({
+                "id": dev_id,
+                "name": name,
+                "is_default": bool(default_id and dev_id == default_id),
+            })
+
+        return mics
+    except Exception as e:
+        print(f"Error en list_microphones: {e}")
+        raise
+    finally:
+        try:
+            CoUninitialize()
+        except:
+            pass
+
+
+def get_default_microphone():
+    """Return only the default enabled microphone, or None if none found."""
+    mics = list_microphones(active_only=True)
+    for m in mics:
+        if m["is_default"]:
+            return m
+    return mics[0] if mics else None
+
+
+def get_microphones():
+    """Flask-friendly wrapper: jsonify the enabled mic list."""
+    try:
+        mics = list_microphones()
+        return jsonify({"data": mics})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)})
+    
+
+def _get_endpoint_volume_by_id(device_id):
+    """Activate IAudioEndpointVolume on a specific device (by endpoint id string)."""
+    enumerator = _get_device_enumerator()
+    if enumerator is None:
+        raise RuntimeError("Could not create device enumerator")
+
+    device = enumerator.GetDevice(device_id)
+    if device is None:
+        raise RuntimeError(f"No device found with id '{device_id}'")
+
+    interface = device.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+    return cast(interface, POINTER(IAudioEndpointVolume))
+
+
+def toggle_mic(message):
+    """
+    Toggle mute state for a specific microphone by device id.
+    Format: '/toggle_mic {device-id}'
+    Example: '/toggle_mic {0.0.1.00000000}.{6acab3bb-ac45-4ef0-a1ac-e79e027ccc97}'
+    """
+    try:
+        parts = message.split(maxsplit=1)
+        if len(parts) < 2:
+            return jsonify({"success": False, "message": "Format: '/toggle_mic <device_id>'"})
+
+        device_id = parts[1].strip()
+
+        CoInitializeEx(COINIT_APARTMENTTHREADED)
+        volume = _get_endpoint_volume_by_id(device_id)
+
+        currently_muted = bool(volume.GetMute())
+        volume.SetMute(0 if currently_muted else 1, None)
+
+        return jsonify({
+            "success": True,
+            "target": device_id,
+            "muted": not currently_muted,
+        })
+    except Exception as e:
+        print(f"Error en toggle_mic: {e}")
+        return jsonify({"success": False, "message": f"Error toggling mic: {e}"})
     finally:
         try:
             CoUninitialize()

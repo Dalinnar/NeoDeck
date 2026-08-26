@@ -654,6 +654,17 @@ def delete_folder(folder_name):
             return jsonify({"success": False, "message": "Folder not found"})
             
 
+@app.route("/api/list_mic_src", methods=["GET"])
+def list_mic_src():
+    from app.buttons.audio.volume import list_microphones
+    mics = list_microphones()
+    options = {
+        m["id"]: f'{m["name"]}{" (Default)" if m["is_default"] else ""}'
+        for m in mics
+        if m.get("id")
+    }
+    return jsonify(options)
+
 @app.route("/favicon.ico", methods=["GET"])
 def favicon():
     return send_from_directory(os.path.join(base_dir, "static", "icons"), "icon.ico")

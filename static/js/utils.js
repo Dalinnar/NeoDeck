@@ -1,28 +1,17 @@
 // utils.js
 
-function createReplacer(inputs, useGlobalFallback = false, maxDepth = 10) {
-    const replaceOnce = (str) =>
-        str.replace(/\{(.*?)\}/g, (match, v) => {
-            let key = v;
-            if (useGlobalFallback && !inputs[v]) {
-                key = `global_${v}`;
+function createReplacer(inputs, useGlobalFallback = false) {
+    return (str) => {
+        return str.replace(/\{([a-zA-Z0-9_]+)\}/g, (match, name) => {
+            let key = name;
+            if (useGlobalFallback && !inputs[key]) {
+                key = `global_${name}`;
             }
             const input = inputs[key];
-            if (!input) return "";
+            if (!input) return match; // no lo toques si no es un placeholder tuyo
             if (input.type === "checkbox") return input.checked;
             return input.value ?? "";
         });
-
-    return (str) => {
-        let result = str;
-        let depth = 0;
-        while (depth < maxDepth) {
-            const replaced = replaceOnce(result);
-            if (replaced === result) break;
-            result = replaced;
-            depth++;
-        }
-        return result;
     };
 }
 
