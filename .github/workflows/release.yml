@@ -2,29 +2,63 @@ name: Build & Release
 
 on:
   push:
-    tags:
-      - "v*.*.*"
+    branches:
+      - main
+    paths:
+      - "version.txt"
 
 jobs:
   build:
     runs-on: windows-latest
-    
+
     permissions:
       contents: write
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read version from version.txt
+        id: version
+        shell: pwsh
+        run: |
+          $version = (Get-Content version.txt -Raw).Trim()
+
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Check if tag already exists
+        id: check_tag
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+
+          $existingTag = git tag -l $tag
+
+          if ($existingTag) {
+            echo "exists=true" >> $env:GITHUB_OUTPUT
+          } else {
+            echo "exists=false" >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Create and push tag
+        if: steps.check_tag.outputs.exists == 'false'
+        shell: pwsh
+        run: |
+          $tag = "${{ steps.version.outputs.tag }}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git tag $tag
+          git push origin $tag
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: Write version.txt from tag
-        run: |
-          $version = "${{ github.ref_name }}" -replace '^v', ''
-          Set-Content -Path version.txt -Value $version
 
       - name: Install build dependencies
         run: pip install cx_Freeze
@@ -32,12 +66,14 @@ jobs:
       - name: Install app dependencies
         run: pip install -r requirements.txt
 
-      - name: Build and zip with cx_Freeze
+      - name: Build with cx_Freeze
         run: python setup.py build_exe
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Neodeck Launcher v${{ steps.version.outputs.version }}
           files: build/NeodeckLauncher.zip
           generate_release_notes: true
         env:
