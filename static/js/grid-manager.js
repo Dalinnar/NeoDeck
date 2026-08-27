@@ -516,7 +516,7 @@ class SliderButton extends BaseButton {
     }
   }
 
-  reateKnob(range) {
+  createKnob(range) {
     range.style.display = "none";
     this.element.appendChild(range);
 
