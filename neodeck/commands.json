@@ -25,11 +25,11 @@
       }
     },
     "Open a folder": {
-      "command": "$folder('{folder-path}')",
+      "command": "$folder('{folder_path}')",
       "inputs": [
         {
           "TYPE": "select",
-          "name": "folder-path",
+          "name": "folder_path",
           "options_url": "/api/deck_folders"
         }
       ],
@@ -291,21 +291,21 @@
       "style": {}
     },
     "Open": {
-      "command": "/start {file-path}",
+      "command": "/start {file_path}",
       "inputs": [
         {
           "TYPE": "sys file",
-          "name": "file-path"
+          "name": "file_path"
         }
       ],
       "style": {}
     },
     "opendir": {
-      "command": "/open_folder {folder-path}",
+      "command": "/open_folder {folder_path}",
       "inputs": [
         {
           "TYPE": "sys folder",
-          "name": "folder-path",
+          "name": "folder_path",
           "placeholder": "path/to/your/folder"
         }
       ],
@@ -379,22 +379,22 @@
       }
     },
     "Kill a task": {
-      "command": "/forceclose {file-path}",
+      "command": "/forceclose {file_path}",
       "inputs": [
         {
           "TYPE": "sys file",
-          "name": "file-path",
+          "name": "file_path",
           "file_type": ".exe"
         }
       ],
       "style": {}
     },
     "Restart a task": {
-      "command": "/restart {file-path}",
+      "command": "/restart {file_path}",
       "inputs": [
         {
           "TYPE": "sys file",
-          "name": "file-path",
+          "name": "file_path",
           "file_type": ".exe"
         }
       ],

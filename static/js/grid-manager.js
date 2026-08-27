@@ -516,13 +516,27 @@ class SliderButton extends BaseButton {
     }
   }
 
-  createKnob(range) {
+  reateKnob(range) {
     range.style.display = "none";
     this.element.appendChild(range);
 
     const knob = document.createElement("div");
     this.knob = knob;
     knob.classList.add("knob");
+
+    if (this.data.image) {
+      // Hide the base tile's own avatar <img> (rendered directly on
+      // this.element by BaseButton) so it doesn't show behind the knob.
+      const baseImg = this.element.querySelector(":scope > img");
+      if (baseImg) baseImg.style.display = "none";
+
+      const avatar = document.createElement("img");
+      avatar.src = this.data.image;
+      avatar.classList.add("knob-avatar");
+      avatar.draggable = false;
+      knob.appendChild(avatar);
+      knob.classList.add("knob--has-image");
+    }
 
     const knobInner = document.createElement("div");
     knobInner.classList.add("knob-inner");

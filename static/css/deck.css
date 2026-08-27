@@ -207,6 +207,7 @@ body {
     border-radius: 4%;
     text-overflow: ellipsis;
     position: relative;
+    container-type: size;
 }
 
 .button_div img {
@@ -1033,8 +1034,10 @@ input[type="color"] {
 ========================= */
 
 .knob {
-    width: 80%;
+    width: min(80cqw, 80cqh);
+    height: min(80cqw, 80cqh);
     aspect-ratio: 1;
+    /* kept as a safety net, now redundant since w=h already */
     border-radius: 50%;
     background: radial-gradient(circle at 35% 35%, var(--surface-4), var(--surface));
     border: 2px solid var(--border);
@@ -1046,6 +1049,8 @@ input[type="color"] {
     user-select: none;
     position: relative;
     transition: box-shadow 0.2s;
+    overflow: hidden;
+
 }
 
 .knob--dragging {
@@ -1106,6 +1111,21 @@ input[type="color"] {
 
 .knob--muted~.knob-label::after {
     content: " 🔇";
+}
+
+.knob-avatar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    border-radius: 50%;
+    /* belt-and-suspenders, .knob's overflow:hidden already clips it */
+}
+
+.knob--muted .knob-avatar {
+    filter: grayscale(1) brightness(0.6);
 }
 
 /* =========================
